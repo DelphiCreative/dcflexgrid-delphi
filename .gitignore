@@ -1,0 +1,101 @@
+# =========================
+
+# Delphi / RAD Studio
+
+# =========================
+
+# Compilados
+
+*.exe
+*.dll
+*.bpl
+*.dcp
+*.dcu
+*.lib
+*.a
+*.o
+*.obj
+
+# Backup e temporários
+
+*.~*
+*.bak
+*.tmp
+*.identcache
+
+# Pastas de saída
+
+Win32/
+Win64/
+Debug/
+Release/
+lib/
+__history/
+__recovery/
+
+# Arquivos de projeto gerados
+
+*.local
+*.stat
+*.deployproj.local
+*.dproj.local
+
+# Cache IDE
+
+*.skincfg
+*.tvsconfig
+*.projdata
+*.dsk
+
+# IntelliSense / Code Insight
+
+*.dres
+*.map
+*.rsm
+*.tds
+
+# Packages
+
+*.bpi
+
+# FMX (se usar)
+
+*.fmx
+
+# Logs
+
+*.log
+
+# Arquivos do Windows
+
+Thumbs.db
+Desktop.ini
+
+# =========================
+
+# SQLite (opcional)
+
+# =========================
+
+*.sqlite
+*.db
+*.db3
+
+# =========================
+
+# Python / Streamlit (caso use junto)
+
+# =========================
+
+**pycache**/
+*.pyc
+.env
+.venv/
+
+# =========================
+
+# Outros
+
+# =========================
+
+*.zip
