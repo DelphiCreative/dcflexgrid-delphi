@@ -9,7 +9,7 @@
         <Projects Include="src\DCFlexGridR.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="demo\Demo.DCFlexGrid.dproj">
+        <Projects Include="demo\DCFlexGridDemo.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -38,23 +38,23 @@
     <Target Name="DCFlexGridR:Make">
         <MSBuild Projects="src\DCFlexGridR.dproj" Targets="Make"/>
     </Target>
-    <Target Name="Demo_DCFlexGrid">
-        <MSBuild Projects="demo\Demo.DCFlexGrid.dproj"/>
+    <Target Name="DCFlexGridDemo">
+        <MSBuild Projects="demo\DCFlexGridDemo.dproj"/>
     </Target>
-    <Target Name="Demo_DCFlexGrid:Clean">
-        <MSBuild Projects="demo\Demo.DCFlexGrid.dproj" Targets="Clean"/>
+    <Target Name="DCFlexGridDemo:Clean">
+        <MSBuild Projects="demo\DCFlexGridDemo.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="Demo_DCFlexGrid:Make">
-        <MSBuild Projects="demo\Demo.DCFlexGrid.dproj" Targets="Make"/>
+    <Target Name="DCFlexGridDemo:Make">
+        <MSBuild Projects="demo\DCFlexGridDemo.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="DCFlexGridD;DCFlexGridR;Demo_DCFlexGrid"/>
+        <CallTarget Targets="DCFlexGridD;DCFlexGridR;DCFlexGridDemo"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="DCFlexGridD:Clean;DCFlexGridR:Clean;Demo_DCFlexGrid:Clean"/>
+        <CallTarget Targets="DCFlexGridD:Clean;DCFlexGridR:Clean;DCFlexGridDemo:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="DCFlexGridD:Make;DCFlexGridR:Make;Demo_DCFlexGrid:Make"/>
+        <CallTarget Targets="DCFlexGridD:Make;DCFlexGridR:Make;DCFlexGridDemo:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>
