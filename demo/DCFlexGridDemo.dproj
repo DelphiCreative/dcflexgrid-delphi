@@ -3,7 +3,7 @@
         <ProjectGuid>{98959CF8-F242-4A9D-B6F7-53486D640CD4}</ProjectGuid>
         <MainSource>DCFlexGridDemo.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <ProjectName Condition="'$(ProjectName)'==''">DCFlexGridDemo</ProjectName>
         <TargetedPlatforms>32769</TargetedPlatforms>
         <AppType>Application</AppType>
@@ -114,7 +114,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="frmMain.pas">
-            <Form>FormMain</Form>
+            <Form>Form1</Form>
         </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

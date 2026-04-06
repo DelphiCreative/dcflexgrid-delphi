@@ -1,9 +1,9 @@
-object FormMain: TFormMain
+object Form1: TForm1
   Left = 0
   Top = 0
-  Caption = 'DCGrid Showcase Demo - v1'
-  ClientHeight = 1055
-  ClientWidth = 1178
+  Caption = 'DCFlexGrid Showcase Demo'
+  ClientHeight = 777
+  ClientWidth = 1172
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -15,20 +15,19 @@ object FormMain: TFormMain
   object pnlHeader: TPanel
     Left = 0
     Top = 0
-    Width = 1178
+    Width = 1172
     Height = 56
     Align = alTop
     BevelOuter = bvNone
     Color = clWhite
     ParentBackground = False
     TabOrder = 0
-    ExplicitWidth = 1176
     object lblTitle: TLabel
       Left = 16
       Top = 10
-      Width = 354
+      Width = 351
       Height = 21
-      Caption = 'DCGrid Showcase - SQLite + Runtime Studio -  v1'
+      Caption = 'DCFlexGrid Showcase - SQLite + Runtime Studio'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
       Font.Height = -16
@@ -48,22 +47,20 @@ object FormMain: TFormMain
     Left = 0
     Top = 56
     Width = 276
-    Height = 999
+    Height = 721
     Align = alLeft
     BevelOuter = bvNone
     Color = clWhitesmoke
     ParentBackground = False
     TabOrder = 1
-    ExplicitHeight = 991
     object PageControl1: TPageControl
       Left = 0
       Top = 0
       Width = 276
-      Height = 999
-      ActivePage = tsBehavior
+      Height = 721
+      ActivePage = tsAdvanced
       Align = alClient
       TabOrder = 0
-      ExplicitHeight = 991
       object tsBehavior: TTabSheet
         Caption = 'Behavior'
         object lblSearch: TLabel
@@ -290,325 +287,323 @@ object FormMain: TFormMain
           Left = 0
           Top = 0
           Width = 268
-          Height = 971
+          Height = 701
           HorzScrollBar.Visible = False
-          VertScrollBar.Position = 49
           VertScrollBar.Tracking = True
           Align = alClient
           BorderStyle = bsNone
           TabOrder = 0
-          ExplicitHeight = 963
           object lblThemeColors: TLabel
             Left = 12
-            Top = -13
+            Top = 36
             Width = 166
             Height = 13
             Caption = 'Theme colors + free color dialog'
           end
           object lblHeaderColor: TLabel
             Left = 12
-            Top = 11
+            Top = 60
             Width = 65
             Height = 13
             Caption = 'HeaderColor'
           end
           object lblHeaderColorHex: TLabel
             Left = 172
-            Top = 33
+            Top = 82
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblRowColor: TLabel
             Left = 12
-            Top = 57
+            Top = 106
             Width = 51
             Height = 13
             Caption = 'RowColor'
           end
           object lblRowColorHex: TLabel
             Left = 172
-            Top = 79
+            Top = 128
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblAltRowColor: TLabel
             Left = 12
-            Top = 103
+            Top = 152
             Width = 75
             Height = 13
             Caption = 'AlternateColor'
           end
           object lblAltRowColorHex: TLabel
             Left = 172
-            Top = 125
+            Top = 174
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblHoverColor: TLabel
             Left = 12
-            Top = 149
+            Top = 198
             Width = 58
             Height = 13
             Caption = 'HoverColor'
           end
           object lblHoverColorHex: TLabel
             Left = 172
-            Top = 171
+            Top = 220
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblSelectedColor: TLabel
             Left = 12
-            Top = 195
+            Top = 244
             Width = 71
             Height = 13
             Caption = 'SelectedColor'
           end
           object lblSelectedColorHex: TLabel
             Left = 172
-            Top = 217
+            Top = 266
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblSelectedTextColor: TLabel
             Left = 12
-            Top = 241
+            Top = 290
             Width = 90
             Height = 13
             Caption = 'SelectedTextColor'
           end
           object lblSelectedTextColorHex: TLabel
             Left = 172
-            Top = 263
+            Top = 312
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblSearchHighlightColor: TLabel
             Left = 12
-            Top = 287
+            Top = 336
             Width = 111
             Height = 13
             Caption = 'SearchHighlightColor'
           end
           object lblSearchHighlightColorHex: TLabel
             Left = 172
-            Top = 309
+            Top = 358
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblSearchHighlightTextColor: TLabel
             Left = 12
-            Top = 333
+            Top = 382
             Width = 130
             Height = 13
             Caption = 'SearchHighlightTextColor'
           end
           object lblSearchHighlightTextColorHex: TLabel
             Left = 172
-            Top = 355
+            Top = 404
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblDetailColor: TLabel
             Left = 12
-            Top = 380
+            Top = 430
             Width = 58
             Height = 13
             Caption = 'DetailColor'
           end
           object lblDetailColorHex: TLabel
             Left = 172
-            Top = 401
+            Top = 450
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblTextColor: TLabel
             Left = 12
-            Top = 425
+            Top = 474
             Width = 47
             Height = 13
             Caption = 'TextColor'
           end
           object lblTextColorHex: TLabel
             Left = 172
-            Top = 447
+            Top = 496
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblHeaderFontColor: TLabel
             Left = 12
-            Top = 471
+            Top = 520
             Width = 89
             Height = 13
             Caption = 'HeaderFontColor'
           end
           object lblHeaderFontColorHex: TLabel
             Left = 172
-            Top = 493
+            Top = 542
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblGridBackgroundColor: TLabel
             Left = 12
-            Top = 517
+            Top = 566
             Width = 113
             Height = 13
             Caption = 'GridBackgroundColor'
           end
           object lblGridBackgroundColorHex: TLabel
             Left = 172
-            Top = 539
+            Top = 588
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblBorderColor: TLabel
             Left = 12
-            Top = 563
+            Top = 612
             Width = 63
             Height = 13
             Caption = 'BorderColor'
           end
           object lblBorderColorHex: TLabel
             Left = 172
-            Top = 585
+            Top = 634
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblDetailBorderColor: TLabel
             Left = 12
-            Top = 609
+            Top = 658
             Width = 93
             Height = 13
             Caption = 'DetailBorderColor'
           end
           object lblDetailBorderColorHex: TLabel
             Left = 172
-            Top = 631
+            Top = 680
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblDetailTextColor: TLabel
             Left = 12
-            Top = 655
+            Top = 704
             Width = 77
             Height = 13
             Caption = 'DetailTextColor'
           end
           object lblDetailTextColorHex: TLabel
             Left = 172
-            Top = 677
+            Top = 726
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblExpandButtonColor: TLabel
             Left = 12
-            Top = 701
+            Top = 750
             Width = 102
             Height = 13
             Caption = 'ExpandButtonColor'
           end
           object lblExpandButtonColorHex: TLabel
             Left = 172
-            Top = 723
+            Top = 772
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblDetailGridHeaderColor: TLabel
             Left = 12
-            Top = 747
+            Top = 796
             Width = 117
             Height = 13
             Caption = 'DetailGridHeaderColor'
           end
           object lblDetailGridHeaderColorHex: TLabel
             Left = 172
-            Top = 769
+            Top = 818
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblDetailGridHeaderFontColor: TLabel
             Left = 12
-            Top = 793
+            Top = 842
             Width = 141
             Height = 13
             Caption = 'DetailGridHeaderFontColor'
           end
           object lblDetailGridHeaderFontColorHex: TLabel
             Left = 172
-            Top = 815
+            Top = 864
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblDetailGridRowColor: TLabel
             Left = 12
-            Top = 839
+            Top = 888
             Width = 103
             Height = 13
             Caption = 'DetailGridRowColor'
           end
           object lblDetailGridRowColorHex: TLabel
             Left = 172
-            Top = 861
+            Top = 910
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblDetailGridAltColor: TLabel
             Left = 12
-            Top = 885
+            Top = 934
             Width = 117
             Height = 13
             Caption = 'DetailGridAltRowColor'
           end
           object lblDetailGridAltColorHex: TLabel
             Left = 172
-            Top = 907
+            Top = 956
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object lblDetailGridLineColor: TLabel
             Left = 12
-            Top = 931
+            Top = 980
             Width = 101
             Height = 13
             Caption = 'DetailGridLineColor'
           end
           object lblDetailGridLineColorHex: TLabel
             Left = 172
-            Top = 953
+            Top = 1002
             Width = 54
             Height = 13
             Caption = '$00000000'
           end
           object cbxSearchHighlightColor: TColorBox
             Left = 12
-            Top = 305
+            Top = 354
             Width = 100
             Height = 22
             TabOrder = 58
           end
           object btnSearchHighlightColor: TButton
             Left = 116
-            Top = 305
+            Top = 354
             Width = 26
             Height = 22
             Caption = '...'
@@ -617,7 +612,7 @@ object FormMain: TFormMain
           end
           object shpSearchHighlightColor: TPanel
             Left = 146
-            Top = 305
+            Top = 354
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -625,14 +620,14 @@ object FormMain: TFormMain
           end
           object cbxSearchHighlightTextColor: TColorBox
             Left = 12
-            Top = 351
+            Top = 400
             Width = 100
             Height = 22
             TabOrder = 61
           end
           object btnSearchHighlightTextColor: TButton
             Left = 116
-            Top = 351
+            Top = 400
             Width = 26
             Height = 22
             Caption = '...'
@@ -641,7 +636,7 @@ object FormMain: TFormMain
           end
           object shpSearchHighlightTextColor: TPanel
             Left = 146
-            Top = 351
+            Top = 400
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -649,7 +644,7 @@ object FormMain: TFormMain
           end
           object chkDarkTheme: TCheckBox
             Left = 12
-            Top = -37
+            Top = 12
             Width = 150
             Height = 17
             Caption = 'Dark theme'
@@ -658,14 +653,14 @@ object FormMain: TFormMain
           end
           object cbxHeaderColor: TColorBox
             Left = 12
-            Top = 29
+            Top = 78
             Width = 100
             Height = 22
             TabOrder = 1
           end
           object btnHeaderColor: TButton
             Left = 116
-            Top = 29
+            Top = 78
             Width = 26
             Height = 22
             Caption = '...'
@@ -674,7 +669,7 @@ object FormMain: TFormMain
           end
           object shpHeaderColor: TPanel
             Left = 146
-            Top = 29
+            Top = 78
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -682,14 +677,14 @@ object FormMain: TFormMain
           end
           object cbxRowColor: TColorBox
             Left = 12
-            Top = 75
+            Top = 124
             Width = 100
             Height = 22
             TabOrder = 4
           end
           object btnRowColor: TButton
             Left = 116
-            Top = 75
+            Top = 124
             Width = 26
             Height = 22
             Caption = '...'
@@ -698,7 +693,7 @@ object FormMain: TFormMain
           end
           object shpRowColor: TPanel
             Left = 146
-            Top = 75
+            Top = 124
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -706,14 +701,14 @@ object FormMain: TFormMain
           end
           object cbxAltRowColor: TColorBox
             Left = 12
-            Top = 121
+            Top = 170
             Width = 100
             Height = 22
             TabOrder = 7
           end
           object btnAltRowColor: TButton
             Left = 116
-            Top = 121
+            Top = 170
             Width = 26
             Height = 22
             Caption = '...'
@@ -722,7 +717,7 @@ object FormMain: TFormMain
           end
           object shpAltRowColor: TPanel
             Left = 146
-            Top = 121
+            Top = 170
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -730,14 +725,14 @@ object FormMain: TFormMain
           end
           object cbxHoverColor: TColorBox
             Left = 12
-            Top = 167
+            Top = 216
             Width = 100
             Height = 22
             TabOrder = 10
           end
           object btnHoverColor: TButton
             Left = 116
-            Top = 167
+            Top = 216
             Width = 26
             Height = 22
             Caption = '...'
@@ -746,7 +741,7 @@ object FormMain: TFormMain
           end
           object shpHoverColor: TPanel
             Left = 146
-            Top = 167
+            Top = 216
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -754,14 +749,14 @@ object FormMain: TFormMain
           end
           object cbxSelectedColor: TColorBox
             Left = 12
-            Top = 213
+            Top = 262
             Width = 100
             Height = 22
             TabOrder = 13
           end
           object btnSelectedColor: TButton
             Left = 116
-            Top = 213
+            Top = 262
             Width = 26
             Height = 22
             Caption = '...'
@@ -770,7 +765,7 @@ object FormMain: TFormMain
           end
           object shpSelectedColor: TPanel
             Left = 146
-            Top = 213
+            Top = 262
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -778,14 +773,14 @@ object FormMain: TFormMain
           end
           object cbxSelectedTextColor: TColorBox
             Left = 12
-            Top = 259
+            Top = 308
             Width = 100
             Height = 22
             TabOrder = 16
           end
           object btnSelectedTextColor: TButton
             Left = 116
-            Top = 259
+            Top = 308
             Width = 26
             Height = 22
             Caption = '...'
@@ -794,7 +789,7 @@ object FormMain: TFormMain
           end
           object shpSelectedTextColor: TPanel
             Left = 146
-            Top = 259
+            Top = 308
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -802,14 +797,14 @@ object FormMain: TFormMain
           end
           object cbxDetailColor: TColorBox
             Left = 12
-            Top = 397
+            Top = 446
             Width = 100
             Height = 22
             TabOrder = 19
           end
           object btnDetailColor: TButton
             Left = 116
-            Top = 397
+            Top = 446
             Width = 26
             Height = 22
             Caption = '...'
@@ -818,7 +813,7 @@ object FormMain: TFormMain
           end
           object shpDetailColor: TPanel
             Left = 146
-            Top = 397
+            Top = 446
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -826,14 +821,14 @@ object FormMain: TFormMain
           end
           object cbxTextColor: TColorBox
             Left = 12
-            Top = 443
+            Top = 492
             Width = 100
             Height = 22
             TabOrder = 22
           end
           object btnTextColor: TButton
             Left = 116
-            Top = 443
+            Top = 492
             Width = 26
             Height = 22
             Caption = '...'
@@ -842,7 +837,7 @@ object FormMain: TFormMain
           end
           object shpTextColor: TPanel
             Left = 146
-            Top = 443
+            Top = 492
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -850,14 +845,14 @@ object FormMain: TFormMain
           end
           object cbxHeaderFontColor: TColorBox
             Left = 12
-            Top = 489
+            Top = 538
             Width = 100
             Height = 22
             TabOrder = 25
           end
           object btnHeaderFontColor: TButton
             Left = 116
-            Top = 489
+            Top = 538
             Width = 26
             Height = 22
             Caption = '...'
@@ -866,7 +861,7 @@ object FormMain: TFormMain
           end
           object shpHeaderFontColor: TPanel
             Left = 146
-            Top = 489
+            Top = 538
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -874,14 +869,14 @@ object FormMain: TFormMain
           end
           object cbxGridBackgroundColor: TColorBox
             Left = 12
-            Top = 535
+            Top = 584
             Width = 100
             Height = 22
             TabOrder = 28
           end
           object btnGridBackgroundColor: TButton
             Left = 116
-            Top = 535
+            Top = 584
             Width = 26
             Height = 22
             Caption = '...'
@@ -890,7 +885,7 @@ object FormMain: TFormMain
           end
           object shpGridBackgroundColor: TPanel
             Left = 146
-            Top = 535
+            Top = 584
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -898,14 +893,14 @@ object FormMain: TFormMain
           end
           object cbxBorderColor: TColorBox
             Left = 12
-            Top = 581
+            Top = 630
             Width = 100
             Height = 22
             TabOrder = 31
           end
           object btnBorderColor: TButton
             Left = 116
-            Top = 581
+            Top = 630
             Width = 26
             Height = 22
             Caption = '...'
@@ -914,7 +909,7 @@ object FormMain: TFormMain
           end
           object shpBorderColor: TPanel
             Left = 146
-            Top = 581
+            Top = 630
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -922,14 +917,14 @@ object FormMain: TFormMain
           end
           object cbxDetailBorderColor: TColorBox
             Left = 12
-            Top = 627
+            Top = 676
             Width = 100
             Height = 22
             TabOrder = 34
           end
           object btnDetailBorderColor: TButton
             Left = 116
-            Top = 627
+            Top = 676
             Width = 26
             Height = 22
             Caption = '...'
@@ -938,7 +933,7 @@ object FormMain: TFormMain
           end
           object shpDetailBorderColor: TPanel
             Left = 146
-            Top = 627
+            Top = 676
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -946,14 +941,14 @@ object FormMain: TFormMain
           end
           object cbxDetailTextColor: TColorBox
             Left = 12
-            Top = 673
+            Top = 722
             Width = 100
             Height = 22
             TabOrder = 37
           end
           object btnDetailTextColor: TButton
             Left = 116
-            Top = 673
+            Top = 722
             Width = 26
             Height = 22
             Caption = '...'
@@ -962,7 +957,7 @@ object FormMain: TFormMain
           end
           object shpDetailTextColor: TPanel
             Left = 146
-            Top = 673
+            Top = 722
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -970,14 +965,14 @@ object FormMain: TFormMain
           end
           object cbxExpandButtonColor: TColorBox
             Left = 12
-            Top = 719
+            Top = 768
             Width = 100
             Height = 22
             TabOrder = 40
           end
           object btnExpandButtonColor: TButton
             Left = 116
-            Top = 719
+            Top = 768
             Width = 26
             Height = 22
             Caption = '...'
@@ -986,7 +981,7 @@ object FormMain: TFormMain
           end
           object shpExpandButtonColor: TPanel
             Left = 146
-            Top = 719
+            Top = 768
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -994,14 +989,14 @@ object FormMain: TFormMain
           end
           object cbxDetailGridHeaderColor: TColorBox
             Left = 12
-            Top = 765
+            Top = 814
             Width = 100
             Height = 22
             TabOrder = 43
           end
           object btnDetailGridHeaderColor: TButton
             Left = 116
-            Top = 765
+            Top = 814
             Width = 26
             Height = 22
             Caption = '...'
@@ -1010,7 +1005,7 @@ object FormMain: TFormMain
           end
           object shpDetailGridHeaderColor: TPanel
             Left = 146
-            Top = 765
+            Top = 814
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -1018,14 +1013,14 @@ object FormMain: TFormMain
           end
           object cbxDetailGridHeaderFontColor: TColorBox
             Left = 12
-            Top = 811
+            Top = 860
             Width = 100
             Height = 22
             TabOrder = 46
           end
           object btnDetailGridHeaderFontColor: TButton
             Left = 116
-            Top = 811
+            Top = 860
             Width = 26
             Height = 22
             Caption = '...'
@@ -1034,7 +1029,7 @@ object FormMain: TFormMain
           end
           object shpDetailGridHeaderFontColor: TPanel
             Left = 146
-            Top = 811
+            Top = 860
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -1042,14 +1037,14 @@ object FormMain: TFormMain
           end
           object cbxDetailGridRowColor: TColorBox
             Left = 12
-            Top = 857
+            Top = 906
             Width = 100
             Height = 22
             TabOrder = 49
           end
           object btnDetailGridRowColor: TButton
             Left = 116
-            Top = 857
+            Top = 906
             Width = 26
             Height = 22
             Caption = '...'
@@ -1058,7 +1053,7 @@ object FormMain: TFormMain
           end
           object shpDetailGridRowColor: TPanel
             Left = 146
-            Top = 857
+            Top = 906
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -1066,14 +1061,14 @@ object FormMain: TFormMain
           end
           object cbxDetailGridAltColor: TColorBox
             Left = 12
-            Top = 903
+            Top = 952
             Width = 100
             Height = 22
             TabOrder = 52
           end
           object btnDetailGridAltColor: TButton
             Left = 116
-            Top = 903
+            Top = 952
             Width = 26
             Height = 22
             Caption = '...'
@@ -1082,7 +1077,7 @@ object FormMain: TFormMain
           end
           object shpDetailGridAltColor: TPanel
             Left = 146
-            Top = 903
+            Top = 952
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -1090,14 +1085,14 @@ object FormMain: TFormMain
           end
           object cbxDetailGridLineColor: TColorBox
             Left = 12
-            Top = 949
+            Top = 998
             Width = 100
             Height = 22
             TabOrder = 55
           end
           object btnDetailGridLineColor: TButton
             Left = 116
-            Top = 949
+            Top = 998
             Width = 26
             Height = 22
             Caption = '...'
@@ -1106,7 +1101,7 @@ object FormMain: TFormMain
           end
           object shpDetailGridLineColor: TPanel
             Left = 146
-            Top = 949
+            Top = 998
             Width = 22
             Height = 22
             BevelOuter = bvLowered
@@ -1143,34 +1138,6 @@ object FormMain: TFormMain
           Font.Name = 'Segoe UI'
           Font.Style = [fsBold]
           ParentFont = False
-        end
-        object lblBusinessField: TLabel
-          Left = 12
-          Top = 310
-          Width = 56
-          Height = 13
-          Caption = 'Field name'
-        end
-        object lblRuleExpr: TLabel
-          Left = 12
-          Top = 358
-          Width = 48
-          Height = 13
-          Caption = 'Rule expr'
-        end
-        object lblRuleBackColor: TLabel
-          Left = 12
-          Top = 406
-          Width = 53
-          Height = 13
-          Caption = 'Back color'
-        end
-        object lblRuleFontColor: TLabel
-          Left = 134
-          Top = 406
-          Width = 53
-          Height = 13
-          Caption = 'Font color'
         end
         object chkDetailSelectEnabled: TCheckBox
           Left = 12
@@ -1250,70 +1217,40 @@ object FormMain: TFormMain
           TabOrder = 7
           OnClick = chkBusinessEngineClick
         end
-        object edtBusinessField: TEdit
+        object btnVisualRulesDesigner: TButton
           Left = 12
-          Top = 328
-          Width = 232
-          Height = 21
-          TabOrder = 8
-          Text = 'total_value'
-        end
-        object edtRuleExpr: TEdit
-          Left = 12
-          Top = 376
-          Width = 232
-          Height = 21
-          TabOrder = 9
-          TextHint = '>700, <200, =Pago'
-        end
-        object cbxRuleBackColor: TColorBox
-          Left = 12
-          Top = 424
-          Width = 110
-          Height = 22
-          TabOrder = 10
-        end
-        object cbxRuleFontColor: TColorBox
-          Left = 134
-          Top = 424
-          Width = 110
-          Height = 22
-          TabOrder = 11
-        end
-        object btnAddRule: TButton
-          Left = 12
-          Top = 456
-          Width = 72
+          Top = 326
+          Width = 228
           Height = 25
-          Caption = 'Add rule'
-          TabOrder = 12
-          OnClick = btnAddRuleClick
+          Caption = 'Open Visual Rules Designer'
+          TabOrder = 8
+          OnClick = btnVisualRulesDesignerClick
         end
         object btnClearRules: TButton
-          Left = 90
-          Top = 456
-          Width = 72
+          Left = 12
+          Top = 368
+          Width = 110
           Height = 25
           Caption = 'Clear'
-          TabOrder = 13
+          TabOrder = 9
           OnClick = btnClearRulesClick
         end
         object btnPresetFinance: TButton
-          Left = 168
-          Top = 456
-          Width = 76
+          Left = 130
+          Top = 368
+          Width = 110
           Height = 25
           Caption = 'Preset'
-          TabOrder = 14
+          TabOrder = 10
           OnClick = btnPresetFinanceClick
         end
         object lstBusinessRules: TListBox
           Left = 12
-          Top = 490
-          Width = 232
-          Height = 180
+          Top = 410
+          Width = 228
+          Height = 103
           ItemHeight = 13
-          TabOrder = 15
+          TabOrder = 11
         end
       end
     end
@@ -1321,18 +1258,16 @@ object FormMain: TFormMain
   object pnlMain: TPanel
     Left = 276
     Top = 56
-    Width = 902
-    Height = 999
+    Width = 896
+    Height = 721
     Align = alClient
     BevelOuter = bvNone
     Color = clWhite
     ParentBackground = False
     TabOrder = 2
-    ExplicitWidth = 900
-    ExplicitHeight = 991
     DesignSize = (
-      902
-      999)
+      896
+      721)
     object lblStatus: TLabel
       Left = 16
       Top = 12
@@ -1412,13 +1347,15 @@ object FormMain: TFormMain
     object DCGrid1: TDCFlexGrid
       Left = 16
       Top = 72
-      Width = 870
-      Height = 916
+      Width = 862
+      Height = 638
       Anchors = [akLeft, akTop, akRight, akBottom]
       Color = clWhite
       ParentColor = False
       Columns = <>
-      DetailColumns = <>
+      DetailColumns = <
+        item
+        end>
       Theme.HeaderColor = 3357254
       Theme.HeaderFontColor = clWhite
       Theme.GridBackgroundColor = 16514301
@@ -1442,12 +1379,12 @@ object FormMain: TFormMain
       Theme.SearchHighlightTextColor = clBlack
       TitleFont.Charset = DEFAULT_CHARSET
       TitleFont.Color = clWindowText
-      TitleFont.Height = -15
+      TitleFont.Height = -12
       TitleFont.Name = 'Segoe UI'
       TitleFont.Style = [fsBold]
       DetailFont.Charset = DEFAULT_CHARSET
       DetailFont.Color = 3226183
-      DetailFont.Height = -15
+      DetailFont.Height = -11
       DetailFont.Name = 'Segoe UI'
       DetailFont.Style = []
       DetailStyle = dsGrid
@@ -1455,21 +1392,17 @@ object FormMain: TFormMain
       OnDetailRowClick = DCGrid1DetailRowClick
       OnDetailRowDblClick = DCGrid1DetailRowDblClick
       OnRightClickHitTest = DCGrid1RightClickHitTest
-      ExplicitWidth = 868
-      ExplicitHeight = 908
     end
     object memThemeCode: TMemo
       Left = 16
-      Top = 1056
-      Width = 870
+      Top = 778
+      Width = 862
       Height = 188
       Anchors = [akLeft, akRight, akBottom]
       ReadOnly = True
       ScrollBars = ssVertical
       TabOrder = 7
       WordWrap = False
-      ExplicitTop = 1048
-      ExplicitWidth = 868
     end
   end
   object FDConnection1: TFDConnection

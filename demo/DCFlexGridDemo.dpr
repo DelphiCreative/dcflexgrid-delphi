@@ -2,13 +2,13 @@ program DCFlexGridDemo;
 
 uses
   Vcl.Forms,
-  frmMain in 'frmMain.pas' {FormMain};
+  frmMain in 'frmMain.pas' {Form1};
 
 {$R *.res}
 
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  Application.CreateForm(TFormMain, FormMain);
+  Application.CreateForm(TForm1, Form1);
   Application.Run;
 end.

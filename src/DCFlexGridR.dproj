@@ -119,6 +119,9 @@
         <DCCReference Include="vcl.dcp"/>
         <DCCReference Include="dbrtl.dcp"/>
         <DCCReference Include="DCFlexGrid.pas"/>
+        <DCCReference Include="DCFlexGrid.Fluent.pas"/>
+        <DCCReference Include="DCFlexGrid.Themes.pas"/>
+        <DCCReference Include="DCFlexGrid.VisualRulesDesigner.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

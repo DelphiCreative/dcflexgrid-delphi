@@ -1,8 +1,8 @@
-# 🚀 DCFlexGrid
+﻿# 🚀 DCFlexGrid
 
 Um componente moderno de **Grid para Delphi** com suporte a **Master-Detail**, desenvolvido para facilitar a criação de interfaces mais profissionais e organizadas.
 
-> ⚠️ **Status: Beta**
+> ⚠️ **Status: Beta**  
 > Este projeto ainda está em desenvolvimento.
 
 ---
@@ -11,9 +11,48 @@ Um componente moderno de **Grid para Delphi** com suporte a **Master-Detail**, d
 
 * ✔ Suporte a **Master-Detail**
 * ✔ Estrutura baseada em **Runtime + Design-time packages**
+* ✔ API fluente para configuração rápida
+* ✔ Temas visuais profissionais
+* ✔ Regras visuais dinâmicas (Visual Rules)
 * ✔ Integração com Delphi moderno (XE7+)
 * ✔ Fácil instalação
 * ✔ Pensado para evolução contínua
+
+---
+
+## 🆕 Novidades recentes
+
+### 🎯 Visual Rules Designer
+
+Novo recurso que permite aplicar regras visuais dinâmicas no grid.
+
+✔ Definição de condições por campo  
+✔ Operadores disponíveis:
+- Equals
+- Not Equals
+- Contains
+- Starts With
+- Greater Than
+- Less Than  
+
+✔ Estilização automática:
+- Cor de fundo  
+- Cor da fonte  
+- Estilo da fonte  
+
+👉 Nesta primeira versão, as regras são aplicadas na **linha inteira**
+
+```delphi
+DCGrid1.ShowVisualRulesDesigner;
+```
+
+---
+
+### 🐞 Correções
+
+* Correção de bug na renderização de linhas
+* Ajustes no comportamento do detail
+* Melhorias gerais de estabilidade
 
 ---
 
@@ -31,9 +70,7 @@ Um componente moderno de **Grid para Delphi** com suporte a **Master-Detail**, d
 
 Abra o arquivo:
 
-```
 DCFlexGrid.groupproj
-```
 
 ---
 
@@ -41,15 +78,11 @@ DCFlexGrid.groupproj
 
 Clique com o botão direito em:
 
-```
 DCFlexGridR
-```
 
 E selecione:
 
-```
 Build
-```
 
 ---
 
@@ -57,15 +90,11 @@ Build
 
 Clique com o botão direito em:
 
-```
 DCFlexGridD
-```
 
 E selecione:
 
-```
 Install
-```
 
 ---
 
@@ -73,15 +102,11 @@ Install
 
 Acesse:
 
-```
 Tools > Options > Delphi > Library
-```
 
 Adicione o caminho da pasta `src`:
 
-```
 ...\DCFlexGrid\src
-```
 
 ---
 
@@ -95,17 +120,34 @@ Após a instalação:
 
 * O componente estará disponível na paleta:
 
-```
 Delphi Creative
-```
 
 * Componente:
 
-```
 TDCFlexGrid
-```
 
 * Pronto para uso em seus formulários
+
+---
+
+## ⚡ Uso rápido (Fluent API)
+
+```delphi
+DCGrid1
+  .ClearColumns
+  .AddTextColumn('pedido', 'Pedido', 90)
+  .AddTextColumn('cliente', 'Cliente', 180)
+  .AddRightColumn('total', 'Total', 100)
+  .WithProfessionalTheme;
+```
+
+---
+
+## 🔗 Bind de dados
+
+```delphi
+DCGrid1.BindDataSets(qryOrders, qryItems, 'pedido', 'pedido');
+```
 
 ---
 
@@ -143,6 +185,7 @@ O DCFlexGrid foi criado com o objetivo de fornecer uma alternativa moderna para 
 
 * Produtividade
 * Organização de dados
+* Experiência visual profissional
 * Evolução contínua
 
 ---
@@ -159,7 +202,11 @@ Sua contribuição ajuda na evolução do componente, melhorias e novos recursos
 
 ## 📌 Roadmap (futuro)
 
-* [ ] Melhorias visuais
+* [ ] Regras por célula
+* [ ] Regras por coluna
+* [ ] Persistência de configurações do usuário
+* [ ] Internacionalização
+* [ ] Melhorias visuais avançadas
 * [ ] Performance otimizada
 * [ ] Mais recursos de Master-Detail
 * [ ] Suporte expandido (FMX)
@@ -169,9 +216,9 @@ Sua contribuição ajuda na evolução do componente, melhorias e novos recursos
 
 ## 🧑‍💻 Autor
 
-**Diego Cataneo**
-📺 YouTube: Delphi Creative
-💻 GitHub: https://github.com/DelphiCreative
+**Diego Cataneo**  
+📺 YouTube: Delphi Creative  
+💻 GitHub: https://github.com/DelphiCreative  
 
 ---
 
@@ -183,7 +230,7 @@ Definir (MIT, comercial, etc.)
 
 ## ⚠️ Aviso
 
-Este é um projeto em fase **beta**.
+Este é um projeto em fase **beta**.  
 Recomenda-se validar antes de utilizar em produção.
 
 ---
@@ -195,5 +242,3 @@ Contribuições são bem-vindas!
 * Abra uma issue
 * Sugira melhorias
 * Reporte bugs
-
----

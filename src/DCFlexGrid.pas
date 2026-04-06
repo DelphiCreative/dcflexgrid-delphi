@@ -1,4 +1,4 @@
-{
+﻿{
   DCFlexGrid - Commercial Master-Detail Grid for Delphi VCL
   ---------------------------------------------------------
   Author  : Diego Cataneo (Delphi Creative)
@@ -37,8 +37,10 @@ uses
   System.Variants,
   System.Generics.Collections,
   System.StrUtils,
+  System.TypInfo,
   System.IniFiles,
   System.IOUtils,
+  System.JSON,
   Data.DB,
   Vcl.Controls,
   Vcl.Graphics;
@@ -61,6 +63,55 @@ type
   TDCExpandMode = (emSingle, emMultiple);
   TDCSortDirection = (sdNone, sdAscending, sdDescending);
   TDCHitTestArea = (htNone, htHeader, htMasterRow, htDetailRow, htExpandButton);
+
+
+  TDCRulesDesignerLanguage = (rdlPortuguese, rdlEnglish, rdlCustom);
+
+  TDCGridLang = class(TPersistent)
+  public
+    Title: string;
+    Subtitle: string;
+    SectionRuleSetup: string;
+    SectionRules: string;
+    SectionActions: string;
+    FieldCaption: string;
+    ConditionCaption: string;
+    ValueCaption: string;
+    BackgroundCaption: string;
+    FontCaption: string;
+    PreviewCaption: string;
+    BoldCaption: string;
+    ItalicCaption: string;
+    UnderlineCaption: string;
+    AddRuleCaption: string;
+    UpdateRuleCaption: string;
+    RemoveSelectedCaption: string;
+    ClearAllCaption: string;
+    CloseCaption: string;
+    SampleCaption: string;
+    StatusReady: string;
+    StatusRuleAdded: string;
+    StatusRuleUpdated: string;
+    StatusRuleRemoved: string;
+    StatusRulesCleared: string;
+    StatusEditingRule: string;
+    ColField: string;
+    ColCondition: string;
+    ColValue: string;
+    ColBack: string;
+    ColFont: string;
+    ColStyles: string;
+    CondEquals: string;
+    CondNotEquals: string;
+    CondGreaterThan: string;
+    CondLessThan: string;
+    CondContains: string;
+    CondStartsWith: string;
+    procedure Assign(Source: TPersistent); override;
+    function Clone: TDCGridLang;
+    class function Portuguese: TDCGridLang; static;
+    class function English: TDCGridLang; static;
+  end;
 
   TDCGetCellTextEvent = procedure(Sender: TObject; ARow, ACol: Integer;
     var AText: string) of object;
@@ -165,8 +216,12 @@ published
 end;
 
 TDCHighlightRules = class(TObjectList<TDCHighlightRule>)
+private
+  FOwnerGrid: TDCMasterDetailGrid;
 public
   function Add(const AExpression: string; ABackColor: TColor; AFontColor: TColor = clNone; AFontStyles: TFontStyles = []): TDCHighlightRule; reintroduce;
+  procedure Edit;
+  property OwnerGrid: TDCMasterDetailGrid read FOwnerGrid write FOwnerGrid;
 end;
 
 TDCBusinessHighlight = class(TPersistent)
@@ -184,6 +239,10 @@ public
   procedure Assign(Source: TPersistent); override;
   procedure Clear;
   function Evaluate(const AValue: Variant; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles): Boolean;
+  function ToJSON: string;
+  procedure FromJSON(const AJSON: string);
+  procedure SaveToFile(const AFileName: string);
+  procedure LoadFromFile(const AFileName: string);
   property Rules: TDCHighlightRules read FRules;
 published
   property Enabled: Boolean read FEnabled write SetEnabled default False;
@@ -388,6 +447,10 @@ end;
     FSearchScope: TDCSearchScope;
     FAutoExpandOnSearch: Boolean;
     FFilteredRows: TList<Integer>;
+    FRulesDesignerLanguage: TDCRulesDesignerLanguage;
+    FRulesDesignerCustomLanguage: TDCGridLang;
+    FRulesDesignerAutoLoadPreferences: Boolean;
+    FRulesDesignerAutoSavePreferences: Boolean;
     function GetLayoutFileName: string;
     function GetLayoutSectionName: string;
     function GetDebugLogFileName: string;
@@ -403,6 +466,9 @@ end;
     procedure SetFilterMode(const Value: TDCFilterMode);
     procedure SetSearchScope(const Value: TDCSearchScope);
     procedure SetAutoExpandOnSearch(const Value: Boolean);
+    procedure SetRulesDesignerLanguage(const Value: TDCRulesDesignerLanguage);
+    procedure SetRulesDesignerAutoLoadPreferences(const Value: Boolean);
+    procedure SetRulesDesignerAutoSavePreferences(const Value: Boolean);
     procedure RebuildFilter;
     function GetFilteredRowCount: Integer;
     function GetActualRowCount: Integer;
@@ -506,6 +572,7 @@ end;
     procedure AutoSizeDetailColumn(ACol: Integer);
     procedure TitleFontChanged(Sender: TObject);
     procedure DetailFontChanged(Sender: TObject);
+    function GetRules: TDCHighlightRules;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -521,6 +588,14 @@ end;
     procedure SaveLayout;
     procedure LoadLayout;
     procedure ResetLayout;
+    procedure ShowVisualRulesDesigner;
+    procedure ShowRulesDesigner;
+    procedure SetRulesDesignerCustomLanguage(ALanguage: TDCGridLang);
+    function GetRulesDesignerCustomLanguageClone: TDCGridLang;
+    function GetDefaultRulesFileName: string;
+    function GetDefaultDesignerPreferencesFileName: string;
+    procedure LoadRulesFromFile(const AFileName: string = '');
+    procedure SaveRulesToFile(const AFileName: string = '');
     property TopRow: Integer read FTopRow write SetTopRow;
     property HoverRow: Integer read FHoverRow;
     property FilteredRowCount: Integer read GetFilteredRowCount;
@@ -599,8 +674,12 @@ end;
     property DataAdapter: TDCGridDataAdapter read FDataAdapter write SetDataAdapter;
     property DataSetAdapter: TDCDataSetAdapter read FDataSetAdapter write SetDataSetAdapter;
     property BusinessHighlight: TDCBusinessHighlight read FBusinessHighlight write SetBusinessHighlight;
+    property Rules: TDCHighlightRules read GetRules;
     property OnDrawCell: TDCDrawCellEvent read FOnDrawCell write FOnDrawCell;
     property OnDrawDetail: TDCDrawDetailEvent read FOnDrawDetail write FOnDrawDetail;
+    property RulesDesignerLanguage: TDCRulesDesignerLanguage read FRulesDesignerLanguage write SetRulesDesignerLanguage default rdlPortuguese;
+    property RulesDesignerAutoLoadPreferences: Boolean read FRulesDesignerAutoLoadPreferences write SetRulesDesignerAutoLoadPreferences default True;
+    property RulesDesignerAutoSavePreferences: Boolean read FRulesDesignerAutoSavePreferences write SetRulesDesignerAutoSavePreferences default True;
 
     property OnClick;
     property OnDblClick;
@@ -617,7 +696,206 @@ end;
 
   TDCGrid = class(TDCFlexGrid);
 
+
 implementation
+
+uses
+  DCFlexGrid.VisualRulesDesigner;
+
+{ TDCGridLang }
+
+procedure TDCGridLang.Assign(Source: TPersistent);
+begin
+  if Source is TDCGridLang then
+  begin
+    Title := TDCGridLang(Source).Title;
+    Subtitle := TDCGridLang(Source).Subtitle;
+    SectionRuleSetup := TDCGridLang(Source).SectionRuleSetup;
+    SectionRules := TDCGridLang(Source).SectionRules;
+    SectionActions := TDCGridLang(Source).SectionActions;
+    FieldCaption := TDCGridLang(Source).FieldCaption;
+    ConditionCaption := TDCGridLang(Source).ConditionCaption;
+    ValueCaption := TDCGridLang(Source).ValueCaption;
+    BackgroundCaption := TDCGridLang(Source).BackgroundCaption;
+    FontCaption := TDCGridLang(Source).FontCaption;
+    PreviewCaption := TDCGridLang(Source).PreviewCaption;
+    BoldCaption := TDCGridLang(Source).BoldCaption;
+    ItalicCaption := TDCGridLang(Source).ItalicCaption;
+    UnderlineCaption := TDCGridLang(Source).UnderlineCaption;
+    AddRuleCaption := TDCGridLang(Source).AddRuleCaption;
+    UpdateRuleCaption := TDCGridLang(Source).UpdateRuleCaption;
+    RemoveSelectedCaption := TDCGridLang(Source).RemoveSelectedCaption;
+    ClearAllCaption := TDCGridLang(Source).ClearAllCaption;
+    CloseCaption := TDCGridLang(Source).CloseCaption;
+    SampleCaption := TDCGridLang(Source).SampleCaption;
+    StatusReady := TDCGridLang(Source).StatusReady;
+    StatusRuleAdded := TDCGridLang(Source).StatusRuleAdded;
+    StatusRuleUpdated := TDCGridLang(Source).StatusRuleUpdated;
+    StatusRuleRemoved := TDCGridLang(Source).StatusRuleRemoved;
+    StatusRulesCleared := TDCGridLang(Source).StatusRulesCleared;
+    StatusEditingRule := TDCGridLang(Source).StatusEditingRule;
+    ColField := TDCGridLang(Source).ColField;
+    ColCondition := TDCGridLang(Source).ColCondition;
+    ColValue := TDCGridLang(Source).ColValue;
+    ColBack := TDCGridLang(Source).ColBack;
+    ColFont := TDCGridLang(Source).ColFont;
+    ColStyles := TDCGridLang(Source).ColStyles;
+    CondEquals := TDCGridLang(Source).CondEquals;
+    CondNotEquals := TDCGridLang(Source).CondNotEquals;
+    CondGreaterThan := TDCGridLang(Source).CondGreaterThan;
+    CondLessThan := TDCGridLang(Source).CondLessThan;
+    CondContains := TDCGridLang(Source).CondContains;
+    CondStartsWith := TDCGridLang(Source).CondStartsWith;
+  end
+  else
+    inherited;
+end;
+
+function TDCGridLang.Clone: TDCGridLang;
+begin
+  Result := TDCGridLang.Create;
+  Result.Assign(Self);
+end;
+
+class function TDCGridLang.Portuguese: TDCGridLang;
+begin
+  Result := TDCGridLang.Create;
+  Result.Title := 'Visual Rules Designer';
+  Result.Subtitle := 'Configure regras visuais de destaque com uma experiência mais profissional.';
+  Result.SectionRuleSetup := 'Configuração da regra';
+  Result.SectionRules := 'Regras configuradas';
+  Result.SectionActions := 'Ações';
+  Result.FieldCaption := 'Campo';
+  Result.ConditionCaption := 'Condição';
+  Result.ValueCaption := 'Valor';
+  Result.BackgroundCaption := 'Fundo';
+  Result.FontCaption := 'Fonte';
+  Result.PreviewCaption := 'Preview';
+  Result.BoldCaption := 'Negrito';
+  Result.ItalicCaption := 'Itálico';
+  Result.UnderlineCaption := 'Sublinhado';
+  Result.AddRuleCaption := 'Adicionar regra';
+  Result.UpdateRuleCaption := 'Atualizar regra';
+  Result.RemoveSelectedCaption := 'Remover selecionada';
+  Result.ClearAllCaption := 'Limpar tudo';
+  Result.CloseCaption := 'Fechar';
+  Result.SampleCaption := 'Exemplo';
+  Result.StatusReady := 'Pronto para configurar novas regras.';
+  Result.StatusRuleAdded := 'Regra adicionada com sucesso.';
+  Result.StatusRuleUpdated := 'Regra atualizada com sucesso.';
+  Result.StatusRuleRemoved := 'Regra removida.';
+  Result.StatusRulesCleared := 'Todas as regras foram removidas.';
+  Result.StatusEditingRule := 'Editando regra selecionada. Clique em atualizar para salvar.';
+  Result.ColField := 'Campo';
+  Result.ColCondition := 'Condição';
+  Result.ColValue := 'Valor';
+  Result.ColBack := 'Fundo';
+  Result.ColFont := 'Fonte';
+  Result.ColStyles := 'Estilos';
+  Result.CondEquals := 'Igual';
+  Result.CondNotEquals := 'Diferente';
+  Result.CondGreaterThan := 'Maior que';
+  Result.CondLessThan := 'Menor que';
+  Result.CondContains := 'Contém';
+  Result.CondStartsWith := 'Começa com';
+end;
+
+class function TDCGridLang.English: TDCGridLang;
+begin
+  Result := TDCGridLang.Create;
+  Result.Title := 'Visual Rules Designer';
+  Result.Subtitle := 'Configure visual highlight rules with a polished, product-ready experience.';
+  Result.SectionRuleSetup := 'Rule setup';
+  Result.SectionRules := 'Configured rules';
+  Result.SectionActions := 'Actions';
+  Result.FieldCaption := 'Field';
+  Result.ConditionCaption := 'Condition';
+  Result.ValueCaption := 'Value';
+  Result.BackgroundCaption := 'Background';
+  Result.FontCaption := 'Font';
+  Result.PreviewCaption := 'Preview';
+  Result.BoldCaption := 'Bold';
+  Result.ItalicCaption := 'Italic';
+  Result.UnderlineCaption := 'Underline';
+  Result.AddRuleCaption := 'Add rule';
+  Result.UpdateRuleCaption := 'Update rule';
+  Result.RemoveSelectedCaption := 'Remove selected';
+  Result.ClearAllCaption := 'Clear all';
+  Result.CloseCaption := 'Close';
+  Result.SampleCaption := 'Sample';
+  Result.StatusReady := 'Ready to configure new rules.';
+  Result.StatusRuleAdded := 'Rule added successfully.';
+  Result.StatusRuleUpdated := 'Rule updated successfully.';
+  Result.StatusRuleRemoved := 'Rule removed.';
+  Result.StatusRulesCleared := 'All rules were removed.';
+  Result.StatusEditingRule := 'Editing selected rule. Click update to save changes.';
+  Result.ColField := 'Field';
+  Result.ColCondition := 'Condition';
+  Result.ColValue := 'Value';
+  Result.ColBack := 'Back';
+  Result.ColFont := 'Font';
+  Result.ColStyles := 'Styles';
+  Result.CondEquals := 'Equals';
+  Result.CondNotEquals := 'Not equals';
+  Result.CondGreaterThan := 'Greater than';
+  Result.CondLessThan := 'Less than';
+  Result.CondContains := 'Contains';
+  Result.CondStartsWith := 'Starts with';
+end;
+
+function DCFontStylesToString(const AStyles: TFontStyles): string;
+var
+  LParts: TStringList;
+begin
+  LParts := TStringList.Create;
+  try
+    if fsBold in AStyles then
+      LParts.Add('Bold');
+    if fsItalic in AStyles then
+      LParts.Add('Italic');
+    if fsUnderline in AStyles then
+      LParts.Add('Underline');
+    if fsStrikeOut in AStyles then
+      LParts.Add('StrikeOut');
+
+    if LParts.Count = 0 then
+      Result := ''
+    else
+      Result := LParts.CommaText;
+  finally
+    LParts.Free;
+  end;
+end;
+
+function DCStringToFontStyles(const AValue: string): TFontStyles;
+var
+  LParts: TStringList;
+  I: Integer;
+  LItem: string;
+begin
+  Result := [];
+  if Trim(AValue) = '' then
+    Exit;
+
+  LParts := TStringList.Create;
+  try
+    LParts.CommaText := AValue;
+    for I := 0 to LParts.Count - 1 do
+    begin
+      LItem := Trim(LParts[I]);
+      if SameText(LItem, 'Bold') then
+        Include(Result, fsBold)
+      else if SameText(LItem, 'Italic') then
+        Include(Result, fsItalic)
+      else if SameText(LItem, 'Underline') then
+        Include(Result, fsUnderline)
+      else if SameText(LItem, 'StrikeOut') then
+        Include(Result, fsStrikeOut);
+    end;
+  finally
+    LParts.Free;
+  end;
+end;
 
 function BlendColor(AColor1, AColor2: TColor; AAmount: Byte): TColor;
 var
@@ -630,6 +908,29 @@ begin
   G := (GetGValue(C1) * (255 - AAmount) + GetGValue(C2) * AAmount) div 255;
   B := (GetBValue(C1) * (255 - AAmount) + GetBValue(C2) * AAmount) div 255;
   Result := RGB(R, G, B);
+end;
+
+procedure FillRectColor(ACanvas: TCanvas; const ARect: TRect; AColor: TColor);
+begin
+  ACanvas.Brush.Style := bsSolid;
+  ACanvas.Brush.Color := AColor;
+  ACanvas.FillRect(ARect);
+end;
+
+procedure DrawRoundedPanel(ACanvas: TCanvas; const ARect: TRect; AFillColor, ABorderColor: TColor; ARadius: Integer = 8);
+begin
+  ACanvas.Brush.Style := bsSolid;
+  ACanvas.Brush.Color := AFillColor;
+  ACanvas.Pen.Color := ABorderColor;
+  ACanvas.RoundRect(ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, ARadius, ARadius);
+end;
+
+procedure DrawAccentBar(ACanvas: TCanvas; const ARect: TRect; AColor: TColor; AWidth: Integer);
+var
+  LRect: TRect;
+begin
+  LRect := Rect(ARect.Left, ARect.Top, Min(ARect.Left + AWidth, ARect.Right), ARect.Bottom);
+  FillRectColor(ACanvas, LRect, AColor);
 end;
 
 { TDCGridDataAdapter }
@@ -1039,6 +1340,64 @@ begin
   FFontStyles := AFontStyles;
 end;
 
+
+function DCNormalizeNumericText(const AValue: string): string;
+var
+  S: string;
+  I: Integer;
+  LastComma, LastDot: Integer;
+  DecimalSep: Char;
+begin
+  S := Trim(AValue);
+  S := StringReplace(S, #160, ' ', [rfReplaceAll]);
+  S := StringReplace(S, 'R$', '', [rfReplaceAll, rfIgnoreCase]);
+  S := StringReplace(S, '$', '', [rfReplaceAll]);
+  S := StringReplace(S, '€', '', [rfReplaceAll]);
+  S := StringReplace(S, '£', '', [rfReplaceAll]);
+  S := StringReplace(S, '¥', '', [rfReplaceAll]);
+  S := StringReplace(S, ' ', '', [rfReplaceAll]);
+
+  Result := '';
+  for I := 1 to Length(S) do
+    if CharInSet(S[I], ['0'..'9', ',', '.', '-', '+']) then
+      Result := Result + S[I];
+
+  LastComma := LastDelimiter(',', Result);
+  LastDot := LastDelimiter('.', Result);
+
+  if (LastComma > 0) and (LastDot > 0) then
+  begin
+    if LastComma > LastDot then
+      DecimalSep := ','
+    else
+      DecimalSep := '.';
+  end
+  else if LastComma > 0 then
+    DecimalSep := ','
+  else
+    DecimalSep := '.';
+
+  if DecimalSep = ',' then
+  begin
+    Result := StringReplace(Result, '.', '', [rfReplaceAll]);
+    Result := StringReplace(Result, ',', '.', [rfReplaceAll]);
+  end
+  else
+    Result := StringReplace(Result, ',', '', [rfReplaceAll]);
+end;
+
+function DCTryParseFlexibleFloat(const AValue: string; out ANumber: Double): Boolean;
+var
+  S: string;
+  FS: TFormatSettings;
+begin
+  S := DCNormalizeNumericText(AValue);
+  FS := TFormatSettings.Create;
+  FS.DecimalSeparator := '.';
+  FS.ThousandSeparator := #0;
+  Result := (S <> '') and (S <> '-') and (S <> '+') and TryStrToFloat(S, ANumber, FS);
+end;
+
 function TDCHighlightRule.Match(const AValue: Variant): Boolean;
 var
   S, Expr, RightSide: string;
@@ -1049,24 +1408,42 @@ begin
   if Expr = '' then
     Exit;
 
-  S := VarToStr(AValue);
+  S := Trim(VarToStr(AValue));
 
-  if (Copy(Expr, 1, 2) = '>=') or (Copy(Expr, 1, 2) = '<=') then
+  if Length(Expr) >= 2 then
   begin
-    Cmp := StrToFloatDef(Trim(Copy(Expr, 3, MaxInt)), 0);
-    N := StrToFloatDef(StringReplace(S, ',', '.', [rfReplaceAll]), 0);
-    if Copy(Expr, 1, 2) = '>=' then
-      Result := N >= Cmp
-    else
-      Result := N <= Cmp;
-    Exit;
+    if Copy(Expr, 1, 2) = '<>' then
+    begin
+      RightSide := Trim(Copy(Expr, 3, MaxInt));
+      Result := not SameText(S, RightSide);
+      Exit;
+    end;
+
+    if (Copy(Expr, 1, 2) = '>=') or (Copy(Expr, 1, 2) = '<=') then
+    begin
+      RightSide := Trim(Copy(Expr, 3, MaxInt));
+      if DCTryParseFlexibleFloat(S, N) and DCTryParseFlexibleFloat(RightSide, Cmp) then
+      begin
+        if Copy(Expr, 1, 2) = '>=' then
+          Result := N >= Cmp
+        else
+          Result := N <= Cmp;
+      end;
+      Exit;
+    end;
   end;
 
-  if (Expr[1] = '>') or (Expr[1] = '<') or (Expr[1] = '=') then
+  if (Length(Expr) > 0) and ((Expr[1] = '>') or (Expr[1] = '<') or (Expr[1] = '=') or (Expr[1] = '^')) then
   begin
     RightSide := Trim(Copy(Expr, 2, MaxInt));
-    if TryStrToFloat(StringReplace(S, ',', '.', [rfReplaceAll]), N) and
-       TryStrToFloat(StringReplace(RightSide, ',', '.', [rfReplaceAll]), Cmp) then
+
+    if Expr[1] = '^' then
+    begin
+      Result := SameText(Copy(S, 1, Length(RightSide)), RightSide);
+      Exit;
+    end;
+
+    if DCTryParseFlexibleFloat(S, N) and DCTryParseFlexibleFloat(RightSide, Cmp) then
     begin
       case Expr[1] of
         '>': Result := N > Cmp;
@@ -1088,11 +1465,18 @@ begin
   inherited Add(Result);
 end;
 
+procedure TDCHighlightRules.Edit;
+begin
+  if Assigned(FOwnerGrid) then
+    ShowDCFlexGridVisualRulesDesigner(FOwnerGrid);
+end;
+
 constructor TDCBusinessHighlight.Create(AOwner: TDCMasterDetailGrid);
 begin
   inherited Create;
   FOwner := AOwner;
   FRules := TDCHighlightRules.Create(True);
+  FRules.OwnerGrid := AOwner;
 end;
 
 destructor TDCBusinessHighlight.Destroy;
@@ -1148,6 +1532,100 @@ procedure TDCBusinessHighlight.Clear;
 begin
   FRules.Clear;
   Changed;
+end;
+
+function TDCBusinessHighlight.ToJSON: string;
+var
+  LRoot: TJSONObject;
+  LRules: TJSONArray;
+  LRule: TDCHighlightRule;
+  LItem: TJSONObject;
+  LStyles: string;
+begin
+  LRoot := TJSONObject.Create;
+  try
+    LRoot.AddPair('enabled', TJSONBool.Create(FEnabled));
+    LRoot.AddPair('field', FField);
+
+    LRules := TJSONArray.Create;
+    for LRule in FRules do
+    begin
+      LStyles := DCFontStylesToString(LRule.FontStyles);
+      LItem := TJSONObject.Create;
+      LItem.AddPair('expression', LRule.Expression);
+      LItem.AddPair('backColor', TJSONNumber.Create(Integer(LRule.BackColor)));
+      LItem.AddPair('fontColor', TJSONNumber.Create(Integer(LRule.FontColor)));
+      LItem.AddPair('fontStyles', LStyles);
+      LRules.AddElement(LItem);
+    end;
+    LRoot.AddPair('rules', LRules);
+    Result := LRoot.ToJSON;
+  finally
+    LRoot.Free;
+  end;
+end;
+
+procedure TDCBusinessHighlight.FromJSON(const AJSON: string);
+var
+  LValue: TJSONValue;
+  LRoot: TJSONObject;
+  LRules: TJSONArray;
+  I: Integer;
+  LItem: TJSONObject;
+  LExpression: string;
+  LBackColor: TColor;
+  LFontColor: TColor;
+  LFontStylesText: string;
+  LDecodedStyles: TFontStyles;
+begin
+  if Trim(AJSON) = '' then
+    Exit;
+
+  LValue := TJSONObject.ParseJSONValue(AJSON);
+  try
+    if not (LValue is TJSONObject) then
+      Exit;
+
+    LRoot := TJSONObject(LValue);
+    FEnabled := SameText(LRoot.GetValue<string>('enabled', 'false'), 'true');
+    FField := LRoot.GetValue<string>('field', '');
+    FRules.Clear;
+
+    if LRoot.TryGetValue<TJSONArray>('rules', LRules) then
+    begin
+      for I := 0 to LRules.Count - 1 do
+      begin
+        if not (LRules.Items[I] is TJSONObject) then
+          Continue;
+        LItem := TJSONObject(LRules.Items[I]);
+        LExpression := LItem.GetValue<string>('expression', '');
+        LBackColor := TColor(LItem.GetValue<Integer>('backColor', Integer(clNone)));
+        LFontColor := TColor(LItem.GetValue<Integer>('fontColor', Integer(clNone)));
+        LFontStylesText := LItem.GetValue<string>('fontStyles', '');
+        LDecodedStyles := DCStringToFontStyles(LFontStylesText);
+        FRules.Add(LExpression, LBackColor, LFontColor, LDecodedStyles);
+      end;
+    end;
+
+    Changed;
+  finally
+    LValue.Free;
+  end;
+end;
+
+procedure TDCBusinessHighlight.SaveToFile(const AFileName: string);
+begin
+  if Trim(AFileName) = '' then
+    Exit;
+  TDirectory.CreateDirectory(ExtractFilePath(AFileName));
+  TFile.WriteAllText(AFileName, ToJSON, TEncoding.UTF8);
+end;
+
+procedure TDCBusinessHighlight.LoadFromFile(const AFileName: string);
+begin
+  if (Trim(AFileName) = '') or (not TFile.Exists(AFileName)) then
+    Exit;
+  FromJSON(TFile.ReadAllText(AFileName, TEncoding.UTF8));
 end;
 
 function TDCBusinessHighlight.Evaluate(const AValue: Variant; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles): Boolean;
@@ -1239,27 +1717,27 @@ end;
 
 procedure TDCGridTheme.ResetDefault;
 begin
-  FHeaderColor := $00333A46;
+  FHeaderColor := $00414F63;
   FHeaderFontColor := clWhite;
-  FGridBackgroundColor := $00FBFCFD;
+  FGridBackgroundColor := $00F6F8FB;
   FRowColor := clWhite;
-  FAlternateRowColor := $00F7F9FB;
-  FHoverRowColor := $00FFF3E6;
-  FSelectedRowColor := $00FFE5C5;
-  FSelectedTextColor := $002A2F38;
-  FDetailColor := $00F3F6FA;
-  FBorderColor := $00D7DDE6;
-  FDetailBorderColor := $00E0E6EE;
-  FTextColor := $002A2F38;
-  FDetailTextColor := $00313A47;
-  FExpandButtonColor := $005E6A7C;
-  FDetailGridHeaderColor := $00E9EEF5;
-  FDetailGridHeaderFontColor := $00313A47;
+  FAlternateRowColor := $00F8FAFD;
+  FHoverRowColor := $00EEF4FB;
+  FSelectedRowColor := $00DDEBFA;
+  FSelectedTextColor := $0029384B;
+  FDetailColor := $00EEF3F9;
+  FBorderColor := $00D7E0EA;
+  FDetailBorderColor := $00D9E2EC;
+  FTextColor := $002A3442;
+  FDetailTextColor := $002D3745;
+  FExpandButtonColor := $00697C96;
+  FDetailGridHeaderColor := $00E6EDF7;
+  FDetailGridHeaderFontColor := $002D3745;
   FDetailGridRowColor := clWhite;
-  FDetailGridAlternateRowColor := $00F8FAFC;
-  FDetailGridLineColor := $00DCE2EA;
-  FSearchHighlightColor := $00FFF59D;
-  FSearchHighlightTextColor := clBlack;
+  FDetailGridAlternateRowColor := $00F9FBFE;
+  FDetailGridLineColor := $00DFE6EF;
+  FSearchHighlightColor := $00FFF2A8;
+  FSearchHighlightTextColor := $001F2D3D;
   Changed;
 end;
 
@@ -1474,6 +1952,10 @@ begin
   FAutoExpandOnSearch := False;
   FSelectedDetailRow := -1;
   FHoverDetailRow := -1;
+  FRulesDesignerLanguage := rdlPortuguese;
+  FRulesDesignerAutoLoadPreferences := True;
+  FRulesDesignerAutoSavePreferences := True;
+  FRulesDesignerCustomLanguage := nil;
 end;
 
 procedure TDCMasterDetailGrid.CreateParams(var Params: TCreateParams);
@@ -1487,6 +1969,7 @@ begin
   FBusinessHighlight.Free;
   FDataSetAdapter.Free;
   FFilteredRows.Free;
+  FRulesDesignerCustomLanguage.Free;
   FExpandedRows.Free;
   FDetailFont.Free;
   FTitleFont.Free;
@@ -1497,9 +1980,16 @@ begin
 end;
 
 procedure TDCMasterDetailGrid.DrawBackground;
+var
+  R: TRect;
 begin
-  Canvas.Brush.Color := FTheme.GridBackgroundColor;
-  Canvas.FillRect(ClientRect);
+  FillRectColor(Canvas, ClientRect, FTheme.GridBackgroundColor);
+
+  if FShowHeader then
+  begin
+    R := Rect(ClientRect.Left, ClientRect.Top, ClientRect.Right, Min(ClientRect.Top + 8, ClientRect.Bottom));
+    FillRectColor(Canvas, R, BlendColor(FTheme.HeaderColor, clWhite, 235));
+  end;
 end;
 
 procedure TDCMasterDetailGrid.DrawBorder;
@@ -1511,10 +2001,15 @@ begin
     Exit;
 
   Canvas.Brush.Style := bsClear;
-  Canvas.Pen.Color := FTheme.BorderColor;
   R := ClientRect;
   for I := 1 to FBorderWidth do
+  begin
+    if I = 1 then
+      Canvas.Pen.Color := BlendColor(FTheme.BorderColor, clWhite, 30)
+    else
+      Canvas.Pen.Color := BlendColor(FTheme.BorderColor, clBlack, 18);
     Canvas.Rectangle(R.Left + I - 1, R.Top + I - 1, R.Right - I + 1, R.Bottom - I + 1);
+  end;
   Canvas.Brush.Style := bsSolid;
 end;
 
@@ -1522,19 +2017,24 @@ procedure TDCMasterDetailGrid.DrawDetail(ARow: Integer; const ARect: TRect);
 var
   LHandled: Boolean;
   LInnerRect: TRect;
+  LShadowRect: TRect;
 begin
-  Canvas.Brush.Color := BlendColor(FTheme.DetailColor, clWhite, 96);
-  Canvas.FillRect(ARect);
+  FillRectColor(Canvas, ARect, BlendColor(FTheme.DetailColor, clWhite, 150));
 
-  Canvas.Pen.Color := FTheme.DetailBorderColor;
-  Canvas.MoveTo(ARect.Left, ARect.Top);
-  Canvas.LineTo(ARect.Right, ARect.Top);
+  Canvas.Pen.Color := BlendColor(FTheme.DetailBorderColor, clWhite, 30);
+  Canvas.MoveTo(ARect.Left + 10, ARect.Top);
+  Canvas.LineTo(ARect.Right - 10, ARect.Top);
 
   LInnerRect := Rect(ARect.Left + 8, ARect.Top + 6, ARect.Right - 8, ARect.Bottom - 8);
-  Canvas.Brush.Color := clWhite;
-  Canvas.FillRect(LInnerRect);
-  Canvas.Pen.Color := BlendColor(FTheme.DetailBorderColor, clWhite, 40);
-  Canvas.Rectangle(LInnerRect);
+  LShadowRect := Rect(LInnerRect.Left + 2, LInnerRect.Top + 2, LInnerRect.Right + 2, LInnerRect.Bottom + 2);
+
+  DrawRoundedPanel(Canvas, LShadowRect, BlendColor(FTheme.DetailBorderColor, clBlack, 8), BlendColor(FTheme.DetailBorderColor, clBlack, 8), 8);
+  DrawRoundedPanel(Canvas, LInnerRect, clWhite, BlendColor(FTheme.DetailBorderColor, clWhite, 35), 8);
+
+  DrawAccentBar(Canvas, Rect(LInnerRect.Left + 1, LInnerRect.Top + 1, LInnerRect.Left + 5, LInnerRect.Bottom - 1),
+    BlendColor(FTheme.ExpandButtonColor, clWhite, 35), 4);
+
+  InflateRect(LInnerRect, -1, -1);
 
   LHandled := False;
   if Assigned(FOnDrawDetail) then
@@ -1571,10 +2071,7 @@ begin
   if (GridRect.Right <= GridRect.Left) or (GridRect.Bottom <= GridRect.Top) then
     Exit;
 
-  Canvas.Brush.Color := clWhite;
-  Canvas.FillRect(GridRect);
-  Canvas.Pen.Color := FTheme.DetailGridLineColor;
-  Canvas.Rectangle(GridRect);
+  DrawRoundedPanel(Canvas, GridRect, clWhite, BlendColor(FTheme.DetailGridLineColor, clWhite, 20), 6);
 
   HeaderRect := Rect(GridRect.Left, GridRect.Top, GridRect.Right,
     GridRect.Top + FDetailGridHeaderHeight);
@@ -1604,8 +2101,8 @@ begin
       else
         HeaderColor := FTheme.DetailGridHeaderColor;
 
-      Canvas.Brush.Color := HeaderColor;
-      Canvas.FillRect(FullCellRect);
+      FillRectColor(Canvas, FullCellRect, HeaderColor);
+      FillRectColor(Canvas, Rect(FullCellRect.Left, FullCellRect.Top, FullCellRect.Right, Min(FullCellRect.Top + 4, FullCellRect.Bottom)), BlendColor(HeaderColor, clWhite, 32));
 
       CellRect := FullCellRect;
       InflateRect(CellRect, -DC_DEFAULT_PADDING, 0);
@@ -1643,14 +2140,12 @@ begin
     if Assigned(FOnGetDetailRowStyle) then
       FOnGetDetailRowStyle(Self, ARow, Row, LRowColor, LFontColor, LFontStyles);
 
-    Canvas.Brush.Color := LRowColor;
-    Canvas.FillRect(Rect(GridRect.Left + 1, Y, GridRect.Right - 1,
-      Min(Y + FDetailGridRowHeight, GridRect.Bottom - 1)));
+    FillRectColor(Canvas, Rect(GridRect.Left + 1, Y, GridRect.Right - 1,
+      Min(Y + FDetailGridRowHeight, GridRect.Bottom - 1)), LRowColor);
 
     if FDetailSelectEnabled and (ARow = FExpandedRow) and (Row = FSelectedDetailRow) then
     begin
-      Canvas.Brush.Color := BlendColor(FTheme.SelectedRowColor, clBlack, 10);
-      Canvas.FillRect(Rect(GridRect.Left + 1, Y, GridRect.Left + 4, Min(Y + FDetailGridRowHeight, GridRect.Bottom - 1)));
+      FillRectColor(Canvas, Rect(GridRect.Left + 1, Y, GridRect.Left + 5, Min(Y + FDetailGridRowHeight, GridRect.Bottom - 1)), BlendColor(FTheme.SelectedRowColor, clBlack, 10));
     end;
 
     Canvas.Font.Assign(FDetailFont);
@@ -1746,17 +2241,20 @@ var
   LColRect: TRect;
   Pts: array[0..2] of TPoint;
   LHandled: Boolean;
+  LHeaderBase: TColor;
 begin
   if not FShowHeader then
     Exit;
 
   R := GetHeaderRect;
-  Canvas.Brush.Color := FTheme.HeaderColor;
-  Canvas.FillRect(R);
+  LHeaderBase := FTheme.HeaderColor;
 
-  Canvas.Pen.Color := BlendColor(FTheme.HeaderColor, clWhite, 25);
-  Canvas.MoveTo(R.Left, R.Top);
-  Canvas.LineTo(R.Right, R.Top);
+  FillRectColor(Canvas, R, LHeaderBase);
+  FillRectColor(Canvas, Rect(R.Left, R.Top, R.Right, Min(R.Top + 6, R.Bottom)), BlendColor(LHeaderBase, clWhite, 35));
+
+  Canvas.Pen.Color := BlendColor(LHeaderBase, clWhite, 45);
+  Canvas.MoveTo(R.Left + 1, R.Top);
+  Canvas.LineTo(R.Right - 1, R.Top);
 
   Canvas.Font.Assign(FTitleFont);
   Canvas.Font.Style := [fsBold];
@@ -1782,20 +2280,16 @@ begin
     if not LHandled then
     begin
       if I = FHeaderHoverColumn then
-      begin
-        Canvas.Brush.Color := BlendColor(FTheme.HeaderColor, clWhite, 18);
-        Canvas.FillRect(LColRect);
-        Canvas.Brush.Style := bsClear;
-      end;
+        FillRectColor(Canvas, LColRect, BlendColor(LHeaderBase, clWhite, 18));
 
       if I = FSortedColumn then
       begin
-        Canvas.Brush.Color := BlendColor(FTheme.HeaderColor, clBlack, 28);
-        Canvas.FillRect(LColRect);
-        Canvas.Brush.Style := bsClear;
+        FillRectColor(Canvas, LColRect, BlendColor(LHeaderBase, clBlack, 18));
+        FillRectColor(Canvas, Rect(LColRect.Left, LColRect.Bottom - 3, LColRect.Right, LColRect.Bottom),
+          BlendColor(FTheme.SelectedRowColor, clWhite, 40));
       end;
 
-      LTextRect := Rect(X + DC_DEFAULT_PADDING, R.Top, X + LCol.Width - DC_DEFAULT_PADDING - 14, R.Bottom);
+      LTextRect := Rect(X + DC_DEFAULT_PADDING + 1, R.Top, X + LCol.Width - DC_DEFAULT_PADDING - 16, R.Bottom - 2);
       DrawText(Canvas.Handle, PChar(LCol.Caption), Length(LCol.Caption), LTextRect,
         DT_VCENTER or DT_SINGLELINE or DT_LEFT or DT_NOPREFIX or DT_END_ELLIPSIS);
 
@@ -1819,19 +2313,19 @@ begin
         Canvas.Brush.Style := bsClear;
       end;
 
-      Canvas.Pen.Color := $00505866;
-      Canvas.MoveTo(X + LCol.Width - 1, R.Top + 6);
-      Canvas.LineTo(X + LCol.Width - 1, R.Bottom - 6);
+      Canvas.Pen.Color := BlendColor(LHeaderBase, clWhite, 65);
+      Canvas.MoveTo(X + LCol.Width - 1, R.Top + 8);
+      Canvas.LineTo(X + LCol.Width - 1, R.Bottom - 8);
     end;
 
     Inc(X, LCol.Width);
   end;
 
-  Canvas.Pen.Color := BlendColor(FTheme.HeaderColor, clBlack, 50);
+  Canvas.Pen.Color := BlendColor(LHeaderBase, clBlack, 55);
   Canvas.MoveTo(R.Left, R.Bottom - 1);
   Canvas.LineTo(R.Right, R.Bottom - 1);
 
-  Canvas.Pen.Color := BlendColor(FTheme.SelectedRowColor, FTheme.HeaderColor, 180);
+  Canvas.Pen.Color := BlendColor(FTheme.SelectedRowColor, LHeaderBase, 175);
   Canvas.MoveTo(R.Left, R.Bottom - 2);
   Canvas.LineTo(R.Right, R.Bottom - 2);
   Canvas.Brush.Style := bsSolid;
@@ -1869,10 +2363,9 @@ var
   Pts: array[0..2] of TPoint;
   LRowColor, LFontColor: TColor;
   LFontStyles: TFontStyles;
+  LStripeColor: TColor;
 begin
-  if ARow = FSelectedRow then
-    LRowColor := FTheme.SelectedRowColor
-  else if ARow = FHoverRow then
+  if ARow = FHoverRow then
     LRowColor := FTheme.HoverRowColor
   else if FAlternateColors and Odd(ARow) then
     LRowColor := FTheme.AlternateRowColor
@@ -1880,27 +2373,29 @@ begin
     LRowColor := FTheme.RowColor;
 
   LFontColor := FTheme.TextColor;
-  if ARow = FSelectedRow then
-    LFontStyles := [fsBold]
-  else
-    LFontStyles := [];
+  LFontStyles := [];
 
-  if ARow <> FSelectedRow then
-    ApplyBusinessHighlight(ARow, LRowColor, LFontColor, LFontStyles);
+  ApplyBusinessHighlight(ARow, LRowColor, LFontColor, LFontStyles);
+
+  if ARow = FSelectedRow then
+    LFontStyles := LFontStyles + [fsBold];
 
   if Assigned(FOnGetMasterRowStyle) then
     FOnGetMasterRowStyle(Self, ARow, LRowColor, LFontColor, LFontStyles);
 
-  Canvas.Brush.Color := LRowColor;
-  Canvas.FillRect(ARect);
+  FillRectColor(Canvas, ARect, LRowColor);
 
   if ARow = FSelectedRow then
-  begin
-    Canvas.Brush.Color := BlendColor(FTheme.ExpandButtonColor, clWhite, 20);
-    Canvas.FillRect(Rect(ARect.Left, ARect.Top, ARect.Left + 4, ARect.Bottom));
-  end;
+    LStripeColor := BlendColor(FTheme.ExpandButtonColor, LRowColor, 110)
+  else if ARow = FHoverRow then
+    LStripeColor := BlendColor(FTheme.ExpandButtonColor, clWhite, 70)
+  else
+    LStripeColor := BlendColor(LRowColor, FTheme.BorderColor, 215);
 
-  Canvas.Pen.Color := BlendColor(FTheme.BorderColor, clWhite, 20);
+  DrawAccentBar(Canvas, Rect(ARect.Left, ARect.Top, ARect.Left + 4, ARect.Bottom), LStripeColor, 4);
+  FillRectColor(Canvas, Rect(ARect.Left + 4, ARect.Top, ARect.Right, ARect.Top + 1), BlendColor(LRowColor, clWhite, 30));
+
+  Canvas.Pen.Color := BlendColor(FTheme.BorderColor, clWhite, 28);
   Canvas.MoveTo(ARect.Left, ARect.Bottom - 1);
   Canvas.LineTo(ARect.Right, ARect.Bottom - 1);
 
@@ -1925,7 +2420,10 @@ begin
       Pts[2] := Point(LExpandRect.Left + 7, LExpandRect.Bottom - 5);
     end;
 
-    Canvas.Brush.Color := BlendColor(FTheme.ExpandButtonColor, clWhite, 10);
+    if ARow = FSelectedRow then
+      Canvas.Brush.Color := BlendColor(FTheme.ExpandButtonColor, clWhite, 8)
+    else
+      Canvas.Brush.Color := BlendColor(FTheme.ExpandButtonColor, clWhite, 18);
     Canvas.Polygon(Pts);
     Canvas.Brush.Style := bsSolid;
     Inc(X, DC_DEFAULT_EXPAND_COL_WIDTH);
@@ -1985,8 +2483,8 @@ begin
   if Focused and (ARow = FSelectedRow) then
   begin
     Canvas.Brush.Style := bsClear;
-    Canvas.Pen.Color := BlendColor(FTheme.ExpandButtonColor, clWhite, 10);
-    DrawFocusRect(Canvas.Handle, Rect(ARect.Left + 6, ARect.Top + 4, ARect.Right - 6, ARect.Bottom - 4));
+    Canvas.Pen.Color := BlendColor(FTheme.ExpandButtonColor, clWhite, 18);
+    DrawFocusRect(Canvas.Handle, Rect(ARect.Left + 8, ARect.Top + 5, ARect.Right - 8, ARect.Bottom - 5));
   end;
 
   Canvas.Brush.Style := bsSolid;
@@ -2114,7 +2612,7 @@ begin
       - outer detail card: Top +6 / Bottom +8
       - inner grid area:   Top +8 / Bottom +8
       Total: 30 px }
-    Result := 34 + LGridHeight;
+    Result := 32 + LGridHeight;
 
     if Result < 66 then
       Result := 66;
@@ -2617,6 +3115,56 @@ begin
   Result := (R.Bottom > GetContentTop) and (R.Top < ClientHeight);
 end;
 
+function TDCMasterDetailGrid.GetDefaultRulesFileName: string;
+var
+  LGridName: string;
+begin
+  LGridName := Trim(Name);
+  if LGridName = '' then
+    LGridName := ClassName;
+
+  Result := TPath.Combine(TPath.GetDirectoryName(ParamStr(0)),
+    TPath.Combine('DCFlexGridRules', LGridName + '.rules.json'));
+end;
+
+function TDCMasterDetailGrid.GetDefaultDesignerPreferencesFileName: string;
+var
+  LGridName: string;
+begin
+  LGridName := Trim(Name);
+  if LGridName = '' then
+    LGridName := ClassName;
+
+  Result := TPath.Combine(TPath.GetDirectoryName(ParamStr(0)),
+    TPath.Combine('DCFlexGridRules', LGridName + '.designer.json'));
+end;
+
+procedure TDCMasterDetailGrid.LoadRulesFromFile(const AFileName: string = '');
+var
+  LFileName: string;
+begin
+  LFileName := Trim(AFileName);
+  if LFileName = '' then
+    LFileName := GetDefaultRulesFileName;
+
+  if Assigned(FBusinessHighlight) then
+    FBusinessHighlight.LoadFromFile(LFileName);
+
+  Invalidate;
+end;
+
+procedure TDCMasterDetailGrid.SaveRulesToFile(const AFileName: string = '');
+var
+  LFileName: string;
+begin
+  LFileName := Trim(AFileName);
+  if LFileName = '' then
+    LFileName := GetDefaultRulesFileName;
+
+  if Assigned(FBusinessHighlight) then
+    FBusinessHighlight.SaveToFile(LFileName);
+end;
+
 procedure TDCMasterDetailGrid.Loaded;
 begin
   inherited Loaded;
@@ -2641,6 +3189,8 @@ begin
 
   if FAutoLoadLayout then
     LoadLayout;
+
+  LoadRulesFromFile;
 
   UpdateScrollBar;
 end;
@@ -3782,6 +4332,59 @@ begin
     CollapseRow(ARow)
   else
     ExpandRow(ARow);
+end;
+
+
+procedure TDCMasterDetailGrid.SetRulesDesignerLanguage(const Value: TDCRulesDesignerLanguage);
+begin
+  FRulesDesignerLanguage := Value;
+end;
+
+procedure TDCMasterDetailGrid.SetRulesDesignerAutoLoadPreferences(const Value: Boolean);
+begin
+  FRulesDesignerAutoLoadPreferences := Value;
+end;
+
+procedure TDCMasterDetailGrid.SetRulesDesignerAutoSavePreferences(const Value: Boolean);
+begin
+  FRulesDesignerAutoSavePreferences := Value;
+end;
+
+procedure TDCMasterDetailGrid.SetRulesDesignerCustomLanguage(ALanguage: TDCGridLang);
+begin
+  FreeAndNil(FRulesDesignerCustomLanguage);
+  if Assigned(ALanguage) then
+  begin
+    FRulesDesignerCustomLanguage := ALanguage.Clone;
+    FRulesDesignerLanguage := rdlCustom;
+  end;
+end;
+
+
+function TDCMasterDetailGrid.GetRules: TDCHighlightRules;
+begin
+  if Assigned(FBusinessHighlight) then
+    Result := FBusinessHighlight.Rules
+  else
+    Result := nil;
+end;
+
+function TDCMasterDetailGrid.GetRulesDesignerCustomLanguageClone: TDCGridLang;
+begin
+  if Assigned(FRulesDesignerCustomLanguage) then
+    Result := FRulesDesignerCustomLanguage.Clone
+  else
+    Result := nil;
+end;
+
+procedure TDCMasterDetailGrid.ShowVisualRulesDesigner;
+begin
+  ShowDCFlexGridVisualRulesDesigner(Self);
+end;
+
+procedure TDCMasterDetailGrid.ShowRulesDesigner;
+begin
+  ShowVisualRulesDesigner;
 end;
 
 procedure TDCMasterDetailGrid.UpdateScrollBar;

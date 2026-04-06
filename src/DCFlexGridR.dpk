@@ -1,4 +1,4 @@
-package DCFlexGridR;
+﻿package DCFlexGridR;
 
 {$R *.res}
 {$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
@@ -33,6 +33,9 @@ requires
   dbrtl;
 
 contains
-  DCFlexGrid in 'DCFlexGrid.pas';
+  DCFlexGrid in 'DCFlexGrid.pas',
+  DCFlexGrid.Fluent in 'DCFlexGrid.Fluent.pas',
+  DCFlexGrid.Themes in 'DCFlexGrid.Themes.pas',
+  DCFlexGrid.VisualRulesDesigner in 'DCFlexGrid.VisualRulesDesigner.pas';
 
 end.

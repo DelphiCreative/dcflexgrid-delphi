@@ -31,11 +31,11 @@ uses
   FireDAC.Phys.SQLite,
   FireDAC.Phys.SQLiteDef,
   FireDAC.UI.Intf,
-  DCFlexGrid, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.VCLUI.Wait,
+  DCFlexGrid, DCFlexGrid.Fluent, DCFlexGrid.Themes, DCFlexGrid.VisualRulesDesigner, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.VCLUI.Wait,
   FireDAC.Stan.ExprFuncs, FireDAC.Phys.SQLiteWrapper.Stat;
 
 type
-  TFormMain = class(TForm)
+  TForm1 = class(TForm)
     pnlHeader: TPanel;
     lblTitle: TLabel;
     lblSubTitle: TLabel;
@@ -58,15 +58,7 @@ type
     lblAdvancedInfo: TLabel;
 
     chkBusinessEngine: TCheckBox;
-    lblBusinessField: TLabel;
-    edtBusinessField: TEdit;
-    lblRuleExpr: TLabel;
-    edtRuleExpr: TEdit;
-    lblRuleBackColor: TLabel;
-    cbxRuleBackColor: TColorBox;
-    lblRuleFontColor: TLabel;
-    cbxRuleFontColor: TColorBox;
-    btnAddRule: TButton;
+    btnVisualRulesDesigner: TButton;
     btnClearRules: TButton;
     btnPresetFinance: TButton;
     lstBusinessRules: TListBox;
@@ -247,6 +239,7 @@ type
     procedure RefreshBusinessRulesUI;
     procedure ApplyBusinessHighlightUI;
     procedure AddBusinessRule(const AExpr: string; ABackColor, AFontColor: TColor; AFontStyles: TFontStyles = []);
+    procedure OpenVisualRulesDesigner(Sender: TObject);
     procedure LoadBusinessHighlightPreset;
     procedure UpdateStatus;
     procedure UpdateLabels;
@@ -272,19 +265,19 @@ type
     procedure btnExpandSelectedClick(Sender: TObject);
     procedure btnCollapseSelectedClick(Sender: TObject);
     procedure chkBusinessEngineClick(Sender: TObject);
-    procedure btnAddRuleClick(Sender: TObject);
+    procedure btnVisualRulesDesignerClick(Sender: TObject);
     procedure btnClearRulesClick(Sender: TObject);
     procedure btnPresetFinanceClick(Sender: TObject);
   end;
 
 var
-  FormMain: TFormMain;
+  Form1: TForm1;
 
 implementation
 
 {$R *.dfm}
 
-procedure TFormMain.PrepareDatabase;
+procedure TForm1.PrepareDatabase;
 begin
   FDBPath := TPath.Combine(ExtractFilePath(Application.ExeName), 'dcgrid_showcase.db');
 
@@ -320,7 +313,7 @@ begin
   SeedData;
 end;
 
-procedure TFormMain.SeedData;
+procedure TForm1.SeedData;
 var
   LCount: Integer;
 begin
@@ -349,7 +342,7 @@ begin
   FDConnection1.ExecSQL('INSERT INTO order_items (pedido, produto, qtde, valor_fmt) VALUES (1006, ''Webcam Full HD'', 1, ''R$ 259,80'')');
 end;
 
-function TFormMain.BuildOrdersSQL(const AOrderBy: string): string;
+function TForm1.BuildOrdersSQL(const AOrderBy: string): string;
 begin
   Result :=
     'SELECT pedido, cliente, cidade, prioridade, status, total_value, total_fmt ' +
@@ -358,7 +351,7 @@ begin
     Result := Result + 'ORDER BY ' + AOrderBy;
 end;
 
-procedure TFormMain.OpenData(const AOrderBy: string);
+procedure TForm1.OpenData(const AOrderBy: string);
 begin
   qryOrders.Close;
   qryOrders.Connection := FDConnection1;
@@ -373,16 +366,12 @@ begin
     'ORDER BY pedido, id';
   qryItems.Open;
 
-  DCGrid1.DataSetAdapter.DataSet := qryOrders;
-  DCGrid1.DataSetAdapter.DetailDataSet := qryItems;
-  DCGrid1.DataSetAdapter.MasterKeyField := 'pedido';
-  DCGrid1.DataSetAdapter.DetailKeyField := 'pedido';
-  DCGrid1.DataAdapter := DCGrid1.DataSetAdapter;
+  DCGrid1.BindDataSets(qryOrders, qryItems, 'pedido', 'pedido');
   DCGrid1.RefreshGrid;
 end;
 
 
-procedure TFormMain.LoadThemeEditorsFromGrid;
+procedure TForm1.LoadThemeEditorsFromGrid;
 begin
   cbxHeaderColor.Selected := DCGrid1.Theme.HeaderColor;
   cbxHeaderFontColor.Selected := DCGrid1.Theme.HeaderFontColor;
@@ -407,7 +396,7 @@ begin
   cbxDetailGridLineColor.Selected := DCGrid1.Theme.DetailGridLineColor;
 end;
 
-procedure TFormMain.ApplyThemeEditorsToGrid;
+procedure TForm1.ApplyThemeEditorsToGrid;
 begin
   DCGrid1.Theme.HeaderColor := cbxHeaderColor.Selected;
   DCGrid1.Theme.HeaderFontColor := cbxHeaderFontColor.Selected;
@@ -434,7 +423,7 @@ begin
   FillThemeCodeMemo;
 end;
 
-procedure TFormMain.ApplyTheme;
+procedure TForm1.ApplyTheme;
 begin
   if chkDarkTheme.Checked then
   begin
@@ -498,7 +487,7 @@ begin
   DCGrid1.RefreshGrid;
 end;
 
-procedure TFormMain.ApplyGridSettings;
+procedure TForm1.ApplyGridSettings;
 begin
   DCGrid1.ExpandOnRowClick := chkExpandOnRowClick.Checked;
   DCGrid1.AlternateColors := chkAlternateColors.Checked;
@@ -530,8 +519,8 @@ begin
   else
     DCGrid1.ExpandMode := emMultiple;
 
-  if chkBusinessHighlight.Checked then
-  begin
+  if chkBusinessHighlight.Checked and (not chkBusinessEngine.Checked) then
+   begin
     DCGrid1.OnGetMasterRowStyle := DCGrid1GetMasterRowStyle;
     DCGrid1.OnGetDetailRowStyle := DCGrid1GetDetailRowStyle;
   end
@@ -548,7 +537,7 @@ begin
   UpdateStatus;
 end;
 
-procedure TFormMain.UpdateLabels;
+procedure TForm1.UpdateLabels;
 begin
   lblRowHeight.Caption := Format('RowHeight: %d', [tbRowHeight.Position]);
   lblHeaderHeight.Caption := Format('HeaderHeight: %d', [tbHeaderHeight.Position]);
@@ -557,9 +546,7 @@ begin
   UpdateAdvancedLabels;
 end;
 
-
-
-procedure TFormMain.ConfigureColorBoxes;
+procedure TForm1.ConfigureColorBoxes;
 const
   CStyle: TColorBoxStyle = [cbStandardColors, cbExtendedColors, cbSystemColors, cbIncludeDefault, cbCustomColor, cbPrettyNames, cbCustomColors];
 begin
@@ -586,7 +573,7 @@ begin
   cbxDetailGridLineColor.Style := CStyle;
 end;
 
-procedure TFormMain.UpdateThemePreview;
+procedure TForm1.UpdateThemePreview;
   function HexColor(AColor: TColor): string;
   begin
     Result := '$' + IntToHex(ColorToRGB(AColor), 8);
@@ -620,7 +607,7 @@ begin
   SetPreview(shpDetailGridLineColor, lblDetailGridLineColorHex, cbxDetailGridLineColor.Selected);
 end;
 
-procedure TFormMain.ChooseThemeColor(AColorBox: TColorBox);
+procedure TForm1.ChooseThemeColor(AColorBox: TColorBox);
 begin
   ColorDialog1.Color := AColorBox.Selected;
   if ColorDialog1.Execute then
@@ -631,7 +618,7 @@ begin
   end;
 end;
 
-procedure TFormMain.FillThemeCodeMemo;
+procedure TForm1.FillThemeCodeMemo;
   function ColorToDelphi(AColor: TColor): string;
   begin
     Result := '$' + IntToHex(ColorToRGB(AColor), 8);
@@ -664,13 +651,13 @@ begin
   end;
 end;
 
-procedure TFormMain.UpdateAdvancedLabels;
+procedure TForm1.UpdateAdvancedLabels;
 begin
   lblDetailHeight.Caption := Format('DetailHeight: %d', [tbDetailHeight.Position]);
   lblMinColumnWidth.Caption := Format('MinColumnWidth: %d', [tbMinColumnWidth.Position]);
 end;
 
-procedure TFormMain.ApplyAdvancedSettings;
+procedure TForm1.ApplyAdvancedSettings;
 begin
   DCGrid1.DetailSelectEnabled := chkDetailSelectEnabled.Checked;
   DCGrid1.DebugLogEnabled := chkDebugLog.Checked;
@@ -680,7 +667,7 @@ begin
   DCGrid1.RefreshGrid;
 end;
 
-procedure TFormMain.ApplyRecommendedPreset;
+procedure TForm1.ApplyRecommendedPreset;
 begin
   chkExpandOnRowClick.Checked := True;
   chkAlternateColors.Checked := True;
@@ -693,7 +680,6 @@ begin
   chkDetailSelectEnabled.Checked := True;
   chkDebugLog.Checked := False;
   chkBusinessEngine.Checked := True;
-  edtBusinessField.Text := 'total_value';
   chkDetailSelectEnabled.Checked := True;
 
   cbFilterMode.ItemIndex := 0;
@@ -701,12 +687,16 @@ begin
   cbDetailStyle.ItemIndex := 0;
   cbExpandMode.ItemIndex := 0;
 
-  tbRowHeight.Position := 34;
-  tbHeaderHeight.Position := 38;
-  tbDetailRowHeight.Position := 24;
-  tbDetailHeaderHeight.Position := 28;
-  tbDetailHeight.Position := 84;
-  tbMinColumnWidth.Position := 48;
+  DCGrid1
+    .WithProfessionalTheme
+    .WithComfortableMetrics;
+
+  tbRowHeight.Position := DCGrid1.RowHeight;
+  tbHeaderHeight.Position := DCGrid1.HeaderHeight;
+  tbDetailRowHeight.Position := DCGrid1.DetailGridRowHeight;
+  tbDetailHeaderHeight.Position := DCGrid1.DetailGridHeaderHeight;
+  tbDetailHeight.Position := DCGrid1.DetailHeight;
+  tbMinColumnWidth.Position := DCGrid1.MinColumnWidth;
 
   ApplyGridSettings;
   ApplyAdvancedSettings;
@@ -714,7 +704,7 @@ begin
 end;
 
 
-procedure TFormMain.RefreshBusinessRulesUI;
+procedure TForm1.RefreshBusinessRulesUI;
 var
   I: Integer;
   R: TDCHighlightRule;
@@ -732,31 +722,33 @@ begin
   end;
 end;
 
-procedure TFormMain.ApplyBusinessHighlightUI;
+procedure TForm1.ApplyBusinessHighlightUI;
 begin
   DCGrid1.BusinessHighlight.Enabled := chkBusinessEngine.Checked;
-  DCGrid1.BusinessHighlight.Field := Trim(edtBusinessField.Text);
   RefreshBusinessRulesUI;
   DCGrid1.RefreshGrid;
   UpdateStatus;
 end;
 
-procedure TFormMain.AddBusinessRule(const AExpr: string; ABackColor, AFontColor: TColor; AFontStyles: TFontStyles);
+procedure TForm1.AddBusinessRule(const AExpr: string; ABackColor, AFontColor: TColor; AFontStyles: TFontStyles);
 begin
   DCGrid1.BusinessHighlight.Rules.Add(AExpr, ABackColor, AFontColor, AFontStyles);
   ApplyBusinessHighlightUI;
 end;
 
-procedure TFormMain.LoadBusinessHighlightPreset;
+
+procedure TForm1.OpenVisualRulesDesigner(Sender: TObject);
+begin
+ 
+end;
+
+procedure TForm1.LoadBusinessHighlightPreset;
 begin
   DCGrid1.BusinessHighlight.Clear;
   chkBusinessEngine.Checked := True;
-  edtBusinessField.Text := 'total_value';
-  AddBusinessRule('>700', $00DFF6DD, $000E5A12, [fsBold]);
-  AddBusinessRule('<200', $00FADBD8, clMaroon, []);
 end;
 
-procedure TFormMain.UpdateStatus;
+procedure TForm1.UpdateStatus;
 begin
   lblStatus.Caption := Format(
     'Rows: %d | Filtered: %d | DetailStyle: %s | ExpandMode: %s | BH rules: %d',
@@ -768,86 +760,30 @@ begin
   );
 end;
 
-procedure TFormMain.FormCreate(Sender: TObject);
+procedure TForm1.FormCreate(Sender: TObject);
 begin
   PrepareDatabase;
 
-  DCGrid1.Columns.Clear;
-  DCGrid1.DetailColumns.Clear;
-
-  with DCGrid1.Columns.Add do
-  begin
-    Caption := 'Pedido';
-    Width := 90;
-    Alignment := taLeft;
-    FieldName := 'pedido';
-  end;
-
-  with DCGrid1.Columns.Add do
-  begin
-    Caption := 'Cliente';
-    Width := 180;
-    Alignment := taLeft;
-    FieldName := 'cliente';
-  end;
-
-  with DCGrid1.Columns.Add do
-  begin
-    Caption := 'Cidade';
-    Width := 130;
-    Alignment := taLeft;
-    FieldName := 'cidade';
-  end;
-
-  with DCGrid1.Columns.Add do
-  begin
-    Caption := 'Prioridade';
-    Width := 110;
-    Alignment := taLeft;
-    FieldName := 'prioridade';
-  end;
-
-  with DCGrid1.Columns.Add do
-  begin
-    Caption := 'Status';
-    Width := 110;
-    Alignment := taLeft;
-    FieldName := 'status';
-  end;
-
-  with DCGrid1.Columns.Add do
-  begin
-    Caption := 'Total';
-    Width := 100;
-    Alignment := taRight;
-    FieldName := 'total_fmt';
-  end;
-
-  with DCGrid1.DetailColumns.Add do
-  begin
-    Caption := 'Produto';
-    Width := 300;
-    Alignment := taLeft;
-    FieldName := 'produto';
-  end;
-
-  with DCGrid1.DetailColumns.Add do
-  begin
-    Caption := 'Qtde';
-    Width := 70;
-    Alignment := taCenter;
-    FieldName := 'qtde';
-  end;
-
-  with DCGrid1.DetailColumns.Add do
-  begin
-    Caption := 'Valor';
-    Width := 110;
-    Alignment := taRight;
-    FieldName := 'valor_fmt';
-  end;
+  DCGrid1
+    .ClearColumns
+    .Column('pedido').Caption('Pedido').Width(90).AsText.Done
+    .Column('cliente').Caption('Cliente').Width(180).AsText.Done
+    .Column('cidade').Caption('Cidade').Width(130).AsText.Done
+    .Column('prioridade').Caption('Prioridade').Width(110).AsText.Done
+    .Column('status').Caption('Status').Width(110).AsStatus.Done
+    .Column('total_fmt').Caption('Total').Width(100).AsCurrency.Done
+    .ClearDetailColumns
+    .DetailColumn('produto').Caption('Produto').Width(300).AsText.Done
+    .DetailColumn('qtde').Caption('Qtde').Width(70).AsInteger.Done
+    .DetailColumn('valor_fmt').Caption('Valor').Width(110).AsCurrency.Done
+    .WithProfessionalTheme
+    .WithComfortableMetrics
+    .WithDefaultVisuals
+    .WithInteractiveLayout
+    .WithLayout('demo-main', True, False);
 
   ConfigureColorBoxes;
+
   tbRowHeight.Position := DCGrid1.RowHeight;
   tbHeaderHeight.Position := DCGrid1.HeaderHeight;
   tbDetailRowHeight.Position := DCGrid1.DetailGridRowHeight;
@@ -942,7 +878,7 @@ begin
   ApplyRecommendedPreset;
 end;
 
-procedure TFormMain.DCGrid1SortColumn(Sender: TObject; ACol: Integer; ADirection: TDCSortDirection);
+procedure TForm1.DCGrid1SortColumn(Sender: TObject; ACol: Integer; ADirection: TDCSortDirection);
 const
   SortMap: array[0..5] of string = ('pedido', 'cliente', 'cidade', 'prioridade', 'status', 'total_value');
 begin
@@ -955,17 +891,17 @@ begin
   UpdateStatus;
 end;
 
-procedure TFormMain.DCGrid1DetailRowClick(Sender: TObject; AMasterRow, ADetailRow: Integer);
+procedure TForm1.DCGrid1DetailRowClick(Sender: TObject; AMasterRow, ADetailRow: Integer);
 begin
   lblStatus.Caption := Format('Detail click -> master %d / detail %d', [AMasterRow + 1, ADetailRow + 1]);
 end;
 
-procedure TFormMain.DCGrid1DetailRowDblClick(Sender: TObject; AMasterRow, ADetailRow: Integer);
+procedure TForm1.DCGrid1DetailRowDblClick(Sender: TObject; AMasterRow, ADetailRow: Integer);
 begin
   ShowMessage(Format('Double click on detail row %d', [ADetailRow + 1]));
 end;
 
-procedure TFormMain.DCGrid1RightClickHitTest(Sender: TObject; Area: TDCHitTestArea; AMasterRow, ADetailRow, ACol: Integer; const ScreenPt: TPoint);
+procedure TForm1.DCGrid1RightClickHitTest(Sender: TObject; Area: TDCHitTestArea; AMasterRow, ADetailRow, ACol: Integer; const ScreenPt: TPoint);
 begin
   case Area of
     htHeader: lblStatus.Caption := Format('Right click on header %d', [ACol + 1]);
@@ -975,7 +911,7 @@ begin
   end;
 end;
 
-procedure TFormMain.DCGrid1GetMasterRowStyle(Sender: TObject; ARow: Integer; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles);
+procedure TForm1.DCGrid1GetMasterRowStyle(Sender: TObject; ARow: Integer; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles);
 var
   LTotal: Double;
   LPriority: string;
@@ -1000,39 +936,39 @@ begin
   end;
 end;
 
-procedure TFormMain.DCGrid1GetDetailRowStyle(Sender: TObject; AMasterRow, ADetailRow: Integer; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles);
+procedure TForm1.DCGrid1GetDetailRowStyle(Sender: TObject; AMasterRow, ADetailRow: Integer; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles);
 begin
   if Odd(ADetailRow) then
     AFontStyles := [fsItalic];
 end;
 
-procedure TFormMain.edtSearchChange(Sender: TObject);
+procedure TForm1.edtSearchChange(Sender: TObject);
 begin
   DCGrid1.SearchText := edtSearch.Text;
   UpdateStatus;
 end;
 
-procedure TFormMain.cbFilterModeChange(Sender: TObject);
+procedure TForm1.cbFilterModeChange(Sender: TObject);
 begin
   ApplyGridSettings;
 end;
 
-procedure TFormMain.cbSearchScopeChange(Sender: TObject);
+procedure TForm1.cbSearchScopeChange(Sender: TObject);
 begin
   ApplyGridSettings;
 end;
 
-procedure TFormMain.chkAutoExpandSearchClick(Sender: TObject);
+procedure TForm1.chkAutoExpandSearchClick(Sender: TObject);
 begin
   ApplyGridSettings;
 end;
 
-procedure TFormMain.GenericSettingClick(Sender: TObject);
+procedure TForm1.GenericSettingClick(Sender: TObject);
 begin
   ApplyGridSettings;
 end;
 
-procedure TFormMain.TrackBarChange(Sender: TObject);
+procedure TForm1.TrackBarChange(Sender: TObject);
 begin
   DCGrid1.RowHeight := tbRowHeight.Position;
   DCGrid1.HeaderHeight := tbHeaderHeight.Position;
@@ -1041,17 +977,17 @@ begin
   ApplyGridSettings;
 end;
 
-procedure TFormMain.cbDetailStyleChange(Sender: TObject);
+procedure TForm1.cbDetailStyleChange(Sender: TObject);
 begin
   ApplyGridSettings;
 end;
 
-procedure TFormMain.cbExpandModeChange(Sender: TObject);
+procedure TForm1.cbExpandModeChange(Sender: TObject);
 begin
   ApplyGridSettings;
 end;
 
-procedure TFormMain.btnExpandAllClick(Sender: TObject);
+procedure TForm1.btnExpandAllClick(Sender: TObject);
 var
   I: Integer;
 begin
@@ -1060,38 +996,38 @@ begin
   UpdateStatus;
 end;
 
-procedure TFormMain.btnCollapseAllClick(Sender: TObject);
+procedure TForm1.btnCollapseAllClick(Sender: TObject);
 begin
   DCGrid1.CollapseRow;
   UpdateStatus;
 end;
 
-procedure TFormMain.btnAutoSizeClick(Sender: TObject);
+procedure TForm1.btnAutoSizeClick(Sender: TObject);
 begin
   DCGrid1.AutoSizeColumns;
   DCGrid1.AutoSizeDetailColumns;
   UpdateStatus;
 end;
 
-procedure TFormMain.btnSaveLayoutClick(Sender: TObject);
+procedure TForm1.btnSaveLayoutClick(Sender: TObject);
 begin
   DCGrid1.SaveLayout;
   lblStatus.Caption := 'Layout saved';
 end;
 
-procedure TFormMain.btnLoadLayoutClick(Sender: TObject);
+procedure TForm1.btnLoadLayoutClick(Sender: TObject);
 begin
   DCGrid1.LoadLayout;
   lblStatus.Caption := 'Layout loaded';
 end;
 
-procedure TFormMain.btnResetLayoutClick(Sender: TObject);
+procedure TForm1.btnResetLayoutClick(Sender: TObject);
 begin
   DCGrid1.ResetLayout;
   lblStatus.Caption := 'Layout reset';
 end;
 
-procedure TFormMain.btnExportThemeClick(Sender: TObject);
+procedure TForm1.btnExportThemeClick(Sender: TObject);
 begin
   FillThemeCodeMemo;
   memThemeCode.SelectAll;
@@ -1099,13 +1035,13 @@ begin
   lblStatus.Caption := 'Theme code copied to clipboard';
 end;
 
-procedure TFormMain.cbThemeColorChange(Sender: TObject);
+procedure TForm1.cbThemeColorChange(Sender: TObject);
 begin
   ApplyThemeEditorsToGrid;
   UpdateStatus;
 end;
 
-procedure TFormMain.btnThemeChooseClick(Sender: TObject);
+procedure TForm1.btnThemeChooseClick(Sender: TObject);
 begin
   if Sender = btnHeaderColor then ChooseThemeColor(cbxHeaderColor)
   else if Sender = btnRowColor then ChooseThemeColor(cbxRowColor)
@@ -1130,19 +1066,19 @@ begin
   else if Sender = btnDetailGridLineColor then ChooseThemeColor(cbxDetailGridLineColor);
 end;
 
-procedure TFormMain.btnApplyRecommendedClick(Sender: TObject);
+procedure TForm1.btnApplyRecommendedClick(Sender: TObject);
 begin
   ApplyRecommendedPreset;
 end;
 
-procedure TFormMain.btnExpandSelectedClick(Sender: TObject);
+procedure TForm1.btnExpandSelectedClick(Sender: TObject);
 begin
   if DCGrid1.SelectedRow >= 0 then
     DCGrid1.ExpandRow(DCGrid1.SelectedRow);
   UpdateStatus;
 end;
 
-procedure TFormMain.btnCollapseSelectedClick(Sender: TObject);
+procedure TForm1.btnCollapseSelectedClick(Sender: TObject);
 begin
   if DCGrid1.SelectedRow >= 0 then
     DCGrid1.CollapseRow(DCGrid1.SelectedRow)
@@ -1151,25 +1087,26 @@ begin
   UpdateStatus;
 end;
 
-procedure TFormMain.chkBusinessEngineClick(Sender: TObject);
+procedure TForm1.chkBusinessEngineClick(Sender: TObject);
 begin
   ApplyBusinessHighlightUI;
 end;
 
-procedure TFormMain.btnAddRuleClick(Sender: TObject);
+procedure TForm1.btnVisualRulesDesignerClick(Sender: TObject);
 begin
-  if Trim(edtRuleExpr.Text) = '' then
-    Exit;
-  AddBusinessRule(edtRuleExpr.Text, cbxRuleBackColor.Selected, cbxRuleFontColor.Selected, []);
+  DCGrid1.RulesDesignerLanguage := rdlPortuguese;
+  DCGrid1.Rules.Edit;
+  RefreshBusinessRulesUI;
+  UpdateStatus;
 end;
 
-procedure TFormMain.btnClearRulesClick(Sender: TObject);
+procedure TForm1.btnClearRulesClick(Sender: TObject);
 begin
   DCGrid1.BusinessHighlight.Clear;
   ApplyBusinessHighlightUI;
 end;
 
-procedure TFormMain.btnPresetFinanceClick(Sender: TObject);
+procedure TForm1.btnPresetFinanceClick(Sender: TObject);
 begin
   LoadBusinessHighlightPreset;
 end;
