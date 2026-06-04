@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{32BA17D1-C0B6-4369-A87C-10C57E552DD6}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="DCFlexCoreR\DCFlexCoreR.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="DCFlexCoreD\DCFlexCoreD.dproj">
+            <Dependencies>DCFlexCoreR</Dependencies>
+        </Projects>
+        <Projects Include="DCFlexGridCommunityR\DCFlexGridCommunityR.dproj">
+            <Dependencies>DCFlexCoreR</Dependencies>
+        </Projects>
+        <Projects Include="DCFlexGridCommunityD\DCFlexGridCommunityD.dproj">
+            <Dependencies>DCFlexCoreR;DCFlexGridCommunityR</Dependencies>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="DCFlexCoreR">
+        <MSBuild Projects="DCFlexCoreR\DCFlexCoreR.dproj"/>
+    </Target>
+    <Target Name="DCFlexCoreR:Clean">
+        <MSBuild Projects="DCFlexCoreR\DCFlexCoreR.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DCFlexCoreR:Make">
+        <MSBuild Projects="DCFlexCoreR\DCFlexCoreR.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="DCFlexCoreD">
+        <MSBuild Projects="DCFlexCoreD\DCFlexCoreD.dproj"/>
+    </Target>
+    <Target Name="DCFlexCoreD:Clean">
+        <MSBuild Projects="DCFlexCoreD\DCFlexCoreD.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DCFlexCoreD:Make">
+        <MSBuild Projects="DCFlexCoreD\DCFlexCoreD.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="DCFlexGridCommunityR">
+        <MSBuild Projects="DCFlexGridCommunityR\DCFlexGridCommunityR.dproj"/>
+    </Target>
+    <Target Name="DCFlexGridCommunityR:Clean">
+        <MSBuild Projects="DCFlexGridCommunityR\DCFlexGridCommunityR.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DCFlexGridCommunityR:Make">
+        <MSBuild Projects="DCFlexGridCommunityR\DCFlexGridCommunityR.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="DCFlexGridCommunityD">
+        <MSBuild Projects="DCFlexGridCommunityD\DCFlexGridCommunityD.dproj"/>
+    </Target>
+    <Target Name="DCFlexGridCommunityD:Clean">
+        <MSBuild Projects="DCFlexGridCommunityD\DCFlexGridCommunityD.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DCFlexGridCommunityD:Make">
+        <MSBuild Projects="DCFlexGridCommunityD\DCFlexGridCommunityD.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="DCFlexCoreR;DCFlexCoreD;DCFlexGridCommunityR;DCFlexGridCommunityD"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="DCFlexCoreR:Clean;DCFlexCoreD:Clean;DCFlexGridCommunityR:Clean;DCFlexGridCommunityD:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="DCFlexCoreR:Make;DCFlexCoreD:Make;DCFlexGridCommunityR:Make;DCFlexGridCommunityD:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

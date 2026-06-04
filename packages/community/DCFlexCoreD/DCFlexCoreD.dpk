@@ -1,0 +1,14 @@
+package DCFlexCoreD;
+
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  vcl,
+  designide,
+  DCFlexCoreR;
+
+contains
+  DCFlexCore.Reg in '..\..\..\src\DCFlexCore.Reg.pas';
+
+end.

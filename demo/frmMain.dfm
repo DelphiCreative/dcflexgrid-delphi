@@ -1,7 +1,7 @@
 object Form1: TForm1
   Left = 0
   Top = 0
-  Caption = 'DCFlexGrid Showcase Demo'
+  Caption = 'DCFlexGrid Showcase Demo - v2'
   ClientHeight = 777
   ClientWidth = 1172
   Color = clBtnFace
@@ -22,12 +22,13 @@ object Form1: TForm1
     Color = clWhite
     ParentBackground = False
     TabOrder = 0
+    ExplicitWidth = 1170
     object lblTitle: TLabel
       Left = 16
       Top = 10
-      Width = 351
+      Width = 382
       Height = 21
-      Caption = 'DCFlexGrid Showcase - SQLite + Runtime Studio'
+      Caption = 'DCFlexGrid Showcase - SQLite + Runtime Studio - v2'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
       Font.Height = -16
@@ -53,6 +54,7 @@ object Form1: TForm1
     Color = clWhitesmoke
     ParentBackground = False
     TabOrder = 1
+    ExplicitHeight = 713
     object PageControl1: TPageControl
       Left = 0
       Top = 0
@@ -61,6 +63,7 @@ object Form1: TForm1
       ActivePage = tsAdvanced
       Align = alClient
       TabOrder = 0
+      ExplicitHeight = 713
       object tsBehavior: TTabSheet
         Caption = 'Behavior'
         object lblSearch: TLabel
@@ -287,7 +290,7 @@ object Form1: TForm1
           Left = 0
           Top = 0
           Width = 268
-          Height = 701
+          Height = 693
           HorzScrollBar.Visible = False
           VertScrollBar.Tracking = True
           Align = alClient
@@ -1265,6 +1268,8 @@ object Form1: TForm1
     Color = clWhite
     ParentBackground = False
     TabOrder = 2
+    ExplicitWidth = 894
+    ExplicitHeight = 713
     DesignSize = (
       896
       721)
@@ -1347,7 +1352,7 @@ object Form1: TForm1
     object DCGrid1: TDCFlexGrid
       Left = 16
       Top = 72
-      Width = 862
+      Width = 860
       Height = 638
       Anchors = [akLeft, akTop, akRight, akBottom]
       Color = clWhite
@@ -1392,11 +1397,14 @@ object Form1: TForm1
       OnDetailRowClick = DCGrid1DetailRowClick
       OnDetailRowDblClick = DCGrid1DetailRowDblClick
       OnRightClickHitTest = DCGrid1RightClickHitTest
+      RulesDesignerLanguage = rdlEnglish
+      ExplicitWidth = 858
+      ExplicitHeight = 630
     end
     object memThemeCode: TMemo
       Left = 16
       Top = 778
-      Width = 862
+      Width = 860
       Height = 188
       Anchors = [akLeft, akRight, akBottom]
       ReadOnly = True

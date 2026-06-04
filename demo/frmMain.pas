@@ -34,6 +34,9 @@ uses
   DCFlexGrid, DCFlexGrid.Fluent, DCFlexGrid.Themes, DCFlexGrid.VisualRulesDesigner, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.VCLUI.Wait,
   FireDAC.Stan.ExprFuncs, FireDAC.Phys.SQLiteWrapper.Stat;
 
+const
+  version = 'v2';
+
 type
   TForm1 = class(TForm)
     pnlHeader: TPanel;
@@ -1094,8 +1097,6 @@ end;
 
 procedure TForm1.btnVisualRulesDesignerClick(Sender: TObject);
 begin
-  DCGrid1.RulesDesignerLanguage := rdlPortuguese;
-  DCGrid1.Rules.Edit;
   RefreshBusinessRulesUI;
   UpdateStatus;
 end;

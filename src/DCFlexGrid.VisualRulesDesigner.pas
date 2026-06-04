@@ -1,4 +1,4 @@
-unit DCFlexGrid.VisualRulesDesigner;
+﻿unit DCFlexGrid.VisualRulesDesigner;
 
 interface
 
@@ -13,8 +13,8 @@ uses
   Vcl.ExtCtrls,
   Vcl.Controls,
   Vcl.Graphics,
-  Vcl.Dialogs,
-  DCFlexGrid;
+  DCFlexGrid,
+  DCFlex.Controls;
 
 type
   TDCFlexGridVisualRulesDesigner = class(TForm)
@@ -38,6 +38,7 @@ type
     lblField: TLabel;
     lblCondition: TLabel;
     lblValue: TLabel;
+    lblApplyTo: TLabel;
     lblBack: TLabel;
     lblFont: TLabel;
     lblPreview: TLabel;
@@ -47,11 +48,12 @@ type
     cbField: TComboBox;
     cbCondition: TComboBox;
     edtValue: TEdit;
-    cbBack: TColorBox;
-    cbFont: TColorBox;
-    chkBold: TCheckBox;
-    chkItalic: TCheckBox;
-    chkUnderline: TCheckBox;
+    cbTarget: TComboBox;
+    cbBack: TDCFlexColorPicker;
+    cbFont: TDCFlexColorPicker;
+    chkBold: TDCFlexToggleButton;
+    chkItalic: TDCFlexToggleButton;
+    chkUnderline: TDCFlexToggleButton;
 
     btnAdd: TButton;
     btnRemove: TButton;
@@ -65,6 +67,7 @@ type
     procedure BuildUI;
     procedure LoadFields;
     procedure LoadConditions;
+    procedure LoadTargets;
     procedure RefreshRulesGrid;
     procedure UpdatePreview;
     procedure SyncSelectedRuleToEditor;
@@ -87,6 +90,8 @@ type
     function StylesToText(const AStyles: TFontStyles): string;
     function FindFieldIndexByFieldName(const AFieldName: string): Integer;
     function GetSelectedFieldName: string;
+    function GetSelectedTarget: TDCHighlightTarget;
+    function TargetToText(ATarget: TDCHighlightTarget): string;
     procedure AddRuleClick(Sender: TObject);
     procedure RemoveRuleClick(Sender: TObject);
     procedure ClearRulesClick(Sender: TObject);
@@ -106,6 +111,115 @@ type
 procedure ShowDCFlexGridVisualRulesDesigner(AGrid: TDCMasterDetailGrid);
 
 implementation
+
+function ShowRulesDesignerConfirm(AOwner: TComponent; ALanguage: TDCGridLang): Boolean;
+var
+  LForm: TForm;
+  LHeader: TPanel;
+  LBody: TPanel;
+  LAccent: TPanel;
+  LFooter: TPanel;
+  LTitle: TLabel;
+  LMessage: TLabel;
+  LClear: TButton;
+  LCancel: TButton;
+  LTitleText: string;
+  LMessageText: string;
+  LCancelText: string;
+begin
+  Result := False;
+  LTitleText := Trim(ALanguage.ConfirmClearTitle);
+  if LTitleText = '' then
+    LTitleText := ALanguage.ClearAllCaption;
+  LMessageText := Trim(ALanguage.ConfirmClearMessage);
+  if LMessageText = '' then
+    LMessageText := 'All visual rules will be removed.';
+  LCancelText := Trim(ALanguage.CancelCaption);
+  if LCancelText = '' then
+    LCancelText := 'Cancel';
+
+  LForm := TForm.CreateNew(AOwner);
+  try
+    LForm.BorderStyle := bsDialog;
+    LForm.BorderIcons := [biSystemMenu];
+    LForm.Caption := LTitleText;
+    LForm.ClientWidth := 460;
+    LForm.ClientHeight := 190;
+    LForm.Position := poScreenCenter;
+    LForm.Color := clWhite;
+    LForm.Font.Name := 'Segoe UI';
+    LForm.Font.Size := 9;
+
+    LHeader := TPanel.Create(LForm);
+    LHeader.Parent := LForm;
+    LHeader.Align := alTop;
+    LHeader.Height := 62;
+    LHeader.BevelOuter := bvNone;
+    LHeader.Color := clWhite;
+    LHeader.ParentBackground := False;
+
+    LTitle := TLabel.Create(LForm);
+    LTitle.Parent := LHeader;
+    LTitle.Left := 24;
+    LTitle.Top := 18;
+    LTitle.Caption := LTitleText;
+    LTitle.Font.Name := 'Segoe UI Semibold';
+    LTitle.Font.Size := 14;
+    LTitle.Font.Style := [fsBold];
+    LTitle.Font.Color := $00253445;
+
+    LBody := TPanel.Create(LForm);
+    LBody.Parent := LForm;
+    LBody.Align := alClient;
+    LBody.BevelOuter := bvNone;
+    LBody.Color := $00FBF8F6;
+    LBody.ParentBackground := False;
+
+    LAccent := TPanel.Create(LForm);
+    LAccent.Parent := LBody;
+    LAccent.SetBounds(24, 14, 4, 48);
+    LAccent.BevelOuter := bvNone;
+    LAccent.Color := $002483DB;
+    LAccent.ParentBackground := False;
+
+    LMessage := TLabel.Create(LForm);
+    LMessage.Parent := LBody;
+    LMessage.Left := 42;
+    LMessage.Top := 17;
+    LMessage.Width := LForm.ClientWidth - 84;
+    LMessage.Height := 42;
+    LMessage.AutoSize := False;
+    LMessage.WordWrap := True;
+    LMessage.Caption := LMessageText;
+    LMessage.Font.Color := $005C524C;
+
+    LFooter := TPanel.Create(LForm);
+    LFooter.Parent := LForm;
+    LFooter.Align := alBottom;
+    LFooter.Height := 56;
+    LFooter.BevelOuter := bvNone;
+    LFooter.Color := $00F7F7F7;
+    LFooter.ParentBackground := False;
+
+    LCancel := TButton.Create(LForm);
+    LCancel.Parent := LFooter;
+    LCancel.SetBounds(LForm.ClientWidth - 24 - 96, 14, 96, 28);
+    LCancel.Caption := LCancelText;
+    LCancel.Cancel := True;
+    LCancel.ModalResult := mrCancel;
+
+    LClear := TButton.Create(LForm);
+    LClear.Parent := LFooter;
+    LClear.SetBounds(LCancel.Left - 128 - 10, 14, 128, 28);
+    LClear.Caption := ALanguage.ClearAllCaption;
+    LClear.Default := True;
+    LClear.ModalResult := mrOk;
+
+    Result := LForm.ShowModal = mrOk;
+  finally
+    LForm.Free;
+  end;
+end;
 
 { TDCFlexGridVisualRulesDesigner }
 
@@ -132,6 +246,7 @@ begin
   ApplyGridLanguage;
   LoadFields;
   LoadConditions;
+  LoadTargets;
   AutoLoadRules;
   RefreshRulesGrid;
   AutoLoadPreferences;
@@ -166,6 +281,7 @@ begin
   FLanguage := ALanguage;
   ApplyLanguage;
   LoadConditions;
+  LoadTargets;
   RefreshRulesGrid;
   UpdatePreview;
 end;
@@ -184,66 +300,66 @@ var
   LPreviewCard: TPanel;
   LFooterDivider: TShape;
 begin
-  Color := $00F3F6FA;
+  Color := $00F5F7FA;
 
   pnlHeader := TPanel.Create(Self);
   pnlHeader.Parent := Self;
   pnlHeader.Align := alTop;
-  pnlHeader.Height := 80;
+  pnlHeader.Height := 72;
   pnlHeader.BevelOuter := bvNone;
-  pnlHeader.Color := $00324A67;
+  pnlHeader.Color := clWhite;
   pnlHeader.ParentBackground := False;
 
   lblTitle := TLabel.Create(Self);
   lblTitle.Parent := pnlHeader;
   lblTitle.Left := 24;
-  lblTitle.Top := 10;
+  lblTitle.Top := 14;
   lblTitle.Font.Name := 'Segoe UI Semibold';
-  lblTitle.Font.Size := 16;
+  lblTitle.Font.Size := 15;
   lblTitle.Font.Style := [fsBold];
-  lblTitle.Font.Color := clWhite;
+  lblTitle.Font.Color := $00253445;
   lblTitle.Transparent := True;
 
   lblSubtitle := TLabel.Create(Self);
   lblSubtitle.Parent := pnlHeader;
   lblSubtitle.Left := 24;
-  lblSubtitle.Top := 42;
+  lblSubtitle.Top := 45;
   lblSubtitle.Font.Name := 'Segoe UI';
   lblSubtitle.Font.Size := 9;
-  lblSubtitle.Font.Color := $00E6EEF7;
+  lblSubtitle.Font.Color := $006B7785;
   lblSubtitle.Transparent := True;
 
   LTopDivider := TShape.Create(Self);
   LTopDivider.Parent := pnlHeader;
   LTopDivider.Align := alBottom;
   LTopDivider.Height := 1;
-  LTopDivider.Brush.Color := $00475F7B;
+  LTopDivider.Brush.Color := $00E2E8F0;
   LTopDivider.Pen.Style := psClear;
 
   pnlEditor := TPanel.Create(Self);
   pnlEditor.Parent := Self;
   pnlEditor.Align := alTop;
-  pnlEditor.Height := 232;
+  pnlEditor.Height := 210;
   pnlEditor.BevelOuter := bvNone;
-  pnlEditor.Color := $00F3F6FA;
+  pnlEditor.Color := $00F5F7FA;
   pnlEditor.ParentBackground := False;
 
   LEditorCard := TPanel.Create(Self);
   LEditorCard.Parent := pnlEditor;
   LEditorCard.Align := alClient;
   LEditorCard.AlignWithMargins := True;
-  LEditorCard.Margins.Left := 15;
-  LEditorCard.Margins.Top := 15;
-  LEditorCard.Margins.Right := 15;
-  LEditorCard.Margins.Bottom := 15;
+  LEditorCard.Margins.Left := 18;
+  LEditorCard.Margins.Top := 14;
+  LEditorCard.Margins.Right := 18;
+  LEditorCard.Margins.Bottom := 10;
   LEditorCard.BevelOuter := bvNone;
   LEditorCard.Color := clWhite;
   LEditorCard.ParentBackground := False;
 
   lblSectionRuleSetup := TLabel.Create(Self);
   lblSectionRuleSetup.Parent := LEditorCard;
-  lblSectionRuleSetup.Left := 18;
-  lblSectionRuleSetup.Top := 14;
+  lblSectionRuleSetup.Left := 20;
+  lblSectionRuleSetup.Top := 16;
   lblSectionRuleSetup.Font.Name := 'Segoe UI Semibold';
   lblSectionRuleSetup.Font.Style := [fsBold];
   lblSectionRuleSetup.Font.Size := UI_SECTION_FONT_SIZE;
@@ -252,16 +368,16 @@ begin
 
   lblField := TLabel.Create(Self);
   lblField.Parent := LEditorCard;
-  lblField.Left := 18;
-  lblField.Top := 44;
+  lblField.Left := 20;
+  lblField.Top := 50;
   lblField.Font.Name := 'Segoe UI';
   lblField.Font.Size := UI_LABEL_FONT_SIZE;
   lblField.Font.Color := $004A5663;
 
   cbField := TComboBox.Create(Self);
   cbField.Parent := LEditorCard;
-  cbField.Left := 18;
-  cbField.Top := 64;
+  cbField.Left := 20;
+  cbField.Top := 70;
   cbField.Width := 184;
   cbField.Height := UI_INPUT_HEIGHT;
   cbField.Font.Name := 'Segoe UI';
@@ -271,16 +387,16 @@ begin
 
   lblCondition := TLabel.Create(Self);
   lblCondition.Parent := LEditorCard;
-  lblCondition.Left := 214;
-  lblCondition.Top := 44;
+  lblCondition.Left := 226;
+  lblCondition.Top := 50;
   lblCondition.Font.Name := 'Segoe UI';
   lblCondition.Font.Size := UI_LABEL_FONT_SIZE;
   lblCondition.Font.Color := $004A5663;
 
   cbCondition := TComboBox.Create(Self);
   cbCondition.Parent := LEditorCard;
-  cbCondition.Left := 214;
-  cbCondition.Top := 64;
+  cbCondition.Left := 226;
+  cbCondition.Top := 70;
   cbCondition.Width := 184;
   cbCondition.Height := UI_INPUT_HEIGHT;
   cbCondition.Font.Name := 'Segoe UI';
@@ -290,107 +406,139 @@ begin
 
   lblValue := TLabel.Create(Self);
   lblValue.Parent := LEditorCard;
-  lblValue.Left := 410;
-  lblValue.Top := 44;
+  lblValue.Left := 432;
+  lblValue.Top := 50;
   lblValue.Font.Name := 'Segoe UI';
   lblValue.Font.Size := UI_LABEL_FONT_SIZE;
   lblValue.Font.Color := $004A5663;
 
   edtValue := TEdit.Create(Self);
   edtValue.Parent := LEditorCard;
-  edtValue.Left := 410;
-  edtValue.Top := 64;
-  edtValue.Width := 184;
+  edtValue.Left := 432;
+  edtValue.Top := 70;
+  edtValue.Width := 324;
   edtValue.Height := UI_INPUT_HEIGHT;
   edtValue.Font.Name := 'Segoe UI';
   edtValue.Font.Size := UI_INPUT_FONT_SIZE;
   edtValue.OnChange := EditorChanged;
 
+  lblApplyTo := TLabel.Create(Self);
+  lblApplyTo.Parent := LEditorCard;
+  lblApplyTo.Left := 778;
+  lblApplyTo.Top := 50;
+  lblApplyTo.Font.Name := 'Segoe UI';
+  lblApplyTo.Font.Size := UI_LABEL_FONT_SIZE;
+  lblApplyTo.Font.Color := $004A5663;
+
+  cbTarget := TComboBox.Create(Self);
+  cbTarget.Parent := LEditorCard;
+  cbTarget.Left := 778;
+  cbTarget.Top := 70;
+  cbTarget.Width := 184;
+  cbTarget.Height := UI_INPUT_HEIGHT;
+  cbTarget.Font.Name := 'Segoe UI';
+  cbTarget.Font.Size := UI_INPUT_FONT_SIZE;
+  cbTarget.Style := csDropDownList;
+  cbTarget.OnChange := EditorChanged;
+
   lblBack := TLabel.Create(Self);
   lblBack.Parent := LEditorCard;
-  lblBack.Left := 606;
-  lblBack.Top := 44;
+  lblBack.Left := 20;
+  lblBack.Top := 114;
   lblBack.Font.Name := 'Segoe UI';
   lblBack.Font.Size := UI_LABEL_FONT_SIZE;
   lblBack.Font.Color := $004A5663;
 
-  cbBack := TColorBox.Create(Self);
+  cbBack := TDCFlexColorPicker.Create(Self);
   cbBack.Parent := LEditorCard;
-  cbBack.Left := 606;
-  cbBack.Top := 64;
+  cbBack.Left := 20;
+  cbBack.Top := 134;
   cbBack.Width := 184;
   cbBack.Height := UI_INPUT_HEIGHT;
+  cbBack.ItemHeight:= 18;
   cbBack.Font.Name := 'Segoe UI';
   cbBack.Font.Size := UI_INPUT_FONT_SIZE;
   cbBack.OnChange := EditorChanged;
 
   lblFont := TLabel.Create(Self);
   lblFont.Parent := LEditorCard;
-  lblFont.Left := 802;
-  lblFont.Top := 44;
+  lblFont.Left := 226;
+  lblFont.Top := 114;
   lblFont.Font.Name := 'Segoe UI';
   lblFont.Font.Size := UI_LABEL_FONT_SIZE;
   lblFont.Font.Color := $004A5663;
 
-  cbFont := TColorBox.Create(Self);
+  cbFont := TDCFlexColorPicker.Create(Self);
   cbFont.Parent := LEditorCard;
-  cbFont.Left := 802;
-  cbFont.Top := 64;
+  cbFont.Left := 226;
+  cbFont.Top := 134;
   cbFont.Width := 184;
   cbFont.Height := UI_INPUT_HEIGHT;
+  cbFont.ItemHeight:= 18;
   cbFont.Font.Name := 'Segoe UI';
   cbFont.Font.Size := UI_INPUT_FONT_SIZE;
   cbFont.OnChange := EditorChanged;
 
-  chkBold := TCheckBox.Create(Self);
+  chkBold := TDCFlexToggleButton.Create(Self);
   chkBold.Parent := LEditorCard;
-  chkBold.Left := 18;
-  chkBold.Top := 108;
+  chkBold.Left := 432;
+  chkBold.Top := 132;
+  chkBold.Width := 88;
+  chkBold.Height := 28;
   chkBold.Font.Name := 'Segoe UI';
   chkBold.Font.Size := UI_LABEL_FONT_SIZE;
-  chkBold.OnClick := EditorChanged;
+  chkBold.Font.Style := [fsBold];
+  chkBold.OnChange := EditorChanged;
 
-  chkItalic := TCheckBox.Create(Self);
+  chkItalic := TDCFlexToggleButton.Create(Self);
   chkItalic.Parent := LEditorCard;
-  chkItalic.Left := 118;
-  chkItalic.Top := 108;
+  chkItalic.Left := 526;
+  chkItalic.Top := 132;
+  chkItalic.Width := 88;
+  chkItalic.Height := 28;
   chkItalic.Font.Name := 'Segoe UI';
   chkItalic.Font.Size := UI_LABEL_FONT_SIZE;
-  chkItalic.OnClick := EditorChanged;
+  chkItalic.Font.Style := [fsItalic];
+  chkItalic.OnChange := EditorChanged;
 
-  chkUnderline := TCheckBox.Create(Self);
+  chkUnderline := TDCFlexToggleButton.Create(Self);
   chkUnderline.Parent := LEditorCard;
-  chkUnderline.Left := 218;
-  chkUnderline.Top := 108;
+  chkUnderline.Left := 620;
+  chkUnderline.Top := 132;
+  chkUnderline.Width := 112;
+  chkUnderline.Height := 28;
   chkUnderline.Font.Name := 'Segoe UI';
   chkUnderline.Font.Size := UI_LABEL_FONT_SIZE;
-  chkUnderline.OnClick := EditorChanged;
+  chkUnderline.Font.Style := [fsUnderline];
+  chkUnderline.OnChange := EditorChanged;
 
   btnAdd := TButton.Create(Self);
   btnAdd.Parent := LEditorCard;
-  btnAdd.Left := 18;
-  btnAdd.Top := 142;
-  btnAdd.Width := 184;
-  btnAdd.Height := 34;
+  btnAdd.Left := 778;
+  btnAdd.Top := 120;
+  btnAdd.Width := 188;
+  btnAdd.Height := 36;
   btnAdd.OnClick := AddRuleClick;
   btnAdd.Font.Name := 'Segoe UI Semibold';
   btnAdd.Font.Style := [fsBold];
   btnAdd.Font.Size := UI_SMALL_BUTTON_FONT_SIZE;
+  btnAdd.Caption := 'Apply';
 
   LPreviewCard := TPanel.Create(Self);
   LPreviewCard.Parent := LEditorCard;
-  LPreviewCard.Left := 410;
-  LPreviewCard.Top := 102;
-  LPreviewCard.Width := 576;
-  LPreviewCard.Height := 84;
+  LPreviewCard.Left := 20;
+  LPreviewCard.Top := 184;
+  LPreviewCard.Width := 966;
+  LPreviewCard.Height := 64;
   LPreviewCard.BevelOuter := bvNone;
   LPreviewCard.Color := $00F8FAFD;
   LPreviewCard.ParentBackground := False;
+  LPreviewCard.Visible := False;
 
   lblPreview := TLabel.Create(Self);
   lblPreview.Parent := LPreviewCard;
   lblPreview.Left := 12;
-  lblPreview.Top := 10;
+  lblPreview.Top := 8;
   lblPreview.Font.Name := 'Segoe UI Semibold';
   lblPreview.Font.Style := [fsBold];
   lblPreview.Font.Size := UI_LABEL_FONT_SIZE + 1;
@@ -398,23 +546,23 @@ begin
 
   lblPreviewHint := TLabel.Create(Self);
   lblPreviewHint.Parent := LPreviewCard;
-  lblPreviewHint.Left := 12;
-  lblPreviewHint.Top := 28;
+  lblPreviewHint.Left := 160;
+  lblPreviewHint.Top := 10;
   lblPreviewHint.Font.Name := 'Segoe UI';
   lblPreviewHint.Font.Size := UI_LABEL_FONT_SIZE;
-  lblPreviewHint.Font.Color := $00707C88;
+  lblPreviewHint.Font.Color := $00737F8A;
   lblPreviewHint.Caption := 'Live preview of the currently configured visual style.';
 
   pnlPreview := TPanel.Create(Self);
   pnlPreview.Parent := LPreviewCard;
   pnlPreview.Left := 12;
-  pnlPreview.Top := 48;
-  pnlPreview.Width := 552;
-  pnlPreview.Height := 28;
+  pnlPreview.Top := 30;
+  pnlPreview.Width := 942;
+  pnlPreview.Height := 24;
   pnlPreview.BevelOuter := bvNone;
-  pnlPreview.BevelInner := bvLowered;
-  pnlPreview.BorderWidth := 1;
-  pnlPreview.Color := $00EDF2F7;
+  pnlPreview.BevelInner := bvNone;
+  pnlPreview.BorderWidth := 0;
+  pnlPreview.Color := $00EEF3F8;
   pnlPreview.ParentBackground := False;
 
   pnlSample := TPanel.Create(Self);
@@ -426,22 +574,19 @@ begin
 
   lblSample := TLabel.Create(Self);
   lblSample.Parent := pnlSample;
-  lblSample.Left := 10;
-  lblSample.Top := 5;
+  lblSample.Left := 12;
+  lblSample.Top := 4;
   lblSample.Font.Name := 'Segoe UI';
   lblSample.Font.Size := UI_INPUT_FONT_SIZE;
 
   LRulesHeader := TPanel.Create(Self);
   LRulesHeader.Parent := Self;
-  LRulesHeader.Align := alNone;
-  LRulesHeader.Top := pnlHeader.Height + pnlEditor.Height;
-  LRulesHeader.Left := 16;
-  LRulesHeader.Padding.Top := 10;
-  LRulesHeader.Margins.Left := 15;
-  LRulesHeader.Width := Self.Width - 50;
-  LRulesHeader.Height := 210;
+  LRulesHeader.Align := alClient;
+  LRulesHeader.Padding.Top := 0;
+  LRulesHeader.AlignWithMargins := True;
+  LRulesHeader.Margins.Left := 18;
   LRulesHeader.BevelOuter := bvNone;
-  LRulesHeader.Color :=  clWhite; //pnlEditor.Color;
+  LRulesHeader.Color := clWhite;
   LRulesHeader.ParentBackground := False;
 
   lblSectionRules := TLabel.Create(Self);
@@ -459,18 +604,18 @@ begin
   grdRules.Parent := LRulesHeader;
   grdRules.Align := alClient;
   grdRules.AlignWithMargins := True;
-  grdRules.Margins.Top := 10;
-  grdRules.Margins.Left := 15;
-  grdRules.Margins.Right := 15;
-  grdRules.Margins.Bottom := 10;
+  grdRules.Margins.Top := 8;
+  grdRules.Margins.Left := 0;
+  grdRules.Margins.Right := 0;
+  grdRules.Margins.Bottom := 0;
   grdRules.Theme.ResetDefault;
-  grdRules.Theme.HeaderColor := $00F7F9FC;
+  grdRules.Theme.HeaderColor := $00F3F6FA;
   grdRules.Theme.HeaderFontColor := $0029384B;
   grdRules.Theme.RowColor := clWhite;
-  grdRules.Theme.AlternateRowColor := $00FBFCFD;
-  grdRules.Theme.SelectedRowColor := $00D8E9FF;
+  grdRules.Theme.AlternateRowColor := $00F9FBFD;
+  grdRules.Theme.SelectedRowColor := $00E4EEF9;
   grdRules.Theme.SelectedTextColor := $00253445;
-  grdRules.Theme.HoverRowColor := $00EEF5FF;
+  grdRules.Theme.HoverRowColor := $00F1F6FB;
   grdRules.RowCount := 0;
   grdRules.ShowExpandButton := False;
   grdRules.ExpandOnRowClick := False;
@@ -489,15 +634,16 @@ begin
   grdRules.Columns.Clear;
   with grdRules.Columns.Add do begin FieldName := 'field'; Width := 170; end;
   with grdRules.Columns.Add do begin FieldName := 'condition'; Width := 160; end;
-  with grdRules.Columns.Add do begin FieldName := 'value'; Width := 170; end;
-  with grdRules.Columns.Add do begin FieldName := 'back'; Width := 150; end;
-  with grdRules.Columns.Add do begin FieldName := 'font'; Width := 150; end;
-  with grdRules.Columns.Add do begin FieldName := 'styles'; Width := 120; end;
+  with grdRules.Columns.Add do begin FieldName := 'value'; Width := 160; end;
+  with grdRules.Columns.Add do begin FieldName := 'applyto'; Width := 130; end;
+  with grdRules.Columns.Add do begin FieldName := 'back'; Width := 140; end;
+  with grdRules.Columns.Add do begin FieldName := 'font'; Width := 140; end;
+  with grdRules.Columns.Add do begin FieldName := 'styles'; Width := 110; end;
 
   pnlFooter := TPanel.Create(Self);
   pnlFooter.Parent := Self;
   pnlFooter.Align := alBottom;
-  pnlFooter.Height := 76;
+  pnlFooter.Height := 72;
   pnlFooter.BevelOuter := bvNone;
   pnlFooter.Color := clWhite;
   pnlFooter.ParentBackground := False;
@@ -522,7 +668,7 @@ begin
   btnRemove.Parent := pnlFooter;
   btnRemove.Left := 20;
   btnRemove.Top := 34;
-  btnRemove.Width := 146;
+  btnRemove.Width := 142;
   btnRemove.Height := 32;
   btnRemove.Font.Name := 'Segoe UI';
   btnRemove.Font.Size := UI_SMALL_BUTTON_FONT_SIZE;
@@ -530,9 +676,9 @@ begin
 
   btnClear := TButton.Create(Self);
   btnClear.Parent := pnlFooter;
-  btnClear.Left := 174;
+  btnClear.Left := 170;
   btnClear.Top := 34;
-  btnClear.Width := 124;
+  btnClear.Width := 118;
   btnClear.Height := 32;
   btnClear.Font.Name := 'Segoe UI';
   btnClear.Font.Size := UI_SMALL_BUTTON_FONT_SIZE;
@@ -540,7 +686,7 @@ begin
 
   lblStatus := TLabel.Create(Self);
   lblStatus.Parent := pnlFooter;
-  lblStatus.Left := 320;
+  lblStatus.Left := 308;
   lblStatus.Top := 42;
   lblStatus.Font.Name := 'Segoe UI';
   lblStatus.Font.Size := UI_LABEL_FONT_SIZE;
@@ -548,12 +694,12 @@ begin
 
   btnClose := TButton.Create(Self);
   btnClose.Parent := pnlFooter;
-  btnClose.Width := 118;
+  btnClose.Width := 110;
   btnClose.Height := 32;
   btnClose.Font.Name := 'Segoe UI';
   btnClose.Font.Size := UI_SMALL_BUTTON_FONT_SIZE;
   btnClose.Top := 34;
-  btnClose.Left := 898;
+  btnClose.Left := 910;
   btnClose.Anchors := [akTop, akRight];
   btnClose.OnClick := CloseClick;
 end;
@@ -567,11 +713,12 @@ begin
   lblTitle.Caption := FLanguage.Title;
   lblSubtitle.Caption := FLanguage.Subtitle;
   lblSectionRuleSetup.Caption := FLanguage.SectionRuleSetup;
-  lblSectionRules.Caption := '   ' + FLanguage.SectionRules;
+  lblSectionRules.Caption := FLanguage.SectionRules;
   lblSectionActions.Caption := FLanguage.SectionActions;
   lblField.Caption := FLanguage.FieldCaption;
   lblCondition.Caption := FLanguage.ConditionCaption;
   lblValue.Caption := FLanguage.ValueCaption;
+  lblApplyTo.Caption := FLanguage.ApplyToCaption;
   lblBack.Caption := FLanguage.BackgroundCaption;
   lblFont.Caption := FLanguage.FontCaption;
   lblPreview.Caption := FLanguage.PreviewCaption;
@@ -585,14 +732,15 @@ begin
   btnClose.Caption := FLanguage.CloseCaption;
   lblSample.Caption := FLanguage.SampleCaption;
 
-  if grdRules.Columns.Count >= 6 then
+  if grdRules.Columns.Count >= 7 then
   begin
     grdRules.Columns[0].Caption := FLanguage.ColField;
     grdRules.Columns[1].Caption := FLanguage.ColCondition;
     grdRules.Columns[2].Caption := FLanguage.ColValue;
-    grdRules.Columns[3].Caption := FLanguage.ColBack;
-    grdRules.Columns[4].Caption := FLanguage.ColFont;
-    grdRules.Columns[5].Caption := FLanguage.ColStyles;
+    grdRules.Columns[3].Caption := FLanguage.ColApplyTo;
+    grdRules.Columns[4].Caption := FLanguage.ColBack;
+    grdRules.Columns[5].Caption := FLanguage.ColFont;
+    grdRules.Columns[6].Caption := FLanguage.ColStyles;
   end;
 end;
 
@@ -648,27 +796,37 @@ end;
 procedure TDCFlexGridVisualRulesDesigner.ApplyGridLanguage;
 var
   LCustom: TDCGridLang;
+  LPaletteLanguage: TDCFlexColorPickerLanguage;
 begin
+  LPaletteLanguage := cplPortuguese;
+
   if not Assigned(FGrid) then
   begin
     SetLanguage(TDCGridLang.Portuguese);
-    Exit;
+  end
+  else
+  begin
+    case FGrid.RulesDesignerLanguage of
+      rdlEnglish:
+        begin
+          SetLanguage(TDCGridLang.English);
+          LPaletteLanguage := cplEnglish;
+        end;
+      rdlCustom:
+        begin
+          LCustom := FGrid.GetRulesDesignerCustomLanguageClone;
+          if Assigned(LCustom) then
+            SetLanguage(LCustom)
+          else
+            SetLanguage(TDCGridLang.Portuguese);
+        end;
+    else
+      SetLanguage(TDCGridLang.Portuguese);
+    end;
   end;
 
-  case FGrid.RulesDesignerLanguage of
-    rdlEnglish:
-      SetLanguage(TDCGridLang.English);
-    rdlCustom:
-      begin
-        LCustom := FGrid.GetRulesDesignerCustomLanguageClone;
-        if Assigned(LCustom) then
-          SetLanguage(LCustom)
-        else
-          SetLanguage(TDCGridLang.Portuguese);
-      end;
-  else
-    SetLanguage(TDCGridLang.Portuguese);
-  end;
+  cbBack.PaletteLanguage := LPaletteLanguage;
+  cbFont.PaletteLanguage := LPaletteLanguage;
 end;
 
 procedure TDCFlexGridVisualRulesDesigner.AutoLoadPreferences;
@@ -831,6 +989,22 @@ begin
   end;
 end;
 
+
+procedure TDCFlexGridVisualRulesDesigner.LoadTargets;
+begin
+  cbTarget.Items.BeginUpdate;
+  try
+    cbTarget.Items.Clear;
+    cbTarget.Items.AddObject(FLanguage.TargetRowCaption, TObject(Ord(htRow)));
+    cbTarget.Items.AddObject(FLanguage.TargetCellCaption, TObject(Ord(htCell)));
+    if cbTarget.Items.Count > 0 then
+      cbTarget.ItemIndex := 0;
+  finally
+    cbTarget.Items.EndUpdate;
+  end;
+end;
+
+
 function TDCFlexGridVisualRulesDesigner.FindFieldIndexByFieldName(const AFieldName: string): Integer;
 var
   I: Integer;
@@ -864,6 +1038,24 @@ begin
   end
   else
     Result := Trim(cbField.Text);
+end;
+
+
+function TDCFlexGridVisualRulesDesigner.GetSelectedTarget: TDCHighlightTarget;
+begin
+  Result := htRow;
+  if cbTarget.ItemIndex < 0 then
+    Exit;
+  Result := TDCHighlightTarget(NativeInt(cbTarget.Items.Objects[cbTarget.ItemIndex]));
+end;
+
+function TDCFlexGridVisualRulesDesigner.TargetToText(ATarget: TDCHighlightTarget): string;
+begin
+  case ATarget of
+    htCell: Result := FLanguage.TargetCellCaption;
+  else
+    Result := FLanguage.TargetRowCaption;
+  end;
 end;
 
 function TDCFlexGridVisualRulesDesigner.BuildExpression: string;
@@ -966,6 +1158,7 @@ procedure TDCFlexGridVisualRulesDesigner.ClearEditor;
 begin
   edtValue.Clear;
   cbCondition.ItemIndex := 0;
+  cbTarget.ItemIndex := 0;
   chkBold.Checked := False;
   chkItalic.Checked := False;
   chkUnderline.Checked := False;
@@ -989,13 +1182,9 @@ begin
   if cbField.ItemIndex < 0 then Exit;
   if Trim(edtValue.Text) = '' then Exit;
 
-  if (Trim(FGrid.BusinessHighlight.Field) <> '') and
-     (not SameText(FGrid.BusinessHighlight.Field, GetSelectedFieldName)) and
-     (FGrid.BusinessHighlight.Rules.Count > 0) then
-    FGrid.BusinessHighlight.Clear;
-
   FGrid.BusinessHighlight.Enabled := True;
-  FGrid.BusinessHighlight.Field := GetSelectedFieldName;
+  if Trim(FGrid.BusinessHighlight.Field) = '' then
+    FGrid.BusinessHighlight.Field := GetSelectedFieldName;
 
   Styles := [];
   if chkBold.Checked then Include(Styles, fsBold);
@@ -1007,15 +1196,17 @@ begin
   if (FEditingIndex >= 0) and (FEditingIndex < FGrid.BusinessHighlight.Rules.Count) then
   begin
     LRule := FGrid.BusinessHighlight.Rules[FEditingIndex];
+    LRule.FieldName := GetSelectedFieldName;
     LRule.Expression := Expr;
     LRule.BackColor := cbBack.Selected;
     LRule.FontColor := cbFont.Selected;
     LRule.FontStyles := Styles;
+    LRule.Target := GetSelectedTarget;
     SetStatus(FLanguage.StatusRuleUpdated);
   end
   else
   begin
-    FGrid.BusinessHighlight.Rules.Add(Expr, cbBack.Selected, cbFont.Selected, Styles);
+    FGrid.BusinessHighlight.Rules.AddForField(GetSelectedFieldName, Expr, cbBack.Selected, cbFont.Selected, Styles, GetSelectedTarget);
     grdRules.SelectedRow := FGrid.BusinessHighlight.Rules.Count - 1;
     SetStatus(FLanguage.StatusRuleAdded);
   end;
@@ -1044,6 +1235,8 @@ end;
 procedure TDCFlexGridVisualRulesDesigner.ClearRulesClick(Sender: TObject);
 begin
   if not Assigned(FGrid) then Exit;
+  if FGrid.BusinessHighlight.Rules.Count = 0 then Exit;
+  if not ShowRulesDesignerConfirm(Self, FLanguage) then Exit;
   FGrid.BusinessHighlight.Clear;
   FGrid.RefreshGrid;
   RefreshRulesGrid;
@@ -1062,6 +1255,7 @@ procedure TDCFlexGridVisualRulesDesigner.RulesGridGetCellText(Sender: TObject; A
 var
   R: TDCHighlightRule;
   Idx: Integer;
+  LFieldName: string;
 begin
   AText := '';
   if not Assigned(FGrid) then Exit;
@@ -1070,16 +1264,20 @@ begin
   case ACol of
     0:
       begin
-        AText := FGrid.BusinessHighlight.Field;
-        Idx := FindFieldIndexByFieldName(FGrid.BusinessHighlight.Field);
+        LFieldName := Trim(R.FieldName);
+        if LFieldName = '' then
+          LFieldName := Trim(FGrid.BusinessHighlight.Field);
+        AText := LFieldName;
+        Idx := FindFieldIndexByFieldName(LFieldName);
         if Idx >= 0 then
           AText := cbField.Items[Idx];
       end;
     1: AText := ConditionFromExpression(R.Expression);
     2: AText := ValueFromExpression(R.Expression);
-    3: AText := ColorToString(R.BackColor);
-    4: AText := ColorToString(R.FontColor);
-    5: AText := StylesToText(R.FontStyles);
+    3: AText := TargetToText(R.Target);
+    4: AText := cbBack.DisplayText(R.BackColor);
+    5: AText := cbFont.DisplayText(R.FontColor);
+    6: AText := StylesToText(R.FontStyles);
   end;
 end;
 
@@ -1087,14 +1285,19 @@ procedure TDCFlexGridVisualRulesDesigner.SyncSelectedRuleToEditor;
 var
   Idx: Integer;
   R: TDCHighlightRule;
+  LFieldName: string;
 begin
   if not Assigned(FGrid) then Exit;
   Idx := grdRules.SelectedRow;
   if (Idx < 0) or (Idx >= FGrid.BusinessHighlight.Rules.Count) then Exit;
   R := FGrid.BusinessHighlight.Rules[Idx];
-  cbField.ItemIndex := FindFieldIndexByFieldName(FGrid.BusinessHighlight.Field);
+  LFieldName := Trim(R.FieldName);
+  if LFieldName = '' then
+    LFieldName := Trim(FGrid.BusinessHighlight.Field);
+  cbField.ItemIndex := FindFieldIndexByFieldName(LFieldName);
   cbCondition.ItemIndex := cbCondition.Items.IndexOf(ConditionFromExpression(R.Expression));
   edtValue.Text := ValueFromExpression(R.Expression);
+  cbTarget.ItemIndex := cbTarget.Items.IndexOf(TargetToText(R.Target));
   cbBack.Selected := R.BackColor;
   cbFont.Selected := R.FontColor;
   chkBold.Checked := fsBold in R.FontStyles;

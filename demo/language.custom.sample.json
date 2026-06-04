@@ -1,0 +1,46 @@
+{
+  "formatVersion": 1,
+  "language": 2,
+  "items": [
+    {
+      "scope": "common",
+      "key": "save",
+      "value": "Persist"
+    },
+    {
+      "scope": "common",
+      "key": "load",
+      "value": "Restore"
+    },
+    {
+      "scope": "scheduler",
+      "key": "event.caption",
+      "value": "Appointment"
+    },
+    {
+      "scope": "scheduler",
+      "key": "field.location",
+      "value": "Where"
+    },
+    {
+      "scope": "kanban",
+      "key": "card.caption",
+      "value": "Task"
+    },
+    {
+      "scope": "kanban",
+      "key": "field.tag",
+      "value": "Category"
+    },
+    {
+      "scope": "sheets",
+      "key": "style.clear",
+      "value": "Reset format"
+    },
+    {
+      "scope": "sheets",
+      "key": "formula.value",
+      "value": "Input"
+    }
+  ]
+}

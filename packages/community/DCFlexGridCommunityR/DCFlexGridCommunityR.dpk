@@ -1,0 +1,18 @@
+package DCFlexGridCommunityR;
+
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  vcl,
+  dbrtl,
+  vclx,
+  DCFlexCoreR;
+
+contains
+  DCFlexGrid in '..\..\..\src\DCFlexGrid.pas',
+  DCFlexGrid.Fluent in '..\..\..\src\DCFlexGrid.Fluent.pas',
+  DCFlexGrid.Themes in '..\..\..\src\DCFlexGrid.Themes.pas',
+  DCFlexGrid.VisualRulesDesigner in '..\..\..\src\DCFlexGrid.VisualRulesDesigner.pas';
+
+end.

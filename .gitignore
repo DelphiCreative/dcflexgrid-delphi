@@ -1,11 +1,4 @@
-# =========================
-
-# Delphi / RAD Studio
-
-# =========================
-
-# Compilados
-
+# Delphi / RAD Studio compiled output
 *.exe
 *.dll
 *.bpl
@@ -15,86 +8,59 @@
 *.a
 *.o
 *.obj
-
-# Backup e temporários
-
-*.~*
-*.bak
-*.tmp
-*.identcache
-
-# Pastas de saída
-
-Win32/
-Win64/
-Debug/
-Release/
-__history/
-__recovery/
-
-# Arquivos de projeto gerados
-
-*.local
-*.stat
-*.deployproj.local
-*.dproj.local
-
-# Cache IDE
-
-*.skincfg
-*.tvsconfig
-*.projdata
-*.dsk
-
-# IntelliSense / Code Insight
-
+*.bpi
 *.dres
 *.map
 *.rsm
 *.tds
 
-# Packages
+# Delphi generated project and IDE files
+*.local
+*.stat
+*.deployproj.local
+*.dproj.local
+*.identcache
+*.skincfg
+*.tvsconfig
+*.projdata
+*.dsk
+*.res
 
-*.bpi
+# Delphi output and recovery folders
+Win32/
+Win64/
+Debug/
+Release/
+__history__/
+__history/
+__recovery/
 
-# FMX (se usar)
-
-*.fmx
-
-# Logs
-
+# Backups, logs and temporary files
+*.~*
+*.bak
+*.tmp
 *.log
 
-# Arquivos do Windows
-
-Thumbs.db
-Desktop.ini
-
-# =========================
-
-# SQLite (opcional)
-
-# =========================
-
+# Runtime databases
 *.sqlite
 *.db
 *.db3
+demo/*.scheduler.json
 
-# =========================
+# Local folders
+backups/
+updates/
 
-# Python / Streamlit (caso use junto)
-
-# =========================
-
-**pycache**/
+# Python helpers, if used during tooling
+__pycache__/
 *.pyc
 .env
 .venv/
 
-# =========================
-
-# Outros
-
-# =========================
-
+# Archives
 *.zip
+*.7z
+
+# Windows
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,15 @@
+package DCFlexGridCommunityD;
+
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  vcl,
+  designide,
+  DCFlexCoreR,
+  DCFlexGridCommunityR;
+
+contains
+  DCFlexGrid.CommunityReg in '..\..\..\src\DCFlexGrid.CommunityReg.pas';
+
+end.

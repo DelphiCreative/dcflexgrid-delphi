@@ -43,7 +43,13 @@ uses
   System.JSON,
   Data.DB,
   Vcl.Controls,
-  Vcl.Graphics;
+  Vcl.Forms,
+  Vcl.StdCtrls,
+  Vcl.CheckLst,
+  Vcl.ExtCtrls,
+  Vcl.Graphics,
+  Vcl.Menus,
+  Vcl.Dialogs;
 
 const
   DC_DEFAULT_ROW_HEIGHT = 34;
@@ -54,6 +60,9 @@ const
   DC_DEFAULT_EXPAND_COL_WIDTH = 28;
   DC_DEFAULT_PADDING = 10;
   DC_DEFAULT_SCROLL_STEP = 3;
+  DC_DEFAULT_TOOLBAR_HEIGHT = 44;
+  DC_DEFAULT_FOOTER_HEIGHT = 34;
+  DC_DEFAULT_COLUMN_FILTER_HEIGHT = 34;
 
 type
   TDCMasterDetailGrid = class;
@@ -62,10 +71,12 @@ type
   TDCDetailStyle = (dsText, dsGrid);
   TDCExpandMode = (emSingle, emMultiple);
   TDCSortDirection = (sdNone, sdAscending, sdDescending);
+  TDCFooterSummary = (fsNone, fsSum, fsCount, fsAvg, fsMin, fsMax);
   TDCHitTestArea = (htNone, htHeader, htMasterRow, htDetailRow, htExpandButton);
 
 
   TDCRulesDesignerLanguage = (rdlPortuguese, rdlEnglish, rdlCustom);
+  TDCHighlightTarget = (htRow, htCell);
 
   TDCGridLang = class(TPersistent)
   public
@@ -77,6 +88,7 @@ type
     FieldCaption: string;
     ConditionCaption: string;
     ValueCaption: string;
+    ApplyToCaption: string;
     BackgroundCaption: string;
     FontCaption: string;
     PreviewCaption: string;
@@ -88,7 +100,10 @@ type
     RemoveSelectedCaption: string;
     ClearAllCaption: string;
     CloseCaption: string;
+    CancelCaption: string;
     SampleCaption: string;
+    ConfirmClearTitle: string;
+    ConfirmClearMessage: string;
     StatusReady: string;
     StatusRuleAdded: string;
     StatusRuleUpdated: string;
@@ -98,6 +113,7 @@ type
     ColField: string;
     ColCondition: string;
     ColValue: string;
+    ColApplyTo: string;
     ColBack: string;
     ColFont: string;
     ColStyles: string;
@@ -107,6 +123,32 @@ type
     CondLessThan: string;
     CondContains: string;
     CondStartsWith: string;
+    TargetRowCaption: string;
+    TargetCellCaption: string;
+    ToolbarSearchHint: string;
+    ToolbarClearCaption: string;
+    ToolbarRulesCaption: string;
+    ColumnFilterHintPrefix: string;
+    FooterMenuCaption: string;
+    FooterMenuShowCaption: string;
+    FooterMenuNoneCaption: string;
+    FooterMenuSumCaption: string;
+    FooterMenuCountCaption: string;
+    FooterMenuAvgCaption: string;
+    FooterMenuMinCaption: string;
+    FooterMenuMaxCaption: string;
+    MenuToolbarCaption: string;
+    MenuShowToolbarCaption: string;
+    MenuShowRulesCaption: string;
+    MenuShowColumnFiltersCaption: string;
+    MenuExportCaption: string;
+    MenuExportCsvCaption: string;
+    MenuFooterSummariesCaption: string;
+    MenuColumnsCaption: string;
+    MenuLayoutCaption: string;
+    MenuLayoutSaveCaption: string;
+    MenuLayoutLoadCaption: string;
+    MenuLayoutResetCaption: string;
     procedure Assign(Source: TPersistent); override;
     function Clone: TDCGridLang;
     class function Portuguese: TDCGridLang; static;
@@ -201,27 +243,33 @@ type
 
 TDCHighlightRule = class(TPersistent)
 private
+  FFieldName: string;
   FExpression: string;
   FBackColor: TColor;
   FFontColor: TColor;
   FFontStyles: TFontStyles;
+  FTarget: TDCHighlightTarget;
 public
-  constructor Create(const AExpression: string; ABackColor: TColor; AFontColor: TColor; AFontStyles: TFontStyles);
+  constructor Create(const AExpression: string; ABackColor: TColor; AFontColor: TColor; AFontStyles: TFontStyles; ATarget: TDCHighlightTarget = htRow);
   function Match(const AValue: Variant): Boolean;
 published
+  property FieldName: string read FFieldName write FFieldName;
   property Expression: string read FExpression write FExpression;
   property BackColor: TColor read FBackColor write FBackColor;
   property FontColor: TColor read FFontColor write FFontColor;
   property FontStyles: TFontStyles read FFontStyles write FFontStyles;
+  property Target: TDCHighlightTarget read FTarget write FTarget default htRow;
 end;
 
 TDCHighlightRules = class(TObjectList<TDCHighlightRule>)
 private
   FOwnerGrid: TDCMasterDetailGrid;
 public
-  function Add(const AExpression: string; ABackColor: TColor; AFontColor: TColor = clNone; AFontStyles: TFontStyles = []): TDCHighlightRule; reintroduce;
+  constructor Create(AOwnsObjects: Boolean; AOwnerGrid: TDCMasterDetailGrid = nil);
+  function Add(const AExpression: string; ABackColor: TColor; AFontColor: TColor = clNone; AFontStyles: TFontStyles = []; ATarget: TDCHighlightTarget = htRow): TDCHighlightRule; reintroduce;
+  function AddForField(const AFieldName, AExpression: string; ABackColor: TColor; AFontColor: TColor = clNone; AFontStyles: TFontStyles = []; ATarget: TDCHighlightTarget = htRow): TDCHighlightRule;
   procedure Edit;
-  property OwnerGrid: TDCMasterDetailGrid read FOwnerGrid write FOwnerGrid;
+  property OwnerGrid: TDCMasterDetailGrid read FOwnerGrid;
 end;
 
 TDCBusinessHighlight = class(TPersistent)
@@ -238,7 +286,8 @@ public
   destructor Destroy; override;
   procedure Assign(Source: TPersistent); override;
   procedure Clear;
-  function Evaluate(const AValue: Variant; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles): Boolean;
+  function Evaluate(const AValue: Variant; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles): Boolean; overload;
+  function Evaluate(const AValue: Variant; out ATarget: TDCHighlightTarget; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles): Boolean; overload;
   function ToJSON: string;
   procedure FromJSON(const AJSON: string);
   procedure SaveToFile(const AFileName: string);
@@ -265,6 +314,10 @@ end;
     FVisible: Boolean;
     FAlignment: TDCTextAlignment;
     FFieldName: string;
+    FFooterSummary: TDCFooterSummary;
+    FFilterText: string;
+    procedure SetFilterText(const Value: string);
+    procedure SetFooterSummary(const Value: TDCFooterSummary);
     procedure SetAlignment(const Value: TDCTextAlignment);
     procedure SetCaption(const Value: string);
     procedure SetVisible(const Value: Boolean);
@@ -275,12 +328,21 @@ end;
     function GetDisplayName: string; override;
   public
     constructor Create(Collection: TCollection); override;
+    procedure Assign(Source: TPersistent); override;
+    function FooterNone: TDCGridColumn;
+    function FooterSum: TDCGridColumn;
+    function FooterCount: TDCGridColumn;
+    function FooterAvg: TDCGridColumn;
+    function FooterMin: TDCGridColumn;
+    function FooterMax: TDCGridColumn;
   published
     property Caption: string read FCaption write SetCaption;
     property Width: Integer read FWidth write SetWidth default 120;
     property Visible: Boolean read FVisible write SetVisible default True;
     property Alignment: TDCTextAlignment read FAlignment write SetAlignment default taLeft;
     property FieldName: string read FFieldName write SetFieldName;
+    property FooterSummary: TDCFooterSummary read FFooterSummary write SetFooterSummary default fsNone;
+    property FilterText: string read FFilterText write SetFilterText;
   end;
 
   TDCGridColumns = class(TCollection)
@@ -382,6 +444,10 @@ end;
     FDetailHeight: Integer;
     FDetailGridHeaderHeight: Integer;
     FDetailGridRowHeight: Integer;
+    FDetailVerticalScroll: Boolean;
+    FDetailMaxHeight: Integer;
+    FDetailScrollMasterRow: Integer;
+    FDetailVerticalOffset: Integer;
     FSelectedRow: Integer;
     FExpandedRow: Integer;
     FExpandedRows: TList<Integer>;
@@ -389,6 +455,13 @@ end;
     FHoverRow: Integer;
     FTopRow: Integer;
     FShowHeader: Boolean;
+    FShowHeaderColumnLines: Boolean;
+    FShowRowColumnLines: Boolean;
+    FFrozenColumns: Integer;
+    FHorizontalOffset: Integer;
+    FAllowHeaderFooterSummaryMenu: Boolean;
+    FHeaderFooterPopup: TPopupMenu;
+    FHeaderFooterPopupColumn: Integer;
     FShowExpandButton: Boolean;
     FAlternateColors: Boolean;
     FExpandOnRowClick: Boolean;
@@ -451,8 +524,25 @@ end;
     FRulesDesignerCustomLanguage: TDCGridLang;
     FRulesDesignerAutoLoadPreferences: Boolean;
     FRulesDesignerAutoSavePreferences: Boolean;
+    FShowToolbar: Boolean;
+    FToolbarHeight: Integer;
+    FToolbarSearchEdit: TEdit;
+    FToolbarClearButton: TButton;
+    FToolbarRulesButton: TButton;
+    FShowToolbarRulesDesignerButton: Boolean;
+    FUpdatingToolbarSearch: Boolean;
+    FShowFooter: Boolean;
+    FFooterHeight: Integer;
+    FShowColumnFilters: Boolean;
+    FAllowColumnFiltersMenu: Boolean;
+    FColumnFilterHeight: Integer;
+    FColumnFilterEdits: TObjectList<TEdit>;
+    FColumnFilterPanel: TPanel;
+    FUpdatingColumnFilters: Boolean;
     function GetLayoutFileName: string;
     function GetLayoutSectionName: string;
+    function GetDefaultLayoutsDirectory: string;
+    function GetNamedLayoutFileName(const ALayoutName: string): string;
     function GetDebugLogFileName: string;
     procedure LogDebug(const AMessage: string);
     procedure SetLayoutKey(const Value: string);
@@ -469,14 +559,45 @@ end;
     procedure SetRulesDesignerLanguage(const Value: TDCRulesDesignerLanguage);
     procedure SetRulesDesignerAutoLoadPreferences(const Value: Boolean);
     procedure SetRulesDesignerAutoSavePreferences(const Value: Boolean);
+    procedure SetShowToolbar(const Value: Boolean);
+    procedure SetToolbarHeight(const Value: Integer);
+    procedure SetShowToolbarRulesDesignerButton(const Value: Boolean);
+    procedure SetShowFooter(const Value: Boolean);
+    procedure SetFooterHeight(const Value: Integer);
+    procedure SetShowColumnFilters(const Value: Boolean);
+    procedure SetColumnFilterHeight(const Value: Integer);
+    procedure ColumnFilterChanged(Sender: TObject);
+    procedure EnsureColumnFilterEditors;
+    procedure UpdateColumnFilterLayout;
+    procedure ClearColumnFilterEditors;
+    function HasColumnFilters: Boolean;
+    function RowMatchesColumnFilters(ARow: Integer): Boolean;
+    function GetVisibleMasterColumnsWidth: Integer;
+    function GetVisibleDetailColumnsWidth: Integer;
+    function GetVisibleFrozenColumnsWidth: Integer;
+    function IsFrozenColumn(ACol: Integer): Boolean;
+    function GetColumnDrawLeft(ACol, ABaseLeft: Integer): Integer;
+    function GetHorizontalMax: Integer;
+    procedure SetHorizontalOffset(const Value: Integer);
+    function GetColumnsStartX(ABaseLeft: Integer): Integer;
+    function GetDetailColumnsStartX(ABaseLeft: Integer): Integer;
+    function GetColumnFilterText(ACol: Integer): string;
+    procedure SetColumnFilterText(ACol: Integer; const AText: string);
+    procedure ToolbarSearchChanged(Sender: TObject);
+    procedure ToolbarClearClick(Sender: TObject);
+    procedure ToolbarRulesClick(Sender: TObject);
+    procedure UpdateToolbarLayout;
+    procedure UpdateToolbarLanguage;
+    function GetCurrentLanguage: TDCGridLang;
     procedure RebuildFilter;
     function GetFilteredRowCount: Integer;
     function GetActualRowCount: Integer;
+    function GetRules: TDCHighlightRules;
     function GetActualRowIndex(AVisibleRow: Integer): Integer;
     function GetVisibleIndexOfActualRow(AActualRow: Integer): Integer;
     function RowMatchesSearch(ARow: Integer): Boolean;
     function DetailMatchesSearch(AMasterRow: Integer): Boolean;
-    procedure ApplyBusinessHighlight(ARow: Integer; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles);
+    function ApplyBusinessHighlight(ARow: Integer; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles; out ATarget: TDCHighlightTarget; out AMatchedFieldName: string): Boolean;
     procedure CMFontChanged(var Message: TMessage); message CM_FONTCHANGED;
     procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
     procedure CMEnter(var Message: TCMEnter); message CM_ENTER;
@@ -485,6 +606,7 @@ end;
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     procedure WMContextMenu(var Message: TWMContextMenu); message WM_CONTEXTMENU;
     procedure WMVScroll(var Message: TWMVScroll); message WM_VSCROLL;
+    procedure WMHScroll(var Message: TWMHScroll); message WM_HSCROLL;
     procedure WMMouseWheel(var Message: TWMMouseWheel); message WM_MOUSEWHEEL;
     procedure SetAlternateColors(const Value: Boolean);
     procedure SetBorderWidth(const Value: Integer);
@@ -494,6 +616,8 @@ end;
     procedure SetDetailColumns(const Value: TDCGridColumns);
     procedure SetDetailGridHeaderHeight(const Value: Integer);
     procedure SetDetailGridRowHeight(const Value: Integer);
+    procedure SetDetailVerticalScroll(const Value: Boolean);
+    procedure SetDetailMaxHeight(const Value: Integer);
     procedure SetDetailHeight(const Value: Integer);
     procedure SetDetailStyle(const Value: TDCDetailStyle);
     procedure SetDetailSelectEnabled(const Value: Boolean);
@@ -509,6 +633,28 @@ end;
     procedure SetSelectedRow(const Value: Integer);
     procedure SetShowExpandButton(const Value: Boolean);
     procedure SetShowHeader(const Value: Boolean);
+    procedure SetShowHeaderColumnLines(const Value: Boolean);
+    procedure SetShowRowColumnLines(const Value: Boolean);
+    procedure SetFrozenColumns(const Value: Integer);
+    procedure SetAllowHeaderFooterSummaryMenu(const Value: Boolean);
+    procedure BuildHeaderFooterPopup;
+    procedure HeaderToolbarVisibilityClick(Sender: TObject);
+    procedure HeaderRulesVisibilityClick(Sender: TObject);
+    procedure HeaderColumnFiltersVisibilityClick(Sender: TObject);
+    procedure HeaderClearThisColumnFilterClick(Sender: TObject);
+    procedure HeaderClearAllColumnFiltersClick(Sender: TObject);
+    procedure HeaderFooterVisibilityClick(Sender: TObject);
+    procedure HeaderLayoutActionClick(Sender: TObject);
+    procedure HeaderExportCsvClick(Sender: TObject);
+    procedure HeaderColumnChooserClick(Sender: TObject);
+    procedure HeaderColumnVisibilityClick(Sender: TObject);
+    procedure HeaderAutoFitColumnClick(Sender: TObject);
+    procedure HeaderAutoFitAllColumnsClick(Sender: TObject);
+    procedure HeaderFreezeToColumnClick(Sender: TObject);
+    procedure HeaderClearFrozenColumnsClick(Sender: TObject);
+    procedure HeaderFooterSummaryClick(Sender: TObject);
+    procedure ShowColumnChooserDialog;
+    procedure ShowHeaderFooterSummaryMenu(ACol: Integer; const AScreenPt: TPoint);
     procedure SetTheme(const Value: TDCGridTheme);
     procedure SetTitleFont(const Value: TFont);
     procedure SetDetailFont(const Value: TFont);
@@ -517,8 +663,16 @@ end;
     procedure CreateParams(var Params: TCreateParams); override;
     procedure DrawBackground;
     procedure DrawBorder;
+    procedure DrawToolbar;
     procedure DrawHeader;
+    procedure DrawColumnFiltersBackground;
     procedure DrawRows;
+    procedure DrawFooter;
+    function GetFrozenColumnsBoundaryX(ABaseLeft: Integer): Integer;
+    procedure DrawFrozenColumnsSeparator(const ARect: TRect; ABackColor: TColor);
+    procedure DrawFrozenHeaderOverlay(const ARect: TRect; ABackColor: TColor);
+    procedure DrawFrozenRowOverlay(ARow: Integer; const ARect: TRect);
+    procedure DrawFrozenFooterOverlay(const ARect: TRect; ABackColor: TColor);
     procedure DrawRow(ARow: Integer; const ARect: TRect);
     procedure DrawDetail(ARow: Integer; const ARect: TRect);
     procedure DrawDetailText(ARow: Integer; const ARect: TRect);
@@ -527,6 +681,11 @@ end;
     function GetContentTop: Integer;
     function GetDetailDisplayText(ARow: Integer): string;
     function GetDetailGridRowCount(AMasterRow: Integer): Integer;
+    function GetDetailGridContentHeight(AMasterRow: Integer): Integer;
+    function GetDetailGridViewportHeight(AMasterRow: Integer): Integer;
+    function GetDetailGridMaxVerticalOffset(AMasterRow: Integer): Integer;
+    procedure SetDetailVerticalOffset(AMasterRow, AOffset: Integer);
+    procedure DrawDetailVerticalScrollBar(AMasterRow: Integer; const AGridRect: TRect);
     function GetDetailGridCellText(AMasterRow, ADetailRow, ADetailCol: Integer): string;
     function GetCurrentDetailHeight(AMasterRow: Integer): Integer;
     function GetDetailRect(ARow: Integer): TRect;
@@ -534,7 +693,10 @@ end;
     function GetDetailRowAtPos(X, Y: Integer; out AMasterRow, ADetailRow: Integer): Boolean;
     function GetDisplayText(ARow, ACol: Integer): string;
     function GetExpandButtonRect(const ARowRect: TRect): TRect;
+    function GetToolbarRect: TRect;
+    function GetFooterRect: TRect;
     function GetHeaderRect: TRect;
+    function GetColumnFiltersRect: TRect;
     function GetHeaderColumnAt(X, Y: Integer): Integer;
     function GetHeaderResizeColumn(X, Y: Integer): Integer;
     function GetDetailHeaderResizeColumn(X, Y: Integer; out AMasterRow: Integer): Integer;
@@ -547,6 +709,7 @@ end;
     function GetRowRect(ARow: Integer): TRect;
     function GetRowsRect: TRect;
     function GetVisibleMasterRows: Integer;
+    function CalculateFooterSummary(ACol: Integer): string;
     function IsExpandedRowVisible: Boolean;
     function IsRowExpanded(ARow: Integer): Boolean;
     function IsPointOnExpandButton(X, Y: Integer; ARow: Integer): Boolean;
@@ -572,7 +735,6 @@ end;
     procedure AutoSizeDetailColumn(ACol: Integer);
     procedure TitleFontChanged(Sender: TObject);
     procedure DetailFontChanged(Sender: TObject);
-    function GetRules: TDCHighlightRules;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -585,11 +747,24 @@ end;
     procedure AutoSizeDetailColumns;
     procedure AutoSizeColumn(AIndex: Integer);
     procedure AutoSizeDetailColumnAt(AIndex: Integer);
-    procedure SaveLayout;
-    procedure LoadLayout;
-    procedure ResetLayout;
-    procedure ShowVisualRulesDesigner;
+    procedure SaveLayout; overload;
+    procedure LoadLayout; overload;
+    procedure ResetLayout; overload;
+    procedure SaveLayout(const ALayoutName: string); overload;
+    procedure LoadLayout(const ALayoutName: string); overload;
+    procedure ResetLayout(const ALayoutName: string); overload;
+    function SaveToJSON: string;
+    procedure LoadFromJSON(const AJSON: string);
+    procedure SaveConfigToFile(const AFileName: string);
+    procedure LoadConfigFromFile(const AFileName: string);
+    procedure ExportToCSV(const AFileName: string; AOnlyVisibleColumns: Boolean = True; AOnlyFilteredRows: Boolean = True);
+    procedure ClearColumnFilters;
+    procedure SetColumnFilter(const AFieldName, AText: string); overload;
+    procedure SetColumnFilter(ACol: Integer; const AText: string); overload;
+    function GetColumnFilter(const AFieldName: string): string; overload;
+    function GetColumnFilter(ACol: Integer): string; overload;
     procedure ShowRulesDesigner;
+    procedure ShowVisualRulesDesigner;
     procedure SetRulesDesignerCustomLanguage(ALanguage: TDCGridLang);
     function GetRulesDesignerCustomLanguageClone: TDCGridLang;
     function GetDefaultRulesFileName: string;
@@ -599,6 +774,7 @@ end;
     property TopRow: Integer read FTopRow write SetTopRow;
     property HoverRow: Integer read FHoverRow;
     property FilteredRowCount: Integer read GetFilteredRowCount;
+    property Rules: TDCHighlightRules read GetRules;
   published
     property Align;
     property Anchors;
@@ -621,11 +797,17 @@ end;
     property DetailHeight: Integer read FDetailHeight write SetDetailHeight default DC_DEFAULT_DETAIL_HEIGHT;
     property DetailGridHeaderHeight: Integer read FDetailGridHeaderHeight write SetDetailGridHeaderHeight default DC_DEFAULT_DETAIL_GRID_HEADER_HEIGHT;
     property DetailGridRowHeight: Integer read FDetailGridRowHeight write SetDetailGridRowHeight default DC_DEFAULT_DETAIL_GRID_ROW_HEIGHT;
+    property DetailVerticalScroll: Boolean read FDetailVerticalScroll write SetDetailVerticalScroll default True;
+    property DetailMaxHeight: Integer read FDetailMaxHeight write SetDetailMaxHeight default 180;
 
     property SelectedRow: Integer read FSelectedRow write SetSelectedRow default -1;
     property ExpandedRow: Integer read FExpandedRow write SetExpandedRow stored False;
 
     property ShowHeader: Boolean read FShowHeader write SetShowHeader default True;
+    property ShowHeaderColumnLines: Boolean read FShowHeaderColumnLines write SetShowHeaderColumnLines default True;
+    property ShowRowColumnLines: Boolean read FShowRowColumnLines write SetShowRowColumnLines default False;
+    property FrozenColumns: Integer read FFrozenColumns write SetFrozenColumns default 0;
+    property AllowHeaderFooterSummaryMenu: Boolean read FAllowHeaderFooterSummaryMenu write SetAllowHeaderFooterSummaryMenu default True;
     property ShowExpandButton: Boolean read FShowExpandButton write SetShowExpandButton default True;
     property AlternateColors: Boolean read FAlternateColors write SetAlternateColors default True;
     property ExpandOnRowClick: Boolean read FExpandOnRowClick write SetExpandOnRowClick default True;
@@ -642,6 +824,14 @@ end;
     property AutoSaveLayout: Boolean read FAutoSaveLayout write SetAutoSaveLayout default False;
     property DebugLogEnabled: Boolean read FDebugLogEnabled write FDebugLogEnabled default False;
     property SearchText: string read FSearchText write SetSearchText;
+    property ShowToolbar: Boolean read FShowToolbar write SetShowToolbar default False;
+    property ToolbarHeight: Integer read FToolbarHeight write SetToolbarHeight default DC_DEFAULT_TOOLBAR_HEIGHT;
+    property ShowToolbarRulesDesignerButton: Boolean read FShowToolbarRulesDesignerButton write SetShowToolbarRulesDesignerButton default False;
+    property ShowFooter: Boolean read FShowFooter write SetShowFooter default False;
+    property FooterHeight: Integer read FFooterHeight write SetFooterHeight default DC_DEFAULT_FOOTER_HEIGHT;
+    property ShowColumnFilters: Boolean read FShowColumnFilters write SetShowColumnFilters default False;
+    property AllowColumnFiltersMenu: Boolean read FAllowColumnFiltersMenu write FAllowColumnFiltersMenu default False;
+    property ColumnFilterHeight: Integer read FColumnFilterHeight write SetColumnFilterHeight default DC_DEFAULT_COLUMN_FILTER_HEIGHT;
     property FilterMode: TDCFilterMode read FFilterMode write SetFilterMode default fmContains;
     property SearchScope: TDCSearchScope read FSearchScope write SetSearchScope default ssMasterOnly;
     property AutoExpandOnSearch: Boolean read FAutoExpandOnSearch write SetAutoExpandOnSearch default False;
@@ -674,7 +864,6 @@ end;
     property DataAdapter: TDCGridDataAdapter read FDataAdapter write SetDataAdapter;
     property DataSetAdapter: TDCDataSetAdapter read FDataSetAdapter write SetDataSetAdapter;
     property BusinessHighlight: TDCBusinessHighlight read FBusinessHighlight write SetBusinessHighlight;
-    property Rules: TDCHighlightRules read GetRules;
     property OnDrawCell: TDCDrawCellEvent read FOnDrawCell write FOnDrawCell;
     property OnDrawDetail: TDCDrawDetailEvent read FOnDrawDetail write FOnDrawDetail;
     property RulesDesignerLanguage: TDCRulesDesignerLanguage read FRulesDesignerLanguage write SetRulesDesignerLanguage default rdlPortuguese;
@@ -702,6 +891,8 @@ implementation
 uses
   DCFlexGrid.VisualRulesDesigner;
 
+function DCColumnFilterHint(ALang: TDCGridLang; ALanguageMode: TDCRulesDesignerLanguage; const ACaption: string): string; forward;
+
 { TDCGridLang }
 
 procedure TDCGridLang.Assign(Source: TPersistent);
@@ -716,6 +907,7 @@ begin
     FieldCaption := TDCGridLang(Source).FieldCaption;
     ConditionCaption := TDCGridLang(Source).ConditionCaption;
     ValueCaption := TDCGridLang(Source).ValueCaption;
+    ApplyToCaption := TDCGridLang(Source).ApplyToCaption;
     BackgroundCaption := TDCGridLang(Source).BackgroundCaption;
     FontCaption := TDCGridLang(Source).FontCaption;
     PreviewCaption := TDCGridLang(Source).PreviewCaption;
@@ -727,7 +919,10 @@ begin
     RemoveSelectedCaption := TDCGridLang(Source).RemoveSelectedCaption;
     ClearAllCaption := TDCGridLang(Source).ClearAllCaption;
     CloseCaption := TDCGridLang(Source).CloseCaption;
+    CancelCaption := TDCGridLang(Source).CancelCaption;
     SampleCaption := TDCGridLang(Source).SampleCaption;
+    ConfirmClearTitle := TDCGridLang(Source).ConfirmClearTitle;
+    ConfirmClearMessage := TDCGridLang(Source).ConfirmClearMessage;
     StatusReady := TDCGridLang(Source).StatusReady;
     StatusRuleAdded := TDCGridLang(Source).StatusRuleAdded;
     StatusRuleUpdated := TDCGridLang(Source).StatusRuleUpdated;
@@ -737,6 +932,7 @@ begin
     ColField := TDCGridLang(Source).ColField;
     ColCondition := TDCGridLang(Source).ColCondition;
     ColValue := TDCGridLang(Source).ColValue;
+    ColApplyTo := TDCGridLang(Source).ColApplyTo;
     ColBack := TDCGridLang(Source).ColBack;
     ColFont := TDCGridLang(Source).ColFont;
     ColStyles := TDCGridLang(Source).ColStyles;
@@ -746,6 +942,32 @@ begin
     CondLessThan := TDCGridLang(Source).CondLessThan;
     CondContains := TDCGridLang(Source).CondContains;
     CondStartsWith := TDCGridLang(Source).CondStartsWith;
+    TargetRowCaption := TDCGridLang(Source).TargetRowCaption;
+    TargetCellCaption := TDCGridLang(Source).TargetCellCaption;
+    ToolbarSearchHint := TDCGridLang(Source).ToolbarSearchHint;
+    ToolbarClearCaption := TDCGridLang(Source).ToolbarClearCaption;
+    ToolbarRulesCaption := TDCGridLang(Source).ToolbarRulesCaption;
+    ColumnFilterHintPrefix := TDCGridLang(Source).ColumnFilterHintPrefix;
+    FooterMenuCaption := TDCGridLang(Source).FooterMenuCaption;
+    FooterMenuShowCaption := TDCGridLang(Source).FooterMenuShowCaption;
+    FooterMenuNoneCaption := TDCGridLang(Source).FooterMenuNoneCaption;
+    FooterMenuSumCaption := TDCGridLang(Source).FooterMenuSumCaption;
+    FooterMenuCountCaption := TDCGridLang(Source).FooterMenuCountCaption;
+    FooterMenuAvgCaption := TDCGridLang(Source).FooterMenuAvgCaption;
+    FooterMenuMinCaption := TDCGridLang(Source).FooterMenuMinCaption;
+    FooterMenuMaxCaption := TDCGridLang(Source).FooterMenuMaxCaption;
+    MenuToolbarCaption := TDCGridLang(Source).MenuToolbarCaption;
+    MenuShowToolbarCaption := TDCGridLang(Source).MenuShowToolbarCaption;
+    MenuShowRulesCaption := TDCGridLang(Source).MenuShowRulesCaption;
+    MenuShowColumnFiltersCaption := TDCGridLang(Source).MenuShowColumnFiltersCaption;
+    MenuExportCaption := TDCGridLang(Source).MenuExportCaption;
+    MenuExportCsvCaption := TDCGridLang(Source).MenuExportCsvCaption;
+    MenuFooterSummariesCaption := TDCGridLang(Source).MenuFooterSummariesCaption;
+    MenuColumnsCaption := TDCGridLang(Source).MenuColumnsCaption;
+    MenuLayoutCaption := TDCGridLang(Source).MenuLayoutCaption;
+    MenuLayoutSaveCaption := TDCGridLang(Source).MenuLayoutSaveCaption;
+    MenuLayoutLoadCaption := TDCGridLang(Source).MenuLayoutLoadCaption;
+    MenuLayoutResetCaption := TDCGridLang(Source).MenuLayoutResetCaption;
   end
   else
     inherited;
@@ -768,6 +990,7 @@ begin
   Result.FieldCaption := 'Campo';
   Result.ConditionCaption := 'Condição';
   Result.ValueCaption := 'Valor';
+  Result.ApplyToCaption := 'Aplicar em';
   Result.BackgroundCaption := 'Fundo';
   Result.FontCaption := 'Fonte';
   Result.PreviewCaption := 'Preview';
@@ -779,7 +1002,10 @@ begin
   Result.RemoveSelectedCaption := 'Remover selecionada';
   Result.ClearAllCaption := 'Limpar tudo';
   Result.CloseCaption := 'Fechar';
+  Result.CancelCaption := 'Cancelar';
   Result.SampleCaption := 'Exemplo';
+  Result.ConfirmClearTitle := 'Limpar regras';
+  Result.ConfirmClearMessage := 'Todas as regras visuais ser' + #227 + 'o removidas.';
   Result.StatusReady := 'Pronto para configurar novas regras.';
   Result.StatusRuleAdded := 'Regra adicionada com sucesso.';
   Result.StatusRuleUpdated := 'Regra atualizada com sucesso.';
@@ -789,6 +1015,7 @@ begin
   Result.ColField := 'Campo';
   Result.ColCondition := 'Condição';
   Result.ColValue := 'Valor';
+  Result.ColApplyTo := 'Aplicação';
   Result.ColBack := 'Fundo';
   Result.ColFont := 'Fonte';
   Result.ColStyles := 'Estilos';
@@ -798,6 +1025,32 @@ begin
   Result.CondLessThan := 'Menor que';
   Result.CondContains := 'Contém';
   Result.CondStartsWith := 'Começa com';
+  Result.TargetRowCaption := 'Linha inteira';
+  Result.TargetCellCaption := 'Apenas célula';
+  Result.ToolbarSearchHint := 'Buscar...';
+  Result.ToolbarClearCaption := 'Limpar';
+  Result.ToolbarRulesCaption := 'Regras';
+  Result.ColumnFilterHintPrefix := 'Filtrar';
+  Result.FooterMenuCaption := 'Rodap' + #233;
+  Result.FooterMenuShowCaption := 'Exibir rodap' + #233;
+  Result.FooterMenuNoneCaption := 'Sem totalizador';
+  Result.FooterMenuSumCaption := 'Somar no rodap' + #233;
+  Result.FooterMenuCountCaption := 'Contar no rodap' + #233;
+  Result.FooterMenuAvgCaption := 'M' + #233 + 'dia no rodap' + #233;
+  Result.FooterMenuMinCaption := 'M' + #237 + 'nimo no rodap' + #233;
+  Result.FooterMenuMaxCaption := 'M' + #225 + 'ximo no rodap' + #233;
+  Result.MenuToolbarCaption := 'Barra de pesquisa';
+  Result.MenuShowToolbarCaption := 'Exibir';
+  Result.MenuShowRulesCaption := 'Exibir bot' + #227 + 'o Regras';
+  Result.MenuShowColumnFiltersCaption := 'Exibir filtros por coluna';
+  Result.MenuExportCaption := 'Exportar';
+  Result.MenuExportCsvCaption := 'CSV...';
+  Result.MenuFooterSummariesCaption := 'Totalizadores';
+  Result.MenuColumnsCaption := 'Colunas';
+  Result.MenuLayoutCaption := 'Layout';
+  Result.MenuLayoutSaveCaption := 'Salvar';
+  Result.MenuLayoutLoadCaption := 'Carregar';
+  Result.MenuLayoutResetCaption := 'Resetar';
 end;
 
 class function TDCGridLang.English: TDCGridLang;
@@ -811,6 +1064,7 @@ begin
   Result.FieldCaption := 'Field';
   Result.ConditionCaption := 'Condition';
   Result.ValueCaption := 'Value';
+  Result.ApplyToCaption := 'Apply to';
   Result.BackgroundCaption := 'Background';
   Result.FontCaption := 'Font';
   Result.PreviewCaption := 'Preview';
@@ -822,7 +1076,10 @@ begin
   Result.RemoveSelectedCaption := 'Remove selected';
   Result.ClearAllCaption := 'Clear all';
   Result.CloseCaption := 'Close';
+  Result.CancelCaption := 'Cancel';
   Result.SampleCaption := 'Sample';
+  Result.ConfirmClearTitle := 'Clear rules';
+  Result.ConfirmClearMessage := 'All visual rules will be removed.';
   Result.StatusReady := 'Ready to configure new rules.';
   Result.StatusRuleAdded := 'Rule added successfully.';
   Result.StatusRuleUpdated := 'Rule updated successfully.';
@@ -832,6 +1089,7 @@ begin
   Result.ColField := 'Field';
   Result.ColCondition := 'Condition';
   Result.ColValue := 'Value';
+  Result.ColApplyTo := 'Apply to';
   Result.ColBack := 'Back';
   Result.ColFont := 'Font';
   Result.ColStyles := 'Styles';
@@ -841,6 +1099,32 @@ begin
   Result.CondLessThan := 'Less than';
   Result.CondContains := 'Contains';
   Result.CondStartsWith := 'Starts with';
+  Result.TargetRowCaption := 'Full row';
+  Result.TargetCellCaption := 'Cell only';
+  Result.ToolbarSearchHint := 'Search...';
+  Result.ToolbarClearCaption := 'Clear';
+  Result.ToolbarRulesCaption := 'Rules';
+  Result.ColumnFilterHintPrefix := 'Filter';
+  Result.FooterMenuCaption := 'Footer';
+  Result.FooterMenuShowCaption := 'Show footer';
+  Result.FooterMenuNoneCaption := 'No summary';
+  Result.FooterMenuSumCaption := 'Sum in footer';
+  Result.FooterMenuCountCaption := 'Count in footer';
+  Result.FooterMenuAvgCaption := 'Average in footer';
+  Result.FooterMenuMinCaption := 'Minimum in footer';
+  Result.FooterMenuMaxCaption := 'Maximum in footer';
+  Result.MenuToolbarCaption := 'Search toolbar';
+  Result.MenuShowToolbarCaption := 'Show';
+  Result.MenuShowRulesCaption := 'Show Rules button';
+  Result.MenuShowColumnFiltersCaption := 'Show column filters';
+  Result.MenuExportCaption := 'Export';
+  Result.MenuExportCsvCaption := 'CSV...';
+  Result.MenuFooterSummariesCaption := 'Summaries';
+  Result.MenuColumnsCaption := 'Columns';
+  Result.MenuLayoutCaption := 'Layout';
+  Result.MenuLayoutSaveCaption := 'Save';
+  Result.MenuLayoutLoadCaption := 'Load';
+  Result.MenuLayoutResetCaption := 'Reset';
 end;
 
 function DCFontStylesToString(const AStyles: TFontStyles): string;
@@ -1238,6 +1522,8 @@ begin
   FVisible := True;
   FAlignment := taLeft;
   FFieldName := '';
+  FFooterSummary := fsNone;
+  FFilterText := '';
 end;
 
 function TDCGridColumn.GetDisplayName: string;
@@ -1273,6 +1559,79 @@ begin
     FFieldName := Value;
     Changed;
   end;
+end;
+
+
+
+procedure TDCGridColumn.Assign(Source: TPersistent);
+begin
+  if Source is TDCGridColumn then
+  begin
+    FCaption := TDCGridColumn(Source).Caption;
+    FWidth := TDCGridColumn(Source).Width;
+    FVisible := TDCGridColumn(Source).Visible;
+    FAlignment := TDCGridColumn(Source).Alignment;
+    FFieldName := TDCGridColumn(Source).FieldName;
+    FFooterSummary := TDCGridColumn(Source).FooterSummary;
+    FFilterText := TDCGridColumn(Source).FilterText;
+    Changed;
+  end
+  else
+    inherited;
+end;
+
+procedure TDCGridColumn.SetFooterSummary(const Value: TDCFooterSummary);
+begin
+  if FFooterSummary <> Value then
+  begin
+    FFooterSummary := Value;
+    Changed;
+  end;
+end;
+
+procedure TDCGridColumn.SetFilterText(const Value: string);
+begin
+  if FFilterText <> Value then
+  begin
+    FFilterText := Value;
+    Changed;
+  end;
+end;
+
+function TDCGridColumn.FooterNone: TDCGridColumn;
+begin
+  FooterSummary := fsNone;
+  Result := Self;
+end;
+
+function TDCGridColumn.FooterSum: TDCGridColumn;
+begin
+  FooterSummary := fsSum;
+  Result := Self;
+end;
+
+function TDCGridColumn.FooterCount: TDCGridColumn;
+begin
+  FooterSummary := fsCount;
+  Result := Self;
+end;
+
+function TDCGridColumn.FooterAvg: TDCGridColumn;
+begin
+  FooterSummary := fsAvg;
+  Result := Self;
+end;
+
+function TDCGridColumn.FooterMin: TDCGridColumn;
+begin
+  FooterSummary := fsMin;
+  Result := Self;
+end;
+
+function TDCGridColumn.FooterMax: TDCGridColumn;
+begin
+  FooterSummary := fsMax;
+  Result := Self;
 end;
 
 procedure TDCGridColumn.SetVisible(const Value: Boolean);
@@ -1331,13 +1690,14 @@ end;
 { TDCGridTheme }
 
 
-constructor TDCHighlightRule.Create(const AExpression: string; ABackColor: TColor; AFontColor: TColor; AFontStyles: TFontStyles);
+constructor TDCHighlightRule.Create(const AExpression: string; ABackColor: TColor; AFontColor: TColor; AFontStyles: TFontStyles; ATarget: TDCHighlightTarget = htRow);
 begin
   inherited Create;
   FExpression := Trim(AExpression);
   FBackColor := ABackColor;
   FFontColor := AFontColor;
   FFontStyles := AFontStyles;
+  FTarget := ATarget;
 end;
 
 
@@ -1459,24 +1819,35 @@ begin
   Result := Pos(UpperCase(Expr), UpperCase(S)) > 0;
 end;
 
-function TDCHighlightRules.Add(const AExpression: string; ABackColor: TColor; AFontColor: TColor; AFontStyles: TFontStyles): TDCHighlightRule;
+constructor TDCHighlightRules.Create(AOwnsObjects: Boolean; AOwnerGrid: TDCMasterDetailGrid);
 begin
-  Result := TDCHighlightRule.Create(AExpression, ABackColor, AFontColor, AFontStyles);
+  inherited Create(AOwnsObjects);
+  FOwnerGrid := AOwnerGrid;
+end;
+
+function TDCHighlightRules.Add(const AExpression: string; ABackColor: TColor; AFontColor: TColor; AFontStyles: TFontStyles; ATarget: TDCHighlightTarget): TDCHighlightRule;
+begin
+  Result := TDCHighlightRule.Create(AExpression, ABackColor, AFontColor, AFontStyles, ATarget);
   inherited Add(Result);
+end;
+
+function TDCHighlightRules.AddForField(const AFieldName, AExpression: string; ABackColor: TColor; AFontColor: TColor; AFontStyles: TFontStyles; ATarget: TDCHighlightTarget): TDCHighlightRule;
+begin
+  Result := Add(AExpression, ABackColor, AFontColor, AFontStyles, ATarget);
+  Result.FieldName := Trim(AFieldName);
 end;
 
 procedure TDCHighlightRules.Edit;
 begin
   if Assigned(FOwnerGrid) then
-    ShowDCFlexGridVisualRulesDesigner(FOwnerGrid);
+    FOwnerGrid.ShowRulesDesigner;
 end;
 
 constructor TDCBusinessHighlight.Create(AOwner: TDCMasterDetailGrid);
 begin
   inherited Create;
   FOwner := AOwner;
-  FRules := TDCHighlightRules.Create(True);
-  FRules.OwnerGrid := AOwner;
+  FRules := TDCHighlightRules.Create(True, AOwner);
 end;
 
 destructor TDCBusinessHighlight.Destroy;
@@ -1521,7 +1892,7 @@ begin
     FField := S.FField;
     FRules.Clear;
     for I := 0 to S.Rules.Count - 1 do
-      FRules.Add(S.Rules[I].Expression, S.Rules[I].BackColor, S.Rules[I].FontColor, S.Rules[I].FontStyles);
+      FRules.AddForField(S.Rules[I].FieldName, S.Rules[I].Expression, S.Rules[I].BackColor, S.Rules[I].FontColor, S.Rules[I].FontStyles, S.Rules[I].Target);
     Changed;
   end
   else
@@ -1552,10 +1923,16 @@ begin
     begin
       LStyles := DCFontStylesToString(LRule.FontStyles);
       LItem := TJSONObject.Create;
+      LItem.AddPair('field', LRule.FieldName);
       LItem.AddPair('expression', LRule.Expression);
       LItem.AddPair('backColor', TJSONNumber.Create(Integer(LRule.BackColor)));
       LItem.AddPair('fontColor', TJSONNumber.Create(Integer(LRule.FontColor)));
       LItem.AddPair('fontStyles', LStyles);
+      case LRule.Target of
+        htCell: LItem.AddPair('target', 'cell');
+      else
+        LItem.AddPair('target', 'row');
+      end;
       LRules.AddElement(LItem);
     end;
     LRoot.AddPair('rules', LRules);
@@ -1577,6 +1954,9 @@ var
   LFontColor: TColor;
   LFontStylesText: string;
   LDecodedStyles: TFontStyles;
+  LTargetText: string;
+  LTarget: TDCHighlightTarget;
+  LFieldName: string;
 begin
   if Trim(AJSON) = '' then
     Exit;
@@ -1598,12 +1978,18 @@ begin
         if not (LRules.Items[I] is TJSONObject) then
           Continue;
         LItem := TJSONObject(LRules.Items[I]);
+        LFieldName := LItem.GetValue<string>('field', FField);
         LExpression := LItem.GetValue<string>('expression', '');
         LBackColor := TColor(LItem.GetValue<Integer>('backColor', Integer(clNone)));
         LFontColor := TColor(LItem.GetValue<Integer>('fontColor', Integer(clNone)));
         LFontStylesText := LItem.GetValue<string>('fontStyles', '');
         LDecodedStyles := DCStringToFontStyles(LFontStylesText);
-        FRules.Add(LExpression, LBackColor, LFontColor, LDecodedStyles);
+        LTargetText := Trim(LItem.GetValue<string>('target', 'row'));
+        if SameText(LTargetText, 'cell') then
+          LTarget := htCell
+        else
+          LTarget := htRow;
+        FRules.AddForField(LFieldName, LExpression, LBackColor, LFontColor, LDecodedStyles, LTarget);
       end;
     end;
 
@@ -1630,10 +2016,18 @@ end;
 
 function TDCBusinessHighlight.Evaluate(const AValue: Variant; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles): Boolean;
 var
+  LTarget: TDCHighlightTarget;
+begin
+  Result := Evaluate(AValue, LTarget, ABackColor, AFontColor, AFontStyles);
+end;
+
+function TDCBusinessHighlight.Evaluate(const AValue: Variant; out ATarget: TDCHighlightTarget; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles): Boolean;
+var
   I: Integer;
   R: TDCHighlightRule;
 begin
   Result := False;
+  ATarget := htRow;
   if not FEnabled then
     Exit;
   for I := 0 to FRules.Count - 1 do
@@ -1641,6 +2035,7 @@ begin
     R := FRules[I];
     if R.Match(AValue) then
     begin
+      ATarget := R.Target;
       ABackColor := R.BackColor;
       if R.FontColor <> clNone then
         AFontColor := R.FontColor;
@@ -1833,6 +2228,11 @@ begin
       FSelectedDetailRow := -1;
       FHoverDetailRow := -1;
     end;
+    if FDetailScrollMasterRow = ARow then
+    begin
+      FDetailScrollMasterRow := -1;
+      FDetailVerticalOffset := 0;
+    end;
     UpdateScrollBar;
     Invalidate;
   end;
@@ -1874,10 +2274,18 @@ end;
 
 procedure TDCMasterDetailGrid.ColumnsChanged;
 begin
-  UpdateScrollBar;
+  UpdateColumnFilterLayout;
+
+  if (Trim(FSearchText) <> '') or HasColumnFilters then
+    RebuildFilter
+  else
+  begin
+    UpdateScrollBar;
+    Invalidate;
+  end;
+
   if FAutoSaveLayout and not (csLoading in ComponentState) then
     SaveLayout;
-  Invalidate;
 end;
 
 constructor TDCMasterDetailGrid.Create(AOwner: TComponent);
@@ -1906,11 +2314,21 @@ begin
   FDetailHeight := DC_DEFAULT_DETAIL_HEIGHT;
   FDetailGridHeaderHeight := DC_DEFAULT_DETAIL_GRID_HEADER_HEIGHT;
   FDetailGridRowHeight := DC_DEFAULT_DETAIL_GRID_ROW_HEIGHT;
+  FDetailVerticalScroll := True;
+  FDetailMaxHeight := 180;
+  FDetailScrollMasterRow := -1;
+  FDetailVerticalOffset := 0;
   FSelectedRow := -1;
   FExpandedRow := -1;
   FHoverRow := -1;
   FTopRow := 0;
   FShowHeader := True;
+  FShowHeaderColumnLines := True;
+  FShowRowColumnLines := False;
+  FFrozenColumns := 0;
+  FHorizontalOffset := 0;
+  FAllowHeaderFooterSummaryMenu := True;
+  FHeaderFooterPopupColumn := -1;
   FShowExpandButton := True;
   FAlternateColors := True;
   FExpandOnRowClick := True;
@@ -1956,16 +2374,63 @@ begin
   FRulesDesignerAutoLoadPreferences := True;
   FRulesDesignerAutoSavePreferences := True;
   FRulesDesignerCustomLanguage := nil;
+
+  FShowToolbar := False;
+  FToolbarHeight := DC_DEFAULT_TOOLBAR_HEIGHT;
+  FShowToolbarRulesDesignerButton := False;
+  FUpdatingToolbarSearch := False;
+
+  FToolbarSearchEdit := TEdit.Create(Self);
+  FToolbarSearchEdit.Parent := Self;
+  FToolbarSearchEdit.Visible := False;
+  FToolbarSearchEdit.OnChange := ToolbarSearchChanged;
+
+  FToolbarClearButton := TButton.Create(Self);
+  FToolbarClearButton.Parent := Self;
+  FToolbarClearButton.Visible := False;
+  FToolbarClearButton.OnClick := ToolbarClearClick;
+
+  FToolbarRulesButton := TButton.Create(Self);
+  FToolbarRulesButton.Parent := Self;
+  FToolbarRulesButton.Visible := False;
+  FToolbarRulesButton.OnClick := ToolbarRulesClick;
+
+  UpdateToolbarLanguage;
+
+  FShowFooter := False;
+  FFooterHeight := DC_DEFAULT_FOOTER_HEIGHT;
+
+  FShowColumnFilters := False;
+  FAllowColumnFiltersMenu := False;
+  FColumnFilterHeight := DC_DEFAULT_COLUMN_FILTER_HEIGHT;
+
+  FColumnFilterPanel := TPanel.Create(Self);
+  FColumnFilterPanel.Parent := Self;
+  FColumnFilterPanel.Visible := False;
+  FColumnFilterPanel.BevelOuter := bvNone;
+  FColumnFilterPanel.ParentColor := False;
+  FColumnFilterPanel.Color := clWhite;
+  FColumnFilterPanel.TabStop := False;
+
+  FColumnFilterEdits := TObjectList<TEdit>.Create(True);
+  FHeaderFooterPopup := TPopupMenu.Create(Self);
+  FUpdatingColumnFilters := False;
 end;
 
 procedure TDCMasterDetailGrid.CreateParams(var Params: TCreateParams);
 begin
   inherited CreateParams(Params);
-  Params.Style := Params.Style or WS_VSCROLL or WS_TABSTOP;
+  Params.Style := Params.Style or WS_VSCROLL or WS_HSCROLL or WS_TABSTOP;
 end;
 
 destructor TDCMasterDetailGrid.Destroy;
 begin
+  FHeaderFooterPopup.Free;
+  FColumnFilterEdits.Free;
+  FColumnFilterPanel.Free;
+  FToolbarRulesButton.Free;
+  FToolbarClearButton.Free;
+  FToolbarSearchEdit.Free;
   FBusinessHighlight.Free;
   FDataSetAdapter.Free;
   FFilteredRows.Free;
@@ -2056,12 +2521,16 @@ var
   DetailRows: Integer;
   GridRect, HeaderRect, CellRect, FullCellRect: TRect;
   Col, Row, X, Y: Integer;
+  LClipSave: Integer;
   Column: TDCGridColumn;
   S: string;
   Flags: Cardinal;
   HeaderColor, LRowColor, LFontColor: TColor;
   LFontStyles: TFontStyles;
   LHandled: Boolean;
+  LVerticalOffset: Integer;
+  LFirstRow: Integer;
+  LRowOffset: Integer;
 begin
   GridRect := Rect(ARect.Left + DC_DEFAULT_PADDING + DC_DEFAULT_EXPAND_COL_WIDTH - 8,
                    ARect.Top + 8,
@@ -2073,8 +2542,12 @@ begin
 
   DrawRoundedPanel(Canvas, GridRect, clWhite, BlendColor(FTheme.DetailGridLineColor, clWhite, 20), 6);
 
-  HeaderRect := Rect(GridRect.Left, GridRect.Top, GridRect.Right,
-    GridRect.Top + FDetailGridHeaderHeight);
+  LClipSave := SaveDC(Canvas.Handle);
+  try
+    IntersectClipRect(Canvas.Handle, GridRect.Left + 1, GridRect.Top + 1, GridRect.Right - 1, GridRect.Bottom - 1);
+
+    HeaderRect := Rect(GridRect.Left, GridRect.Top, GridRect.Right,
+      GridRect.Top + FDetailGridHeaderHeight);
 
   Canvas.Font.Assign(FTitleFont);
   Canvas.Font.Style := [fsBold];
@@ -2118,10 +2591,23 @@ begin
   end;
 
   DetailRows := GetDetailGridRowCount(ARow);
-  Y := HeaderRect.Bottom;
+  if FDetailScrollMasterRow = ARow then
+    LVerticalOffset := EnsureRange(FDetailVerticalOffset, 0, GetDetailGridMaxVerticalOffset(ARow))
+  else
+    LVerticalOffset := 0;
+
+  LFirstRow := 0;
+  LRowOffset := 0;
+  if FDetailGridRowHeight > 0 then
+  begin
+    LFirstRow := LVerticalOffset div FDetailGridRowHeight;
+    LRowOffset := LVerticalOffset mod FDetailGridRowHeight;
+  end;
+
+  Y := HeaderRect.Bottom - LRowOffset;
   Canvas.Font.Assign(FDetailFont);
 
-  for Row := 0 to DetailRows - 1 do
+  for Row := LFirstRow to DetailRows - 1 do
   begin
     if Y >= GridRect.Bottom then
       Break;
@@ -2205,7 +2691,12 @@ begin
     Inc(Y, FDetailGridRowHeight);
   end;
 
-  Canvas.Brush.Style := bsSolid;
+    DrawDetailVerticalScrollBar(ARow, GridRect);
+
+    Canvas.Brush.Style := bsSolid;
+  finally
+    RestoreDC(Canvas.Handle, LClipSave);
+  end;
 end;
 
 procedure TDCMasterDetailGrid.DrawDetailText(ARow: Integer; const ARect: TRect);
@@ -2240,8 +2731,14 @@ var
   LTextRect: TRect;
   LColRect: TRect;
   Pts: array[0..2] of TPoint;
+  LGlyph: string;
+  LGlyphRect: TRect;
   LHandled: Boolean;
   LHeaderBase: TColor;
+  LHeaderCaption: string;
+  LHasFilter: Boolean;
+  LFilterIndicatorRect: TRect;
+  LClipState: Integer;
 begin
   if not FShowHeader then
     Exit;
@@ -2260,13 +2757,27 @@ begin
   Canvas.Font.Style := [fsBold];
   Canvas.Font.Color := FTheme.HeaderFontColor;
   Canvas.Brush.Style := bsClear;
+  SetBkMode(Canvas.Handle, TRANSPARENT);
 
   X := R.Left;
   if FShowExpandButton then
-    Inc(X, DC_DEFAULT_EXPAND_COL_WIDTH);
-
-  for I := 0 to FColumns.Count - 1 do
   begin
+    if FShowHeaderColumnLines then
+    begin
+      Canvas.Pen.Color := BlendColor(FTheme.BorderColor, LHeaderBase, 120);
+      Canvas.MoveTo(X + DC_DEFAULT_EXPAND_COL_WIDTH - 1, R.Top + 4);
+      Canvas.LineTo(X + DC_DEFAULT_EXPAND_COL_WIDTH - 1, R.Bottom - 4);
+    end;
+    Inc(X, DC_DEFAULT_EXPAND_COL_WIDTH);
+  end;
+
+  LClipState := SaveDC(Canvas.Handle);
+  try
+    IntersectClipRect(Canvas.Handle, X, R.Top, R.Right, R.Bottom);
+    Dec(X, FHorizontalOffset);
+
+    for I := 0 to FColumns.Count - 1 do
+    begin
     LCol := FColumns[I];
     if not LCol.Visible then
       Continue;
@@ -2284,42 +2795,67 @@ begin
 
       if I = FSortedColumn then
       begin
-        FillRectColor(Canvas, LColRect, BlendColor(LHeaderBase, clBlack, 18));
+        FillRectColor(Canvas, LColRect, BlendColor(LHeaderBase, clBlack, 10));
         FillRectColor(Canvas, Rect(LColRect.Left, LColRect.Bottom - 3, LColRect.Right, LColRect.Bottom),
           BlendColor(FTheme.SelectedRowColor, clWhite, 40));
       end;
 
+      LHasFilter := Trim(LCol.FilterText) <> '';
+      if LHasFilter then
+      begin
+        LFilterIndicatorRect := Rect(LColRect.Left, LColRect.Bottom - 4, LColRect.Right, LColRect.Bottom - 1);
+        FillRectColor(Canvas, LFilterIndicatorRect, BlendColor(FTheme.SelectedRowColor, clWhite, 25));
+      end;
+
+      LHeaderCaption := LCol.Caption;
+      if LHasFilter then
+        LHeaderCaption := LHeaderCaption + ' *';
+
       LTextRect := Rect(X + DC_DEFAULT_PADDING + 1, R.Top, X + LCol.Width - DC_DEFAULT_PADDING - 16, R.Bottom - 2);
-      DrawText(Canvas.Handle, PChar(LCol.Caption), Length(LCol.Caption), LTextRect,
+      SetBkMode(Canvas.Handle, TRANSPARENT);
+      DrawText(Canvas.Handle, PChar(LHeaderCaption), Length(LHeaderCaption), LTextRect,
         DT_VCENTER or DT_SINGLELINE or DT_LEFT or DT_NOPREFIX or DT_END_ELLIPSIS);
 
       if I = FSortedColumn then
       begin
-        Canvas.Brush.Color := FTheme.HeaderFontColor;
+        LGlyph := '';
         if FSortDirection = sdAscending then
-        begin
-          Pts[0] := Point(LColRect.Right - 14, LColRect.Bottom - 12);
-          Pts[1] := Point(LColRect.Right - 6, LColRect.Bottom - 12);
-          Pts[2] := Point(LColRect.Right - 10, LColRect.Top + 10);
-          Canvas.Polygon(Pts);
-        end
+          LGlyph := WideChar($25B2)
         else if FSortDirection = sdDescending then
+          LGlyph := WideChar($25BC);
+
+        if LGlyph <> '' then
         begin
-          Pts[0] := Point(LColRect.Right - 14, LColRect.Top + 12);
-          Pts[1] := Point(LColRect.Right - 6, LColRect.Top + 12);
-          Pts[2] := Point(LColRect.Right - 10, LColRect.Bottom - 10);
-          Canvas.Polygon(Pts);
+          LGlyphRect := Rect(LColRect.Right - 22, LColRect.Top, LColRect.Right - 4, LColRect.Bottom);
+          Canvas.Font.Name := 'Segoe UI Symbol';
+          Canvas.Font.Style := [];
+          Canvas.Font.Size := Max(9, FTitleFont.Size);
+          Canvas.Font.Color := FTheme.HeaderFontColor;
+          SetBkMode(Canvas.Handle, TRANSPARENT);
+          DrawText(Canvas.Handle, PChar(LGlyph), Length(LGlyph), LGlyphRect,
+            DT_CENTER or DT_VCENTER or DT_SINGLELINE or DT_NOPREFIX);
+          Canvas.Font.Assign(FTitleFont);
+          Canvas.Font.Style := [fsBold];
+          Canvas.Font.Color := FTheme.HeaderFontColor;
         end;
-        Canvas.Brush.Style := bsClear;
       end;
 
-      Canvas.Pen.Color := BlendColor(LHeaderBase, clWhite, 65);
-      Canvas.MoveTo(X + LCol.Width - 1, R.Top + 8);
-      Canvas.LineTo(X + LCol.Width - 1, R.Bottom - 8);
+      if FShowHeaderColumnLines then
+      begin
+        Canvas.Pen.Color := BlendColor(FTheme.BorderColor, LHeaderBase, 120);
+        Canvas.MoveTo(LColRect.Right - 1, R.Top + 4);
+        Canvas.LineTo(LColRect.Right - 1, R.Bottom - 4);
+      end;
     end;
 
     Inc(X, LCol.Width);
+    end;
+  finally
+    RestoreDC(Canvas.Handle, LClipState);
   end;
+
+  DrawFrozenHeaderOverlay(R, LHeaderBase);
+  DrawFrozenColumnsSeparator(R, LHeaderBase);
 
   Canvas.Pen.Color := BlendColor(LHeaderBase, clBlack, 55);
   Canvas.MoveTo(R.Left, R.Bottom - 1);
@@ -2332,22 +2868,118 @@ begin
 end;
 
 
-procedure TDCMasterDetailGrid.ApplyBusinessHighlight(ARow: Integer; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles);
+procedure TDCMasterDetailGrid.DrawColumnFiltersBackground;
+var
+  I: Integer;
+  X: Integer;
+  R: TRect;
+  LCol: TDCGridColumn;
+  LColRect: TRect;
+  LBackColor: TColor;
+  LClipState: Integer;
+begin
+  if not FShowColumnFilters then
+    Exit;
+
+  R := GetColumnFiltersRect;
+  if (R.Bottom <= R.Top) or (R.Right <= R.Left) then
+    Exit;
+
+  LBackColor := BlendColor(FTheme.GridBackgroundColor, clWhite, 18);
+  FillRectColor(Canvas, R, LBackColor);
+
+  Canvas.Pen.Color := BlendColor(FTheme.BorderColor, clWhite, 25);
+  Canvas.MoveTo(R.Left, R.Top);
+  Canvas.LineTo(R.Right, R.Top);
+  Canvas.MoveTo(R.Left, R.Bottom - 1);
+  Canvas.LineTo(R.Right, R.Bottom - 1);
+
+  { Important:
+    Column filter editors are native TEdit controls and already render their own
+    TextHint. Do not draw filter hint text on the grid canvas here. When frozen
+    columns and horizontal scrolling are active, canvas-drawn hints can appear
+    behind the frozen area and create visual artifacts. This routine now only
+    paints the filter row background and column separators. }
+
+  X := R.Left;
+  if FShowExpandButton then
+  begin
+    FillRectColor(Canvas, Rect(X, R.Top, X + DC_DEFAULT_EXPAND_COL_WIDTH, R.Bottom), LBackColor);
+    Canvas.Pen.Color := BlendColor(FTheme.BorderColor, clWhite, 35);
+    Canvas.MoveTo(X + DC_DEFAULT_EXPAND_COL_WIDTH - 1, R.Top + 4);
+    Canvas.LineTo(X + DC_DEFAULT_EXPAND_COL_WIDTH - 1, R.Bottom - 4);
+    Inc(X, DC_DEFAULT_EXPAND_COL_WIDTH);
+  end;
+
+  LClipState := SaveDC(Canvas.Handle);
+  try
+    IntersectClipRect(Canvas.Handle, X, R.Top, R.Right, R.Bottom);
+
+    for I := 0 to FColumns.Count - 1 do
+    begin
+      LCol := FColumns[I];
+      if not LCol.Visible then
+        Continue;
+
+      LColRect := Rect(GetColumnDrawLeft(I, R.Left), R.Top,
+        GetColumnDrawLeft(I, R.Left) + LCol.Width, R.Bottom);
+
+      if (LColRect.Right <= X) or (LColRect.Left >= R.Right) then
+        Continue;
+
+      Canvas.Pen.Color := BlendColor(FTheme.BorderColor, clWhite, 45);
+      Canvas.MoveTo(LColRect.Right - 1, LColRect.Top + 5);
+      Canvas.LineTo(LColRect.Right - 1, LColRect.Bottom - 5);
+    end;
+  finally
+    RestoreDC(Canvas.Handle, LClipState);
+  end;
+
+  DrawFrozenColumnsSeparator(R, LBackColor);
+
+  Canvas.Brush.Style := bsSolid;
+end;
+
+function TDCMasterDetailGrid.ApplyBusinessHighlight(ARow: Integer; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles; out ATarget: TDCHighlightTarget; out AMatchedFieldName: string): Boolean;
 var
   V: Variant;
+  I: Integer;
+  LRule: TDCHighlightRule;
+  LFieldName: string;
 begin
+  Result := False;
+  ATarget := htRow;
+  AMatchedFieldName := '';
   if (not Assigned(FBusinessHighlight)) or (not FBusinessHighlight.Enabled) then
-    Exit;
-  if Trim(FBusinessHighlight.Field) = '' then
     Exit;
   if not (FDataAdapter is TDCDataSetAdapter) then
     Exit;
 
-  V := TDCDataSetAdapter(FDataAdapter).GetFieldValueByName(ARow, FBusinessHighlight.Field);
-  if VarIsNull(V) then
-    Exit;
+  for I := 0 to FBusinessHighlight.Rules.Count - 1 do
+  begin
+    LRule := FBusinessHighlight.Rules[I];
+    LFieldName := Trim(LRule.FieldName);
+    if LFieldName = '' then
+      LFieldName := Trim(FBusinessHighlight.Field);
+    if LFieldName = '' then
+      Continue;
 
-  FBusinessHighlight.Evaluate(V, ABackColor, AFontColor, AFontStyles);
+    V := TDCDataSetAdapter(FDataAdapter).GetFieldValueByName(ARow, LFieldName);
+    if VarIsNull(V) then
+      Continue;
+
+    if LRule.Match(V) then
+    begin
+      ATarget := LRule.Target;
+      AMatchedFieldName := LFieldName;
+      ABackColor := LRule.BackColor;
+      if LRule.FontColor <> clNone then
+        AFontColor := LRule.FontColor;
+      if LRule.FontStyles <> [] then
+        AFontStyles := LRule.FontStyles;
+      Exit(True);
+    end;
+  end;
 end;
 
 procedure TDCMasterDetailGrid.DrawRow(ARow: Integer; const ARect: TRect);
@@ -2361,9 +2993,21 @@ var
   LHandled: Boolean;
   LExpandRect: TRect;
   Pts: array[0..2] of TPoint;
+  LGlyph: string;
+  LGlyphRect: TRect;
   LRowColor, LFontColor: TColor;
   LFontStyles: TFontStyles;
   LStripeColor: TColor;
+  LBusinessTarget: TDCHighlightTarget;
+  LBusinessMatched: Boolean;
+  LBusinessFieldName: string;
+  LCellBackColor: TColor;
+  LCellFontColor: TColor;
+  LCellFontStyles: TFontStyles;
+  LMatchedBackColor: TColor;
+  LMatchedFontColor: TColor;
+  LMatchedFontStyles: TFontStyles;
+  LClipState: Integer;
 begin
   if ARow = FHoverRow then
     LRowColor := FTheme.HoverRowColor
@@ -2374,8 +3018,24 @@ begin
 
   LFontColor := FTheme.TextColor;
   LFontStyles := [];
+  LBusinessTarget := htRow;
+  LBusinessMatched := ApplyBusinessHighlight(ARow, LRowColor, LFontColor, LFontStyles, LBusinessTarget, LBusinessFieldName);
+  LMatchedBackColor := LRowColor;
+  LMatchedFontColor := LFontColor;
+  LMatchedFontStyles := LFontStyles;
 
-  ApplyBusinessHighlight(ARow, LRowColor, LFontColor, LFontStyles);
+  if LBusinessMatched and (LBusinessTarget = htCell) then
+  begin
+    if ARow = FHoverRow then
+      LRowColor := FTheme.HoverRowColor
+    else if FAlternateColors and Odd(ARow) then
+      LRowColor := FTheme.AlternateRowColor
+    else
+      LRowColor := FTheme.RowColor;
+
+    LFontColor := FTheme.TextColor;
+    LFontStyles := [];
+  end;
 
   if ARow = FSelectedRow then
     LFontStyles := LFontStyles + [fsBold];
@@ -2408,28 +3068,37 @@ begin
     Canvas.Pen.Color := FTheme.ExpandButtonColor;
 
     if ARow = FExpandedRow then
-    begin
-      Pts[0] := Point(LExpandRect.Left + 5, LExpandRect.Top + 8);
-      Pts[1] := Point(LExpandRect.Right - 5, LExpandRect.Top + 8);
-      Pts[2] := Point((LExpandRect.Left + LExpandRect.Right) div 2, LExpandRect.Bottom - 6);
-    end
+      LGlyph := WideChar($25BE)
     else
+      LGlyph := WideChar($25B8);
+
+    LGlyphRect := Rect(LExpandRect.Left, LExpandRect.Top - 1, LExpandRect.Right, LExpandRect.Bottom + 1);
+    Canvas.Font.Assign(Font);
+    Canvas.Font.Name := 'Segoe UI Symbol';
+    Canvas.Font.Style := [];
+    Canvas.Font.Size := Max(10, Font.Size + 3);
+    Canvas.Font.Color := FTheme.ExpandButtonColor;
+    SetBkMode(Canvas.Handle, TRANSPARENT);
+    DrawText(Canvas.Handle, PChar(LGlyph), Length(LGlyph), LGlyphRect,
+      DT_CENTER or DT_VCENTER or DT_SINGLELINE or DT_NOPREFIX);
+    Canvas.Brush.Style := bsSolid;
+
+    if FShowRowColumnLines then
     begin
-      Pts[0] := Point(LExpandRect.Left + 7, LExpandRect.Top + 5);
-      Pts[1] := Point(LExpandRect.Right - 6, (LExpandRect.Top + LExpandRect.Bottom) div 2);
-      Pts[2] := Point(LExpandRect.Left + 7, LExpandRect.Bottom - 5);
+      Canvas.Pen.Color := BlendColor(FTheme.BorderColor, LRowColor, 45);
+      Canvas.MoveTo(ARect.Left + DC_DEFAULT_EXPAND_COL_WIDTH - 1, ARect.Top + 2);
+      Canvas.LineTo(ARect.Left + DC_DEFAULT_EXPAND_COL_WIDTH - 1, ARect.Bottom - 2);
     end;
 
-    if ARow = FSelectedRow then
-      Canvas.Brush.Color := BlendColor(FTheme.ExpandButtonColor, clWhite, 8)
-    else
-      Canvas.Brush.Color := BlendColor(FTheme.ExpandButtonColor, clWhite, 18);
-    Canvas.Polygon(Pts);
-    Canvas.Brush.Style := bsSolid;
     Inc(X, DC_DEFAULT_EXPAND_COL_WIDTH);
   end;
 
-  Canvas.Font.Assign(Font);
+  LClipState := SaveDC(Canvas.Handle);
+  try
+    IntersectClipRect(Canvas.Handle, X, ARect.Top, ARect.Right, ARect.Bottom);
+    Dec(X, FHorizontalOffset);
+
+    Canvas.Font.Assign(Font);
   Canvas.Font.Style := LFontStyles;
   Canvas.Font.Color := LFontColor;
   Canvas.Brush.Style := bsClear;
@@ -2463,7 +3132,25 @@ begin
         end;
 
         InflateRect(LCellRect, -DC_DEFAULT_PADDING, 0);
-        Canvas.Font.Color := LFontColor;
+        LCellBackColor := LRowColor;
+        LCellFontColor := LFontColor;
+        LCellFontStyles := LFontStyles;
+
+        if LBusinessMatched and (LBusinessTarget = htCell) and SameText(Trim(LCol.FieldName), LBusinessFieldName) then
+        begin
+          LCellBackColor := LMatchedBackColor;
+          if LMatchedFontColor <> clNone then
+            LCellFontColor := LMatchedFontColor;
+          if LMatchedFontStyles <> [] then
+            LCellFontStyles := LCellFontStyles + LMatchedFontStyles;
+          Canvas.Brush.Style := bsSolid;
+          Canvas.Brush.Color := LCellBackColor;
+          Canvas.FillRect(LPaintRect);
+          Canvas.Brush.Style := bsClear;
+        end;
+
+        Canvas.Font.Style := LCellFontStyles;
+        Canvas.Font.Color := LCellFontColor;
         if (Trim(FSearchText) <> '') and ContainsTextEx(LText, FSearchText) then
         begin
           Canvas.Brush.Style := bsSolid;
@@ -2472,13 +3159,27 @@ begin
           Canvas.Font.Color := FTheme.SearchHighlightTextColor;
           Canvas.Brush.Style := bsClear;
         end;
+        SetBkMode(Canvas.Handle, TRANSPARENT);
         DrawText(Canvas.Handle, PChar(LText), Length(LText), LCellRect,
           DT_VCENTER or DT_SINGLELINE or DT_NOPREFIX or DT_END_ELLIPSIS or LFlags);
       end;
     end;
 
+    if FShowRowColumnLines then
+    begin
+      Canvas.Pen.Color := BlendColor(FTheme.BorderColor, LCellBackColor, 45);
+      Canvas.MoveTo(LPaintRect.Right - 1, ARect.Top + 2);
+      Canvas.LineTo(LPaintRect.Right - 1, ARect.Bottom - 2);
+    end;
+
     Inc(X, LCol.Width);
+    end;
+  finally
+    RestoreDC(Canvas.Handle, LClipState);
   end;
+
+  DrawFrozenRowOverlay(ARow, ARect);
+  DrawFrozenColumnsSeparator(ARect, LRowColor);
 
   if Focused and (ARow = FSelectedRow) then
   begin
@@ -2494,26 +3195,45 @@ procedure TDCMasterDetailGrid.DrawRows;
 var
   I, ARow: Integer;
   LRowRect: TRect;
+  LRowsRect: TRect;
+  LSaveDC: Integer;
 begin
   if GetActualRowCount <= 0 then
     Exit;
 
-  for I := FTopRow to GetActualRowCount - 1 do
-  begin
-    ARow := GetActualRowIndex(I);
-    if ARow < 0 then
-      Continue;
+  LRowsRect := GetRowsRect;
+  if (LRowsRect.Bottom <= LRowsRect.Top) or (LRowsRect.Right <= LRowsRect.Left) then
+    Exit;
 
-    LRowRect := GetRowRect(I);
-    if LRowRect.Top >= ClientHeight then
-      Break;
+  {
+    Keep row/detail painting restricted to the rows viewport.
+    This is important when ShowFooter=True because expanded details can be
+    taller than the available viewport and would otherwise paint over the
+    footer area.
+  }
+  LSaveDC := SaveDC(Canvas.Handle);
+  try
+    IntersectClipRect(Canvas.Handle, LRowsRect.Left, LRowsRect.Top, LRowsRect.Right, LRowsRect.Bottom);
 
-    if IsRowVisible(I) then
+    for I := FTopRow to GetActualRowCount - 1 do
     begin
-      DrawRow(ARow, LRowRect);
-      if RowHasDetailVisible(ARow) then
-        DrawDetail(ARow, GetDetailRect(ARow));
+      ARow := GetActualRowIndex(I);
+      if ARow < 0 then
+        Continue;
+
+      LRowRect := GetRowRect(I);
+      if LRowRect.Top >= LRowsRect.Bottom then
+        Break;
+
+      if IsRowVisible(I) then
+      begin
+        DrawRow(ARow, LRowRect);
+        if RowHasDetailVisible(ARow) then
+          DrawDetail(ARow, GetDetailRect(ARow));
+      end;
     end;
+  finally
+    RestoreDC(Canvas.Handle, LSaveDC);
   end;
 end;
 
@@ -2564,6 +3284,8 @@ begin
 
   FExpandedRows.Add(ARow);
   FExpandedRow := ARow;
+  FDetailScrollMasterRow := ARow;
+  FDetailVerticalOffset := 0;
   FSelectedDetailRow := -1;
   FHoverDetailRow := -1;
   EnsureRowVisible(ARow);
@@ -2589,24 +3311,25 @@ end;
 
 function TDCMasterDetailGrid.GetContentTop: Integer;
 begin
+  Result := 0;
+  if FShowToolbar then
+    Inc(Result, FToolbarHeight);
   if FShowHeader then
-    Result := FHeaderHeight
-  else
-    Result := 0;
+    Inc(Result, FHeaderHeight);
+  if FShowColumnFilters then
+    Inc(Result, FColumnFilterHeight);
 end;
 
 function TDCMasterDetailGrid.GetCurrentDetailHeight(AMasterRow: Integer): Integer;
 var
-  LRows: Integer;
   LGridHeight: Integer;
 begin
   if FDetailStyle = dsGrid then
   begin
-    LRows := GetDetailGridRowCount(AMasterRow);
-    if LRows <= 0 then
-      LRows := 1;
+    LGridHeight := GetDetailGridContentHeight(AMasterRow);
 
-    LGridHeight := FDetailGridHeaderHeight + (LRows * FDetailGridRowHeight);
+    if FDetailVerticalScroll and (FDetailMaxHeight > 0) then
+      LGridHeight := Min(LGridHeight, FDetailMaxHeight);
 
     { Total padding consumed until the detail grid usable area:
       - outer detail card: Top +6 / Bottom +8
@@ -2619,6 +3342,93 @@ begin
   end
   else
     Result := FDetailHeight;
+end;
+
+function TDCMasterDetailGrid.GetDetailGridContentHeight(AMasterRow: Integer): Integer;
+var
+  LRows: Integer;
+begin
+  LRows := GetDetailGridRowCount(AMasterRow);
+  if LRows <= 0 then
+    LRows := 1;
+  Result := FDetailGridHeaderHeight + (LRows * FDetailGridRowHeight);
+end;
+
+function TDCMasterDetailGrid.GetDetailGridViewportHeight(AMasterRow: Integer): Integer;
+begin
+  Result := GetDetailGridContentHeight(AMasterRow);
+  if FDetailVerticalScroll and (FDetailMaxHeight > 0) then
+    Result := Min(Result, FDetailMaxHeight);
+end;
+
+function TDCMasterDetailGrid.GetDetailGridMaxVerticalOffset(AMasterRow: Integer): Integer;
+begin
+  Result := Max(0, GetDetailGridContentHeight(AMasterRow) - GetDetailGridViewportHeight(AMasterRow));
+end;
+
+procedure TDCMasterDetailGrid.SetDetailVerticalOffset(AMasterRow, AOffset: Integer);
+var
+  LNewOffset: Integer;
+  LInvalidateRect: TRect;
+begin
+  if AMasterRow < 0 then
+    Exit;
+
+  LNewOffset := EnsureRange(AOffset, 0, GetDetailGridMaxVerticalOffset(AMasterRow));
+  if (FDetailScrollMasterRow <> AMasterRow) or (FDetailVerticalOffset <> LNewOffset) then
+  begin
+    FDetailScrollMasterRow := AMasterRow;
+    FDetailVerticalOffset := LNewOffset;
+    if HandleAllocated then
+    begin
+      LInvalidateRect := GetDetailRect(AMasterRow);
+      InvalidateRect(Handle, @LInvalidateRect, False);
+    end
+    else
+      Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.DrawDetailVerticalScrollBar(AMasterRow: Integer; const AGridRect: TRect);
+var
+  LContentHeight: Integer;
+  LViewportHeight: Integer;
+  LMaxOffset: Integer;
+  LTrackRect: TRect;
+  LThumbRect: TRect;
+  LThumbHeight: Integer;
+  LThumbTop: Integer;
+  LOffset: Integer;
+begin
+  if not FDetailVerticalScroll then
+    Exit;
+
+  LContentHeight := GetDetailGridContentHeight(AMasterRow);
+  LViewportHeight := AGridRect.Bottom - AGridRect.Top;
+  LMaxOffset := Max(0, LContentHeight - LViewportHeight);
+  if LMaxOffset <= 0 then
+    Exit;
+
+  if FDetailScrollMasterRow = AMasterRow then
+    LOffset := FDetailVerticalOffset
+  else
+    LOffset := 0;
+
+  LTrackRect := Rect(AGridRect.Right - 8, AGridRect.Top + FDetailGridHeaderHeight + 2,
+    AGridRect.Right - 3, AGridRect.Bottom - 3);
+  if (LTrackRect.Bottom <= LTrackRect.Top) then
+    Exit;
+
+  FillRectColor(Canvas, LTrackRect, BlendColor(FTheme.DetailGridLineColor, clWhite, 75));
+
+  LThumbHeight := Max(18, MulDiv(LTrackRect.Bottom - LTrackRect.Top, LViewportHeight, LContentHeight));
+  LThumbHeight := Min(LThumbHeight, LTrackRect.Bottom - LTrackRect.Top);
+  LThumbTop := LTrackRect.Top;
+  if LMaxOffset > 0 then
+    Inc(LThumbTop, MulDiv((LTrackRect.Bottom - LTrackRect.Top) - LThumbHeight, LOffset, LMaxOffset));
+
+  LThumbRect := Rect(LTrackRect.Left, LThumbTop, LTrackRect.Right, LThumbTop + LThumbHeight);
+  FillRectColor(Canvas, LThumbRect, BlendColor(FTheme.TextColor, clWhite, 45));
 end;
 
 function TDCMasterDetailGrid.GetDetailDisplayText(ARow: Integer): string;
@@ -2716,19 +3526,18 @@ begin
       Exit;
 
     DetailRows := GetDetailGridRowCount(LMasterRow);
-    RowTop := HeaderRect.Bottom;
-    for I := 0 to DetailRows - 1 do
+    if (Y >= HeaderRect.Bottom) and (Y < GridRect.Bottom) and (FDetailGridRowHeight > 0) then
     begin
-      if PtInRect(Rect(GridRect.Left, RowTop, GridRect.Right,
-        RowTop + FDetailGridRowHeight), Point(X, Y)) then
+      I := (Y - HeaderRect.Bottom) div FDetailGridRowHeight;
+      if FDetailScrollMasterRow = LMasterRow then
+        Inc(I, FDetailVerticalOffset div FDetailGridRowHeight);
+
+      if (I >= 0) and (I < DetailRows) then
       begin
         AMasterRow := LMasterRow;
         ADetailRow := I;
         Exit(True);
       end;
-      Inc(RowTop, FDetailGridRowHeight);
-      if RowTop >= GridRect.Bottom then
-        Break;
     end;
   end;
 end;
@@ -2777,11 +3586,35 @@ begin
 end;
 
 function TDCMasterDetailGrid.GetHeaderRect: TRect;
+var
+  LTop: Integer;
 begin
+  LTop := 0;
+  if FShowToolbar then
+    Inc(LTop, FToolbarHeight);
+
   if FShowHeader then
-    Result := Rect(0, 0, ClientWidth, FHeaderHeight)
+    Result := Rect(0, LTop, ClientWidth, LTop + FHeaderHeight)
   else
-    Result := Rect(0, 0, 0, 0);
+    Result := Rect(0, LTop, 0, LTop);
+end;
+
+
+function TDCMasterDetailGrid.GetColumnFiltersRect: TRect;
+var
+  LHeaderRect: TRect;
+begin
+  if not FShowColumnFilters then
+    Exit(Rect(0, 0, 0, 0));
+
+  LHeaderRect := GetHeaderRect;
+  if FShowHeader then
+    Result := Rect(0, LHeaderRect.Bottom, ClientWidth, LHeaderRect.Bottom + FColumnFilterHeight)
+  else
+  begin
+    Result := GetToolbarRect;
+    Result := Rect(0, Result.Bottom, ClientWidth, Result.Bottom + FColumnFilterHeight);
+  end;
 end;
 
 function TDCMasterDetailGrid.GetHeaderColumnAt(X, Y: Integer): Integer;
@@ -2799,20 +3632,15 @@ begin
   if not PtInRect(GetHeaderRect, P) then
     Exit;
 
-  CurrentX := 0;
-  if FShowExpandButton then
-    Inc(CurrentX, DC_DEFAULT_EXPAND_COL_WIDTH);
-
   for I := 0 to FColumns.Count - 1 do
   begin
     LCol := FColumns[I];
     if not LCol.Visible then
       Continue;
 
+    CurrentX := GetColumnDrawLeft(I, 0);
     if (X >= CurrentX) and (X < CurrentX + LCol.Width) then
       Exit(I);
-
-    Inc(CurrentX, LCol.Width);
   end;
 end;
 
@@ -2833,17 +3661,13 @@ begin
     Exit;
 
   HitTolerance := 4;
-  CurrentX := 0;
-  if FShowExpandButton then
-    Inc(CurrentX, DC_DEFAULT_EXPAND_COL_WIDTH);
-
   for I := 0 to FColumns.Count - 1 do
   begin
     LCol := FColumns[I];
     if not LCol.Visible then
       Continue;
 
-    Inc(CurrentX, LCol.Width);
+    CurrentX := GetColumnDrawLeft(I, 0) + LCol.Width;
     if Abs(X - CurrentX) <= HitTolerance then
       Exit(I);
   end;
@@ -2950,20 +3774,15 @@ begin
   if not PtInRect(RowRect, Point(X, Y)) then
     Exit;
 
-  CurrentX := RowRect.Left;
-  if FShowExpandButton then
-    Inc(CurrentX, DC_DEFAULT_EXPAND_COL_WIDTH);
-
   for I := 0 to FColumns.Count - 1 do
   begin
     LCol := FColumns[I];
     if not LCol.Visible then
       Continue;
 
+    CurrentX := GetColumnDrawLeft(I, RowRect.Left);
     if (X >= CurrentX) and (X < CurrentX + LCol.Width) then
       Exit(I);
-
-    Inc(CurrentX, LCol.Width);
   end;
 end;
 
@@ -3056,7 +3875,7 @@ begin
   for I := FTopRow to GetActualRowCount - 1 do
   begin
     LRowRect := GetRowRect(I);
-    if LRowRect.Top >= ClientHeight then
+    if LRowRect.Top >= GetRowsRect.Bottom then
       Break;
     if PtInRect(LRowRect, P) then
       Exit(I);
@@ -3075,13 +3894,17 @@ end;
 function TDCMasterDetailGrid.GetRowsRect: TRect;
 begin
   Result := Rect(0, GetContentTop, ClientWidth, ClientHeight);
+  if FShowFooter then
+    Dec(Result.Bottom, FFooterHeight);
+  if Result.Bottom < Result.Top then
+    Result.Bottom := Result.Top;
 end;
 
 function TDCMasterDetailGrid.GetVisibleMasterRows: Integer;
 var
   LHeight: Integer;
 begin
-  LHeight := ClientHeight - GetContentTop;
+  LHeight := (GetRowsRect.Bottom - GetRowsRect.Top);
   if LHeight <= 0 then
     Exit(0);
   Result := Max(1, LHeight div FRowHeight);
@@ -3112,7 +3935,7 @@ var
   R: TRect;
 begin
   R := GetRowRect(ARow);
-  Result := (R.Bottom > GetContentTop) and (R.Top < ClientHeight);
+  Result := (R.Bottom > GetRowsRect.Top) and (R.Top < GetRowsRect.Bottom);
 end;
 
 function TDCMasterDetailGrid.GetDefaultRulesFileName: string;
@@ -3202,7 +4025,7 @@ var
   LAccumulatedHeight: Integer;
   LActualRow: Integer;
 begin
-  LViewportHeight := ClientHeight - GetContentTop;
+  LViewportHeight := (GetRowsRect.Bottom - GetRowsRect.Top);
   if (GetActualRowCount <= 0) or (LViewportHeight <= 0) then
     Exit(0);
 
@@ -3343,7 +4166,18 @@ var
   LDetailRow: Integer;
   LNewWidth: Integer;
   LHeaderCol: Integer;
-  LNeedInvalidate: Boolean;
+  LRowsRect: TRect;
+  LHeaderRect: TRect;
+
+  procedure InvalidateControlRect(const ARect: TRect);
+  var
+    LRect: TRect;
+  begin
+    LRect := ARect;
+    if (LRect.Right > LRect.Left) and (LRect.Bottom > LRect.Top) and HandleAllocated then
+      Winapi.Windows.InvalidateRect(Handle, @LRect, False);
+  end;
+
 begin
   inherited MouseMove(Shift, X, Y);
 
@@ -3352,6 +4186,8 @@ begin
     LNewWidth := FResizeColumnStartWidth + (X - FResizeStartX);
     FColumns[FResizingColumn].Width := Max(FMinColumnWidth, LNewWidth);
     Cursor := crHSplit;
+    UpdateColumnFilterLayout;
+    UpdateScrollBar;
     Invalidate;
     Exit;
   end;
@@ -3361,6 +4197,7 @@ begin
     LNewWidth := FResizeColumnStartWidth + (X - FResizeStartX);
     FDetailColumns[FDetailResizingColumn].Width := Max(FMinColumnWidth, LNewWidth);
     Cursor := crHSplit;
+    { Detail resizing must not affect the master horizontal scrollbar. }
     Invalidate;
     Exit;
   end;
@@ -3372,13 +4209,12 @@ begin
   else
     Cursor := crDefault;
 
-  LNeedInvalidate := False;
-
   LHeaderCol := GetHeaderColumnAt(X, Y);
   if FHeaderHoverColumn <> LHeaderCol then
   begin
     FHeaderHoverColumn := LHeaderCol;
-    LNeedInvalidate := True;
+    LHeaderRect := GetHeaderRect;
+    InvalidateControlRect(LHeaderRect);
   end;
 
   LDetailRow := GetDetailHeaderColumnAt(X, Y, LDetailMasterRow);
@@ -3389,7 +4225,8 @@ begin
       FDetailResizeMasterRow := LDetailMasterRow
     else if FDetailResizingColumn = -1 then
       FDetailResizeMasterRow := -1;
-    LNeedInvalidate := True;
+    LRowsRect := GetRowsRect;
+    InvalidateControlRect(LRowsRect);
   end;
 
   LOldHover := FHoverRow;
@@ -3402,10 +4239,10 @@ begin
     FHoverDetailRow := -1;
 
   if (LOldHover <> FHoverRow) or (LOldDetailHover <> FHoverDetailRow) then
-    LNeedInvalidate := True;
-
-  if LNeedInvalidate then
-    Invalidate;
+  begin
+    LRowsRect := GetRowsRect;
+    InvalidateControlRect(LRowsRect);
+  end;
 end;
 
 procedure TDCMasterDetailGrid.MouseUp(Button: TMouseButton; Shift: TShiftState; X,
@@ -3509,9 +4346,28 @@ end;
 procedure TDCMasterDetailGrid.Paint;
 begin
   inherited Paint;
+
+  { Safety clamp: after detail-column resizing or layout loading, the old
+    horizontal offset can be greater than the current master max. In that case
+    the master content becomes shifted/cropped even when no horizontal scroll
+    is really needed. }
+  if FHorizontalOffset > GetHorizontalMax then
+    FHorizontalOffset := GetHorizontalMax;
+  if FHorizontalOffset < 0 then
+    FHorizontalOffset := 0;
+
+  {
+    Draw only the non-windowed areas here.
+    Toolbar/search and column filters are real VCL child controls (TEdit/TButton),
+    so their bounds/z-order must be refreshed after the grid finishes painting.
+    Otherwise the canvas painting can visually cover them or leave them behind the grid.
+  }
   DrawBackground;
+  DrawToolbar;
   DrawHeader;
+  DrawColumnFiltersBackground;
   DrawRows;
+  DrawFooter;
   DrawBorder;
 end;
 
@@ -3528,6 +4384,8 @@ end;
 procedure TDCMasterDetailGrid.Resize;
 begin
   inherited Resize;
+  UpdateToolbarLayout;
+  UpdateColumnFilterLayout;
   UpdateScrollBar;
   Invalidate;
 end;
@@ -3608,6 +4466,28 @@ begin
       FSelectedDetailRow := -1;
       FHoverDetailRow := -1;
     end;
+    Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.SetDetailVerticalScroll(const Value: Boolean);
+begin
+  if FDetailVerticalScroll <> Value then
+  begin
+    FDetailVerticalScroll := Value;
+    FDetailVerticalOffset := 0;
+    UpdateScrollBar;
+    Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.SetDetailMaxHeight(const Value: Integer);
+begin
+  if FDetailMaxHeight <> Value then
+  begin
+    FDetailMaxHeight := Max(60, Value);
+    FDetailVerticalOffset := 0;
+    UpdateScrollBar;
     Invalidate;
   end;
 end;
@@ -3760,6 +4640,723 @@ begin
     UpdateScrollBar;
     Invalidate;
   end;
+end;
+
+procedure TDCMasterDetailGrid.SetShowHeaderColumnLines(const Value: Boolean);
+begin
+  if FShowHeaderColumnLines <> Value then
+  begin
+    FShowHeaderColumnLines := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.SetShowRowColumnLines(const Value: Boolean);
+begin
+  if FShowRowColumnLines <> Value then
+  begin
+    FShowRowColumnLines := Value;
+    Invalidate;
+  end;
+end;
+
+
+
+function DCCSVValue(const AValue: string): string;
+var
+  S: string;
+begin
+  S := AValue;
+  S := StringReplace(S, '"', '""', [rfReplaceAll]);
+  if (Pos(';', S) > 0) or (Pos('"', S) > 0) or (Pos(#13, S) > 0) or (Pos(#10, S) > 0) then
+    Result := '"' + S + '"'
+  else
+    Result := S;
+end;
+
+procedure TDCMasterDetailGrid.ExportToCSV(const AFileName: string; AOnlyVisibleColumns: Boolean;
+  AOnlyFilteredRows: Boolean);
+var
+  LLines: TStringList;
+  LLine: string;
+  LCol: Integer;
+  LRow: Integer;
+  LFirst: Boolean;
+
+  procedure AppendValue(const AValue: string);
+  begin
+    if not LFirst then
+      LLine := LLine + ';';
+    LLine := LLine + DCCSVValue(AValue);
+    LFirst := False;
+  end;
+
+begin
+  if Trim(AFileName) = '' then
+    Exit;
+
+  LLines := TStringList.Create;
+  try
+    LLine := '';
+    LFirst := True;
+    for LCol := 0 to FColumns.Count - 1 do
+    begin
+      if AOnlyVisibleColumns and not FColumns[LCol].Visible then
+        Continue;
+      AppendValue(FColumns[LCol].Caption);
+    end;
+    LLines.Add(LLine);
+
+    for LRow := 0 to FRowCount - 1 do
+    begin
+      if AOnlyFilteredRows and not RowMatchesSearch(LRow) then
+        Continue;
+
+      LLine := '';
+      LFirst := True;
+      for LCol := 0 to FColumns.Count - 1 do
+      begin
+        if AOnlyVisibleColumns and not FColumns[LCol].Visible then
+          Continue;
+        AppendValue(GetDisplayText(LRow, LCol));
+      end;
+      LLines.Add(LLine);
+    end;
+
+    if ExtractFilePath(AFileName) <> '' then
+      ForceDirectories(ExtractFilePath(AFileName));
+    LLines.SaveToFile(AFileName, TEncoding.UTF8);
+  finally
+    LLines.Free;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.SetFrozenColumns(const Value: Integer);
+begin
+  if FFrozenColumns <> Max(0, Value) then
+  begin
+    FFrozenColumns := Max(0, Value);
+    if FAutoSaveLayout and not (csLoading in ComponentState) then
+      SaveLayout;
+    Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.SetAllowHeaderFooterSummaryMenu(const Value: Boolean);
+begin
+  if FAllowHeaderFooterSummaryMenu <> Value then
+    FAllowHeaderFooterSummaryMenu := Value;
+end;
+
+procedure TDCMasterDetailGrid.BuildHeaderFooterPopup;
+var
+  LItem: TMenuItem;
+  LToolbarItem: TMenuItem;
+  LLayoutItem: TMenuItem;
+  LExportItem: TMenuItem;
+  LFiltersItem: TMenuItem;
+  LColumnsItem: TMenuItem;
+  LSummaryItem: TMenuItem;
+  LLang: TDCGridLang;
+  I: Integer;
+
+  procedure AddSeparator;
+  begin
+    LItem := TMenuItem.Create(FHeaderFooterPopup);
+    LItem.Caption := '-';
+    FHeaderFooterPopup.Items.Add(LItem);
+  end;
+
+  procedure AddSummaryItem(const ACaption: string; ASummary: TDCFooterSummary);
+  begin
+    LItem := TMenuItem.Create(FHeaderFooterPopup);
+    LItem.Caption := ACaption;
+    LItem.Tag := Ord(ASummary);
+    LItem.RadioItem := True;
+    LItem.GroupIndex := 1;
+    LItem.Checked := (FHeaderFooterPopupColumn >= 0) and
+      (FHeaderFooterPopupColumn < FColumns.Count) and
+      (FColumns[FHeaderFooterPopupColumn].FooterSummary = ASummary);
+    LItem.OnClick := HeaderFooterSummaryClick;
+    LSummaryItem.Add(LItem);
+  end;
+
+  procedure AddLayoutItem(const ACaption: string; ATag: Integer);
+  begin
+    LItem := TMenuItem.Create(FHeaderFooterPopup);
+    LItem.Caption := ACaption;
+    LItem.Tag := ATag;
+    LItem.OnClick := HeaderLayoutActionClick;
+    LLayoutItem.Add(LItem);
+  end;
+
+  procedure AddColumnVisibilityItem(AColumnIndex: Integer);
+  var
+    LCaption: string;
+  begin
+    if (AColumnIndex < 0) or (AColumnIndex >= FColumns.Count) then
+      Exit;
+
+    LCaption := FColumns[AColumnIndex].Caption;
+    if Trim(LCaption) = '' then
+      LCaption := FColumns[AColumnIndex].FieldName;
+    if Trim(LCaption) = '' then
+      LCaption := Format('Coluna %d', [AColumnIndex + 1]);
+
+    LItem := TMenuItem.Create(FHeaderFooterPopup);
+    LItem.Caption := LCaption;
+    LItem.Tag := AColumnIndex;
+    LItem.Checked := FColumns[AColumnIndex].Visible;
+    LItem.AutoCheck := False;
+    LItem.OnClick := HeaderColumnVisibilityClick;
+    LColumnsItem.Add(LItem);
+  end;
+
+begin
+  if FHeaderFooterPopup = nil then
+    FHeaderFooterPopup := TPopupMenu.Create(Self);
+
+  FHeaderFooterPopup.Items.Clear;
+  LLang := GetCurrentLanguage;
+
+  LToolbarItem := TMenuItem.Create(FHeaderFooterPopup);
+  LToolbarItem.Caption := LLang.MenuToolbarCaption;
+  FHeaderFooterPopup.Items.Add(LToolbarItem);
+
+  LItem := TMenuItem.Create(FHeaderFooterPopup);
+  LItem.Caption := LLang.MenuShowToolbarCaption;
+  LItem.Checked := FShowToolbar;
+  LItem.OnClick := HeaderToolbarVisibilityClick;
+  LToolbarItem.Add(LItem);
+
+  LItem := TMenuItem.Create(FHeaderFooterPopup);
+  LItem.Caption := LLang.MenuShowRulesCaption;
+  LItem.Checked := FShowToolbarRulesDesignerButton;
+  LItem.Enabled := FShowToolbar;
+  LItem.OnClick := HeaderRulesVisibilityClick;
+  LToolbarItem.Add(LItem);
+
+  if FAllowColumnFiltersMenu then
+  begin
+    LFiltersItem := TMenuItem.Create(FHeaderFooterPopup);
+    if FRulesDesignerLanguage = rdlEnglish then
+      LFiltersItem.Caption := 'Filters'
+    else
+      LFiltersItem.Caption := 'Filtros';
+    FHeaderFooterPopup.Items.Add(LFiltersItem);
+
+    LItem := TMenuItem.Create(FHeaderFooterPopup);
+    LItem.Caption := LLang.MenuShowColumnFiltersCaption;
+    LItem.Checked := FShowColumnFilters;
+    LItem.OnClick := HeaderColumnFiltersVisibilityClick;
+    LFiltersItem.Add(LItem);
+
+    LItem := TMenuItem.Create(FHeaderFooterPopup);
+    LItem.Caption := '-';
+    LFiltersItem.Add(LItem);
+
+    LItem := TMenuItem.Create(FHeaderFooterPopup);
+    if FRulesDesignerLanguage = rdlEnglish then
+      LItem.Caption := 'Clear this column filter'
+    else
+      LItem.Caption := 'Limpar filtro desta coluna';
+    LItem.Enabled := (FHeaderFooterPopupColumn >= 0) and
+      (FHeaderFooterPopupColumn < FColumns.Count) and
+      (Trim(FColumns[FHeaderFooterPopupColumn].FilterText) <> '');
+    LItem.OnClick := HeaderClearThisColumnFilterClick;
+    LFiltersItem.Add(LItem);
+
+    LItem := TMenuItem.Create(FHeaderFooterPopup);
+    if FRulesDesignerLanguage = rdlEnglish then
+      LItem.Caption := 'Clear all filters'
+    else
+      LItem.Caption := 'Limpar todos os filtros';
+    LItem.Enabled := HasColumnFilters;
+    LItem.OnClick := HeaderClearAllColumnFiltersClick;
+    LFiltersItem.Add(LItem);
+  end;
+
+  LItem := TMenuItem.Create(FHeaderFooterPopup);
+  LItem.Caption := LLang.FooterMenuShowCaption;
+  LItem.Checked := FShowFooter;
+  LItem.OnClick := HeaderFooterVisibilityClick;
+  FHeaderFooterPopup.Items.Add(LItem);
+
+  AddSeparator;
+
+  LLayoutItem := TMenuItem.Create(FHeaderFooterPopup);
+  LLayoutItem.Caption := LLang.MenuLayoutCaption;
+  FHeaderFooterPopup.Items.Add(LLayoutItem);
+
+  AddLayoutItem(LLang.MenuLayoutSaveCaption, 1);
+  AddLayoutItem(LLang.MenuLayoutLoadCaption, 2);
+  AddLayoutItem(LLang.MenuLayoutResetCaption, 3);
+
+  LExportItem := TMenuItem.Create(FHeaderFooterPopup);
+  LExportItem.Caption := LLang.MenuExportCaption;
+  FHeaderFooterPopup.Items.Add(LExportItem);
+
+  LItem := TMenuItem.Create(FHeaderFooterPopup);
+  LItem.Caption := LLang.MenuExportCsvCaption;
+  LItem.OnClick := HeaderExportCsvClick;
+  LExportItem.Add(LItem);
+
+  AddSeparator;
+
+  LColumnsItem := TMenuItem.Create(FHeaderFooterPopup);
+  LColumnsItem.Caption := LLang.MenuColumnsCaption;
+  FHeaderFooterPopup.Items.Add(LColumnsItem);
+
+  LItem := TMenuItem.Create(FHeaderFooterPopup);
+  if FRulesDesignerLanguage = rdlEnglish then
+    LItem.Caption := 'Choose columns...'
+  else
+    LItem.Caption := 'Selecionar colunas...';
+  LItem.OnClick := HeaderColumnChooserClick;
+  LColumnsItem.Add(LItem);
+
+  LItem := TMenuItem.Create(FHeaderFooterPopup);
+  if FRulesDesignerLanguage = rdlEnglish then
+    LItem.Caption := 'Auto fit this column'
+  else
+    LItem.Caption := 'Auto ajustar esta coluna';
+  LItem.Enabled := (FHeaderFooterPopupColumn >= 0) and
+    (FHeaderFooterPopupColumn < FColumns.Count) and
+    FColumns[FHeaderFooterPopupColumn].Visible;
+  LItem.OnClick := HeaderAutoFitColumnClick;
+  LColumnsItem.Add(LItem);
+
+  LItem := TMenuItem.Create(FHeaderFooterPopup);
+  if FRulesDesignerLanguage = rdlEnglish then
+    LItem.Caption := 'Auto fit all columns'
+  else
+    LItem.Caption := 'Auto ajustar todas';
+  LItem.Enabled := FColumns.Count > 0;
+  LItem.OnClick := HeaderAutoFitAllColumnsClick;
+  LColumnsItem.Add(LItem);
+
+  LItem := TMenuItem.Create(FHeaderFooterPopup);
+  LItem.Caption := '-';
+  LColumnsItem.Add(LItem);
+
+  LItem := TMenuItem.Create(FHeaderFooterPopup);
+  if FRulesDesignerLanguage = rdlEnglish then
+    LItem.Caption := 'Freeze up to this column'
+  else
+    LItem.Caption := 'Congelar ate esta coluna';
+  LItem.Enabled := (FHeaderFooterPopupColumn >= 0) and
+    (FHeaderFooterPopupColumn < FColumns.Count) and
+    FColumns[FHeaderFooterPopupColumn].Visible;
+  LItem.OnClick := HeaderFreezeToColumnClick;
+  LColumnsItem.Add(LItem);
+
+  LItem := TMenuItem.Create(FHeaderFooterPopup);
+  if FRulesDesignerLanguage = rdlEnglish then
+    LItem.Caption := 'Remove frozen columns'
+  else
+    LItem.Caption := 'Remover congelamento';
+  LItem.Enabled := FFrozenColumns > 0;
+  LItem.OnClick := HeaderClearFrozenColumnsClick;
+  LColumnsItem.Add(LItem);
+
+  LItem := TMenuItem.Create(FHeaderFooterPopup);
+  LItem.Caption := '-';
+  LColumnsItem.Add(LItem);
+
+  for I := 0 to FColumns.Count - 1 do
+    AddColumnVisibilityItem(I);
+
+  AddSeparator;
+
+  LSummaryItem := TMenuItem.Create(FHeaderFooterPopup);
+  LSummaryItem.Caption := LLang.MenuFooterSummariesCaption;
+  FHeaderFooterPopup.Items.Add(LSummaryItem);
+
+  AddSummaryItem(LLang.FooterMenuNoneCaption, fsNone);
+  AddSummaryItem(LLang.FooterMenuSumCaption, fsSum);
+  AddSummaryItem(LLang.FooterMenuCountCaption, fsCount);
+  AddSummaryItem(LLang.FooterMenuAvgCaption, fsAvg);
+  AddSummaryItem(LLang.FooterMenuMinCaption, fsMin);
+  AddSummaryItem(LLang.FooterMenuMaxCaption, fsMax);
+end;
+
+procedure TDCMasterDetailGrid.HeaderToolbarVisibilityClick(Sender: TObject);
+begin
+  ShowToolbar := not FShowToolbar;
+  Invalidate;
+end;
+
+procedure TDCMasterDetailGrid.HeaderRulesVisibilityClick(Sender: TObject);
+begin
+  ShowToolbarRulesDesignerButton := not FShowToolbarRulesDesignerButton;
+  if FShowToolbarRulesDesignerButton then
+    ShowToolbar := True;
+  Invalidate;
+end;
+
+procedure TDCMasterDetailGrid.HeaderColumnFiltersVisibilityClick(Sender: TObject);
+begin
+  ShowColumnFilters := not FShowColumnFilters;
+  Invalidate;
+end;
+
+procedure TDCMasterDetailGrid.HeaderClearThisColumnFilterClick(Sender: TObject);
+begin
+  if (FHeaderFooterPopupColumn >= 0) and
+     (FHeaderFooterPopupColumn < FColumns.Count) then
+    SetColumnFilterText(FHeaderFooterPopupColumn, '');
+end;
+
+procedure TDCMasterDetailGrid.HeaderClearAllColumnFiltersClick(Sender: TObject);
+begin
+  ClearColumnFilters;
+end;
+
+procedure TDCMasterDetailGrid.HeaderExportCsvClick(Sender: TObject);
+var
+  LSaveDialog: TSaveDialog;
+begin
+  LSaveDialog := TSaveDialog.Create(Self);
+  try
+    LSaveDialog.Title := GetCurrentLanguage.MenuExportCsvCaption;
+    LSaveDialog.Filter := 'CSV (*.csv)|*.csv|Todos os arquivos (*.*)|*.*';
+    LSaveDialog.DefaultExt := 'csv';
+    LSaveDialog.FileName := 'dcflex-grid.csv';
+    if LSaveDialog.Execute then
+      ExportToCSV(LSaveDialog.FileName, True, True);
+  finally
+    LSaveDialog.Free;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.HeaderLayoutActionClick(Sender: TObject);
+var
+  LSaveDialog: TSaveDialog;
+  LOpenDialog: TOpenDialog;
+  LFileName: string;
+begin
+  if not (Sender is TMenuItem) then
+    Exit;
+
+  case TMenuItem(Sender).Tag of
+    1:
+      begin
+        LSaveDialog := TSaveDialog.Create(Self);
+        try
+          LSaveDialog.Title := GetCurrentLanguage.MenuLayoutSaveCaption;
+          LSaveDialog.Filter := 'DCFlex Grid Layout (*.layout)|*.layout|JSON (*.json)|*.json|Todos os arquivos (*.*)|*.*';
+          LSaveDialog.DefaultExt := 'layout';
+          LSaveDialog.FileName := 'dcflex-grid.layout';
+          if LSaveDialog.Execute then
+            SaveConfigToFile(LSaveDialog.FileName);
+        finally
+          LSaveDialog.Free;
+        end;
+      end;
+
+    2:
+      begin
+        LOpenDialog := TOpenDialog.Create(Self);
+        try
+          LOpenDialog.Title := GetCurrentLanguage.MenuLayoutLoadCaption;
+          LOpenDialog.Filter := 'DCFlex Grid Layout (*.layout)|*.layout|JSON (*.json)|*.json|Todos os arquivos (*.*)|*.*';
+          LOpenDialog.DefaultExt := 'layout';
+          if LOpenDialog.Execute then
+            LoadConfigFromFile(LOpenDialog.FileName);
+        finally
+          LOpenDialog.Free;
+        end;
+      end;
+
+    3:
+      begin
+        LFileName := GetLayoutFileName;
+        if TFile.Exists(LFileName) then
+          TFile.Delete(LFileName);
+      end;
+  end;
+
+  Invalidate;
+end;
+
+procedure TDCMasterDetailGrid.HeaderColumnChooserClick(Sender: TObject);
+begin
+  ShowColumnChooserDialog;
+end;
+
+procedure TDCMasterDetailGrid.ShowColumnChooserDialog;
+const
+  MR_SELECT_ALL = 1001;
+  MR_UNSELECT_ALL = 1002;
+var
+  LForm: TForm;
+  LList: TCheckListBox;
+  LBtnOK: TButton;
+  LBtnCancel: TButton;
+  LBtnAll: TButton;
+  LBtnNone: TButton;
+  LBottom: TPanel;
+  LCaption: string;
+  LVisibleCount: Integer;
+  I: Integer;
+  LChanged: Boolean;
+  LModalResult: Integer;
+
+  function IsEnglish: Boolean;
+  begin
+    Result := FRulesDesignerLanguage = rdlEnglish;
+  end;
+
+  function ColumnDisplayName(AIndex: Integer): string;
+  begin
+    Result := '';
+    if (AIndex >= 0) and (AIndex < FColumns.Count) then
+    begin
+      Result := Trim(FColumns[AIndex].Caption);
+      if Result = '' then
+        Result := Trim(FColumns[AIndex].FieldName);
+    end;
+    if Result = '' then
+    begin
+      if IsEnglish then
+        Result := Format('Column %d', [AIndex + 1])
+      else
+        Result := Format('Coluna %d', [AIndex + 1]);
+    end;
+  end;
+
+  procedure CheckAll(AValue: Boolean);
+  var
+    J: Integer;
+  begin
+    for J := 0 to LList.Count - 1 do
+      LList.Checked[J] := AValue;
+  end;
+
+begin
+  if FColumns.Count = 0 then
+    Exit;
+
+  LForm := TForm.Create(Self);
+  try
+    LForm.BorderStyle := bsDialog;
+    LForm.Position := poScreenCenter;
+    LForm.Width := 360;
+    LForm.Height := 420;
+    LForm.Caption := GetCurrentLanguage.MenuColumnsCaption;
+
+    LList := TCheckListBox.Create(LForm);
+    LList.Parent := LForm;
+    LList.Align := alClient;
+    LList.BorderStyle := bsNone;
+    LList.ItemHeight := 22;
+
+    for I := 0 to FColumns.Count - 1 do
+    begin
+      LCaption := ColumnDisplayName(I);
+      LList.Items.Add(LCaption);
+      LList.Checked[I] := FColumns[I].Visible;
+    end;
+
+    LBottom := TPanel.Create(LForm);
+    LBottom.Parent := LForm;
+    LBottom.Align := alBottom;
+    LBottom.Height := 82;
+    LBottom.BevelOuter := bvNone;
+
+    LBtnAll := TButton.Create(LForm);
+    LBtnAll.Parent := LBottom;
+    LBtnAll.Left := 8;
+    LBtnAll.Top := 8;
+    LBtnAll.Width := 120;
+    LBtnAll.Height := 26;
+    if IsEnglish then
+      LBtnAll.Caption := 'Select all'
+    else
+      LBtnAll.Caption := 'Marcar todas';
+    LBtnAll.ModalResult := MR_SELECT_ALL;
+
+    LBtnNone := TButton.Create(LForm);
+    LBtnNone.Parent := LBottom;
+    LBtnNone.Left := 136;
+    LBtnNone.Top := 8;
+    LBtnNone.Width := 130;
+    LBtnNone.Height := 26;
+    if IsEnglish then
+      LBtnNone.Caption := 'Unselect all'
+    else
+      LBtnNone.Caption := 'Desmarcar todas';
+    LBtnNone.ModalResult := MR_UNSELECT_ALL;
+
+    LBtnOK := TButton.Create(LForm);
+    LBtnOK.Parent := LBottom;
+    LBtnOK.Left := LBottom.Width - 176;
+    LBtnOK.Top := 46;
+    LBtnOK.Width := 78;
+    LBtnOK.Height := 26;
+    LBtnOK.Anchors := [akRight, akBottom];
+    LBtnOK.Caption := 'OK';
+    LBtnOK.ModalResult := mrOk;
+
+    LBtnCancel := TButton.Create(LForm);
+    LBtnCancel.Parent := LBottom;
+    LBtnCancel.Left := LBottom.Width - 90;
+    LBtnCancel.Top := 46;
+    LBtnCancel.Width := 78;
+    LBtnCancel.Height := 26;
+    LBtnCancel.Anchors := [akRight, akBottom];
+    if IsEnglish then
+      LBtnCancel.Caption := 'Cancel'
+    else
+      LBtnCancel.Caption := 'Cancelar';
+    LBtnCancel.ModalResult := mrCancel;
+
+    repeat
+      LModalResult := LForm.ShowModal;
+      case LModalResult of
+        MR_SELECT_ALL:
+          CheckAll(True);
+        MR_UNSELECT_ALL:
+          CheckAll(False);
+      end;
+    until (LModalResult <> MR_SELECT_ALL) and (LModalResult <> MR_UNSELECT_ALL);
+
+    if LModalResult = mrOk then
+    begin
+      LVisibleCount := 0;
+      for I := 0 to LList.Count - 1 do
+        if LList.Checked[I] then
+          Inc(LVisibleCount);
+
+      if LVisibleCount = 0 then
+      begin
+        if IsEnglish then
+          MessageDlg('At least one column must remain visible.', mtWarning, [mbOK], 0)
+        else
+          MessageDlg('Pelo menos uma coluna deve permanecer visivel.', mtWarning, [mbOK], 0);
+        Exit;
+      end;
+
+      LChanged := False;
+      for I := 0 to FColumns.Count - 1 do
+      begin
+        if FColumns[I].Visible <> LList.Checked[I] then
+        begin
+          FColumns[I].Visible := LList.Checked[I];
+          LChanged := True;
+        end;
+      end;
+
+      if LChanged then
+      begin
+        UpdateColumnFilterLayout;
+        UpdateScrollBar;
+        Invalidate;
+      end;
+    end;
+  finally
+    LForm.Free;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.HeaderColumnVisibilityClick(Sender: TObject);
+var
+  LIndex: Integer;
+  LVisibleCount: Integer;
+  I: Integer;
+begin
+  if not (Sender is TMenuItem) then
+    Exit;
+
+  LIndex := TMenuItem(Sender).Tag;
+  if (LIndex < 0) or (LIndex >= FColumns.Count) then
+    Exit;
+
+  LVisibleCount := 0;
+  for I := 0 to FColumns.Count - 1 do
+    if FColumns[I].Visible then
+      Inc(LVisibleCount);
+
+  // Evita deixar o grid sem nenhuma coluna visivel.
+  if FColumns[LIndex].Visible and (LVisibleCount <= 1) then
+    Exit;
+
+  FColumns[LIndex].Visible := not FColumns[LIndex].Visible;
+  TMenuItem(Sender).Checked := FColumns[LIndex].Visible;
+
+  UpdateColumnFilterLayout;
+  UpdateScrollBar;
+  Invalidate;
+end;
+
+procedure TDCMasterDetailGrid.HeaderAutoFitColumnClick(Sender: TObject);
+begin
+  if (FHeaderFooterPopupColumn >= 0) and
+     (FHeaderFooterPopupColumn < FColumns.Count) and
+     FColumns[FHeaderFooterPopupColumn].Visible then
+    AutoSizeColumn(FHeaderFooterPopupColumn);
+end;
+
+procedure TDCMasterDetailGrid.HeaderAutoFitAllColumnsClick(Sender: TObject);
+begin
+  AutoSizeColumns;
+end;
+
+procedure TDCMasterDetailGrid.HeaderFreezeToColumnClick(Sender: TObject);
+var
+  I: Integer;
+  LVisibleCount: Integer;
+begin
+  if (FHeaderFooterPopupColumn < 0) or
+     (FHeaderFooterPopupColumn >= FColumns.Count) then
+    Exit;
+
+  LVisibleCount := 0;
+  for I := 0 to FHeaderFooterPopupColumn do
+    if FColumns[I].Visible then
+      Inc(LVisibleCount);
+
+  FrozenColumns := LVisibleCount;
+end;
+
+procedure TDCMasterDetailGrid.HeaderClearFrozenColumnsClick(Sender: TObject);
+begin
+  FrozenColumns := 0;
+end;
+
+procedure TDCMasterDetailGrid.HeaderFooterVisibilityClick(Sender: TObject);
+begin
+  ShowFooter := not FShowFooter;
+  Invalidate;
+end;
+
+procedure TDCMasterDetailGrid.HeaderFooterSummaryClick(Sender: TObject);
+var
+  LSummary: TDCFooterSummary;
+begin
+  if not (Sender is TMenuItem) then
+    Exit;
+
+  if (FHeaderFooterPopupColumn < 0) or (FHeaderFooterPopupColumn >= FColumns.Count) then
+    Exit;
+
+  LSummary := TDCFooterSummary(TMenuItem(Sender).Tag);
+  FColumns[FHeaderFooterPopupColumn].FooterSummary := LSummary;
+
+  if LSummary <> fsNone then
+    ShowFooter := True;
+
+  Invalidate;
+end;
+
+procedure TDCMasterDetailGrid.ShowHeaderFooterSummaryMenu(ACol: Integer; const AScreenPt: TPoint);
+begin
+  if (not FAllowHeaderFooterSummaryMenu) or (ACol < 0) or (ACol >= FColumns.Count) then
+    Exit;
+
+  FHeaderFooterPopupColumn := ACol;
+  BuildHeaderFooterPopup;
+  FHeaderFooterPopup.Popup(AScreenPt.X, AScreenPt.Y);
 end;
 
 procedure TDCMasterDetailGrid.SetTheme(const Value: TDCGridTheme);
@@ -3965,12 +5562,54 @@ begin
 end;
 
 
+
+function DCSanitizeLayoutFileName(const AValue: string): string;
+var
+  I: Integer;
+const
+  InvalidChars: TSysCharSet = ['\', '/', ':', '*', '?', '"', '<', '>', '|'];
+begin
+  Result := Trim(AValue);
+  for I := 1 to Length(Result) do
+    if CharInSet(Result[I], InvalidChars) or (Ord(Result[I]) < 32) then
+      Result[I] := '_';
+
+  Result := StringReplace(Result, ' ', '_', [rfReplaceAll]);
+
+  if Result = '' then
+    Result := 'default';
+end;
+
+function TDCMasterDetailGrid.GetDefaultLayoutsDirectory: string;
+var
+  BasePath: string;
+begin
+  BasePath := GetEnvironmentVariable('APPDATA');
+  if Trim(BasePath) = '' then
+    BasePath := GetEnvironmentVariable('LOCALAPPDATA');
+  if Trim(BasePath) = '' then
+    BasePath := ExtractFilePath(ParamStr(0));
+
+  Result := IncludeTrailingPathDelimiter(BasePath) +
+    'DelphiCreative' + PathDelim +
+    'DCFlexGrid' + PathDelim +
+    'Layouts';
+end;
+
+function TDCMasterDetailGrid.GetNamedLayoutFileName(const ALayoutName: string): string;
+var
+  LName: string;
+begin
+  LName := DCSanitizeLayoutFileName(ALayoutName);
+  Result := IncludeTrailingPathDelimiter(GetDefaultLayoutsDirectory) + LName + '.layout';
+end;
+
 function TDCMasterDetailGrid.GetLayoutFileName: string;
 begin
   if Trim(FLayoutFileName) <> '' then
     Result := FLayoutFileName
   else
-    Result := ChangeFileExt(ParamStr(0), '.dcgrid.ini');
+    Result := ChangeFileExt(ParamStr(0), '.dcgrid.layout');
 end;
 
 function TDCMasterDetailGrid.GetLayoutSectionName: string;
@@ -4029,99 +5668,467 @@ begin
   end;
 end;
 
+
+function DCFooterSummaryToText(AValue: TDCFooterSummary): string;
+begin
+  case AValue of
+    fsSum: Result := 'sum';
+    fsCount: Result := 'count';
+    fsAvg: Result := 'avg';
+    fsMin: Result := 'min';
+    fsMax: Result := 'max';
+  else
+    Result := 'none';
+  end;
+end;
+
+function DCTextToFooterSummary(const AValue: string; ADefault: TDCFooterSummary = fsNone): TDCFooterSummary;
+var
+  S: string;
+begin
+  Result := ADefault;
+  S := Trim(AValue);
+  if SameText(S, 'sum') or SameText(S, 'fsSum') then
+    Result := fsSum
+  else if SameText(S, 'count') or SameText(S, 'fsCount') then
+    Result := fsCount
+  else if SameText(S, 'avg') or SameText(S, 'average') or SameText(S, 'fsAvg') then
+    Result := fsAvg
+  else if SameText(S, 'min') or SameText(S, 'fsMin') then
+    Result := fsMin
+  else if SameText(S, 'max') or SameText(S, 'fsMax') then
+    Result := fsMax
+  else if SameText(S, 'none') or SameText(S, 'fsNone') or (S = '') then
+    Result := fsNone;
+end;
+
+function DCAlignmentToText(AValue: TDCTextAlignment): string;
+begin
+  case AValue of
+    taCenter: Result := 'center';
+    taRight: Result := 'right';
+  else
+    Result := 'left';
+  end;
+end;
+
+function DCTextToAlignment(const AValue: string; ADefault: TDCTextAlignment = taLeft): TDCTextAlignment;
+var
+  S: string;
+begin
+  Result := ADefault;
+  S := Trim(AValue);
+  if SameText(S, 'center') or SameText(S, 'taCenter') then
+    Result := taCenter
+  else if SameText(S, 'right') or SameText(S, 'taRight') then
+    Result := taRight
+  else if SameText(S, 'left') or SameText(S, 'taLeft') then
+    Result := taLeft;
+end;
+
+function DCSortDirectionToText(AValue: TDCSortDirection): string;
+begin
+  case AValue of
+    sdAscending: Result := 'ascending';
+    sdDescending: Result := 'descending';
+  else
+    Result := 'none';
+  end;
+end;
+
+function DCTextToSortDirection(const AValue: string; ADefault: TDCSortDirection = sdNone): TDCSortDirection;
+begin
+  Result := ADefault;
+  if SameText(AValue, 'ascending') or SameText(AValue, 'asc') or SameText(AValue, 'sdAscending') then
+    Result := sdAscending
+  else if SameText(AValue, 'descending') or SameText(AValue, 'desc') or SameText(AValue, 'sdDescending') then
+    Result := sdDescending
+  else if SameText(AValue, 'none') or SameText(AValue, 'sdNone') or (Trim(AValue) = '') then
+    Result := sdNone;
+end;
+
+function DCFilterModeToText(AValue: TDCFilterMode): string;
+begin
+  case AValue of
+    fmStartsWith: Result := 'startsWith';
+    fmEquals: Result := 'equals';
+  else
+    Result := 'contains';
+  end;
+end;
+
+function DCTextToFilterMode(const AValue: string; ADefault: TDCFilterMode = fmContains): TDCFilterMode;
+begin
+  Result := ADefault;
+  if SameText(AValue, 'startsWith') or SameText(AValue, 'fmStartsWith') then
+    Result := fmStartsWith
+  else if SameText(AValue, 'equals') or SameText(AValue, 'fmEquals') then
+    Result := fmEquals
+  else if SameText(AValue, 'contains') or SameText(AValue, 'fmContains') then
+    Result := fmContains;
+end;
+
+function DCSearchScopeToText(AValue: TDCSearchScope): string;
+begin
+  case AValue of
+    ssMasterAndDetail: Result := 'masterAndDetail';
+  else
+    Result := 'masterOnly';
+  end;
+end;
+
+function DCTextToSearchScope(const AValue: string; ADefault: TDCSearchScope = ssMasterOnly): TDCSearchScope;
+begin
+  Result := ADefault;
+  if SameText(AValue, 'masterAndDetail') or SameText(AValue, 'ssMasterAndDetail') then
+    Result := ssMasterAndDetail
+  else if SameText(AValue, 'masterOnly') or SameText(AValue, 'ssMasterOnly') then
+    Result := ssMasterOnly;
+end;
+
+function DCGetJSONValueText(AObject: TJSONObject; const AName, ADefault: string): string;
+var
+  LValue: TJSONValue;
+begin
+  Result := ADefault;
+  if AObject = nil then
+    Exit;
+  LValue := AObject.GetValue(AName);
+  if LValue <> nil then
+    Result := LValue.Value;
+end;
+
+function DCFindColumnByFieldName(AColumns: TDCGridColumns; const AFieldName: string): TDCGridColumn;
+var
+  I: Integer;
+begin
+  Result := nil;
+  if (AColumns = nil) or (Trim(AFieldName) = '') then
+    Exit;
+  for I := 0 to AColumns.Count - 1 do
+    if SameText(AColumns[I].FieldName, AFieldName) then
+      Exit(AColumns[I]);
+end;
+
+procedure DCSaveColumnToJSON(AColumn: TDCGridColumn; AArray: TJSONArray);
+var
+  LItem: TJSONObject;
+begin
+  if (AColumn = nil) or (AArray = nil) then
+    Exit;
+
+  LItem := TJSONObject.Create;
+  LItem.AddPair('field', AColumn.FieldName);
+  LItem.AddPair('caption', AColumn.Caption);
+  LItem.AddPair('width', TJSONNumber.Create(AColumn.Width));
+  LItem.AddPair('visible', TJSONBool.Create(AColumn.Visible));
+  LItem.AddPair('alignment', DCAlignmentToText(AColumn.Alignment));
+  LItem.AddPair('footerSummary', DCFooterSummaryToText(AColumn.FooterSummary));
+  if Trim(AColumn.FilterText) <> '' then
+    LItem.AddPair('filterText', AColumn.FilterText);
+  AArray.AddElement(LItem);
+end;
+
+procedure DCApplyColumnFromJSON(AColumn: TDCGridColumn; AObject: TJSONObject);
+var
+  S: string;
+  W: Integer;
+begin
+  if (AColumn = nil) or (AObject = nil) then
+    Exit;
+
+  S := DCGetJSONValueText(AObject, 'field', AColumn.FieldName);
+  if Trim(S) <> '' then
+    AColumn.FieldName := S;
+
+  S := DCGetJSONValueText(AObject, 'caption', AColumn.Caption);
+  if S <> '' then
+    AColumn.Caption := S;
+
+  W := StrToIntDef(DCGetJSONValueText(AObject, 'width', IntToStr(AColumn.Width)), AColumn.Width);
+  if W > 0 then
+    AColumn.Width := W;
+
+  S := DCGetJSONValueText(AObject, 'visible', BoolToStr(AColumn.Visible, True));
+  AColumn.Visible := SameText(S, 'true') or SameText(S, '1');
+
+  AColumn.Alignment := DCTextToAlignment(DCGetJSONValueText(AObject, 'alignment', DCAlignmentToText(AColumn.Alignment)), AColumn.Alignment);
+  AColumn.FooterSummary := DCTextToFooterSummary(DCGetJSONValueText(AObject, 'footerSummary', DCFooterSummaryToText(AColumn.FooterSummary)), AColumn.FooterSummary);
+  AColumn.FilterText := DCGetJSONValueText(AObject, 'filterText', AColumn.FilterText);
+end;
+
+function TDCMasterDetailGrid.SaveToJSON: string;
+var
+  LRoot: TJSONObject;
+  LGrid: TJSONObject;
+  LColumns: TJSONArray;
+  LDetailColumns: TJSONArray;
+  LBusinessHighlightValue: TJSONValue;
+  I: Integer;
+begin
+  LRoot := TJSONObject.Create;
+  try
+    LRoot.AddPair('schema', 'DCFlexGrid.Config');
+    LRoot.AddPair('version', TJSONNumber.Create(1));
+
+    LGrid := TJSONObject.Create;
+    LGrid.AddPair('showToolbar', TJSONBool.Create(FShowToolbar));
+    LGrid.AddPair('toolbarHeight', TJSONNumber.Create(FToolbarHeight));
+    LGrid.AddPair('showToolbarRulesDesignerButton', TJSONBool.Create(FShowToolbarRulesDesignerButton));
+    LGrid.AddPair('showFooter', TJSONBool.Create(FShowFooter));
+    LGrid.AddPair('footerHeight', TJSONNumber.Create(FFooterHeight));
+    LGrid.AddPair('showColumnFilters', TJSONBool.Create(FShowColumnFilters));
+    LGrid.AddPair('columnFilterHeight', TJSONNumber.Create(FColumnFilterHeight));
+    LGrid.AddPair('showHeader', TJSONBool.Create(FShowHeader));
+    LGrid.AddPair('showHeaderColumnLines', TJSONBool.Create(FShowHeaderColumnLines));
+    LGrid.AddPair('showRowColumnLines', TJSONBool.Create(FShowRowColumnLines));
+    LGrid.AddPair('frozenColumns', TJSONNumber.Create(FFrozenColumns));
+    LGrid.AddPair('allowHeaderFooterSummaryMenu', TJSONBool.Create(FAllowHeaderFooterSummaryMenu));
+    LGrid.AddPair('showExpandButton', TJSONBool.Create(FShowExpandButton));
+    LGrid.AddPair('alternateColors', TJSONBool.Create(FAlternateColors));
+    LGrid.AddPair('expandOnRowClick', TJSONBool.Create(FExpandOnRowClick));
+    LGrid.AddPair('filterMode', DCFilterModeToText(FFilterMode));
+    LGrid.AddPair('searchScope', DCSearchScopeToText(FSearchScope));
+    LGrid.AddPair('autoExpandOnSearch', TJSONBool.Create(FAutoExpandOnSearch));
+    LGrid.AddPair('sortedColumn', TJSONNumber.Create(FSortedColumn));
+    LGrid.AddPair('sortDirection', DCSortDirectionToText(FSortDirection));
+    LRoot.AddPair('grid', LGrid);
+
+    LColumns := TJSONArray.Create;
+    for I := 0 to FColumns.Count - 1 do
+      DCSaveColumnToJSON(FColumns[I], LColumns);
+    LRoot.AddPair('columns', LColumns);
+
+    LDetailColumns := TJSONArray.Create;
+    for I := 0 to FDetailColumns.Count - 1 do
+      DCSaveColumnToJSON(FDetailColumns[I], LDetailColumns);
+    LRoot.AddPair('detailColumns', LDetailColumns);
+
+    if Assigned(FBusinessHighlight) then
+    begin
+      LBusinessHighlightValue := TJSONObject.ParseJSONValue(FBusinessHighlight.ToJSON);
+      if LBusinessHighlightValue <> nil then
+        LRoot.AddPair('businessHighlight', LBusinessHighlightValue);
+    end;
+
+    Result := LRoot.ToJSON;
+  finally
+    LRoot.Free;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.LoadFromJSON(const AJSON: string);
+var
+  LValue: TJSONValue;
+  LRoot: TJSONObject;
+  LGrid: TJSONObject;
+  LColumns: TJSONArray;
+  LItem: TJSONObject;
+  LColumn: TDCGridColumn;
+  LFieldName: string;
+  I: Integer;
+  LBoolText: string;
+  LIntValue: Integer;
+  LBusinessHighlightValue: TJSONValue;
+  LOldAutoSave: Boolean;
+begin
+  if Trim(AJSON) = '' then
+    Exit;
+
+  LValue := TJSONObject.ParseJSONValue(AJSON);
+  if not (LValue is TJSONObject) then
+  begin
+    LValue.Free;
+    Exit;
+  end;
+
+  try
+    LOldAutoSave := FAutoSaveLayout;
+    FAutoSaveLayout := False;
+    try
+      LRoot := TJSONObject(LValue);
+
+      if LRoot.TryGetValue<TJSONObject>('grid', LGrid) then
+      begin
+        LBoolText := DCGetJSONValueText(LGrid, 'showToolbar', BoolToStr(FShowToolbar, True));
+        SetShowToolbar(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        LIntValue := StrToIntDef(DCGetJSONValueText(LGrid, 'toolbarHeight', IntToStr(FToolbarHeight)), FToolbarHeight);
+        SetToolbarHeight(LIntValue);
+
+        LBoolText := DCGetJSONValueText(LGrid, 'showToolbarRulesDesignerButton', BoolToStr(FShowToolbarRulesDesignerButton, True));
+        SetShowToolbarRulesDesignerButton(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        LBoolText := DCGetJSONValueText(LGrid, 'showFooter', BoolToStr(FShowFooter, True));
+        SetShowFooter(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        LIntValue := StrToIntDef(DCGetJSONValueText(LGrid, 'footerHeight', IntToStr(FFooterHeight)), FFooterHeight);
+        SetFooterHeight(LIntValue);
+
+        LBoolText := DCGetJSONValueText(LGrid, 'showColumnFilters', BoolToStr(FShowColumnFilters, True));
+        SetShowColumnFilters(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        LIntValue := StrToIntDef(DCGetJSONValueText(LGrid, 'columnFilterHeight', IntToStr(FColumnFilterHeight)), FColumnFilterHeight);
+        SetColumnFilterHeight(LIntValue);
+
+        LBoolText := DCGetJSONValueText(LGrid, 'showHeader', BoolToStr(FShowHeader, True));
+        SetShowHeader(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        LBoolText := DCGetJSONValueText(LGrid, 'showHeaderColumnLines', BoolToStr(FShowHeaderColumnLines, True));
+        SetShowHeaderColumnLines(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        LBoolText := DCGetJSONValueText(LGrid, 'showRowColumnLines', BoolToStr(FShowRowColumnLines, True));
+        SetShowRowColumnLines(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        LIntValue := StrToIntDef(DCGetJSONValueText(LGrid, 'frozenColumns', IntToStr(FFrozenColumns)), FFrozenColumns);
+        SetFrozenColumns(LIntValue);
+
+        LBoolText := DCGetJSONValueText(LGrid, 'allowHeaderFooterSummaryMenu', BoolToStr(FAllowHeaderFooterSummaryMenu, True));
+        SetAllowHeaderFooterSummaryMenu(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        LBoolText := DCGetJSONValueText(LGrid, 'showExpandButton', BoolToStr(FShowExpandButton, True));
+        SetShowExpandButton(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        LBoolText := DCGetJSONValueText(LGrid, 'alternateColors', BoolToStr(FAlternateColors, True));
+        SetAlternateColors(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        LBoolText := DCGetJSONValueText(LGrid, 'expandOnRowClick', BoolToStr(FExpandOnRowClick, True));
+        SetExpandOnRowClick(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        LBoolText := DCGetJSONValueText(LGrid, 'autoExpandOnSearch', BoolToStr(FAutoExpandOnSearch, True));
+        SetAutoExpandOnSearch(SameText(LBoolText, 'true') or SameText(LBoolText, '1'));
+
+        SetFilterMode(DCTextToFilterMode(DCGetJSONValueText(LGrid, 'filterMode', DCFilterModeToText(FFilterMode)), FFilterMode));
+        SetSearchScope(DCTextToSearchScope(DCGetJSONValueText(LGrid, 'searchScope', DCSearchScopeToText(FSearchScope)), FSearchScope));
+
+        LIntValue := StrToIntDef(DCGetJSONValueText(LGrid, 'sortedColumn', IntToStr(FSortedColumn)), FSortedColumn);
+        SetSortedColumn(LIntValue);
+        SetSortDirection(DCTextToSortDirection(DCGetJSONValueText(LGrid, 'sortDirection', DCSortDirectionToText(FSortDirection)), FSortDirection));
+      end;
+
+      if LRoot.TryGetValue<TJSONArray>('columns', LColumns) then
+      begin
+        for I := 0 to LColumns.Count - 1 do
+        begin
+          if not (LColumns.Items[I] is TJSONObject) then
+            Continue;
+          LItem := TJSONObject(LColumns.Items[I]);
+          LFieldName := DCGetJSONValueText(LItem, 'field', '');
+          LColumn := DCFindColumnByFieldName(FColumns, LFieldName);
+          if (LColumn = nil) and (I < FColumns.Count) then
+            LColumn := FColumns[I];
+          if LColumn = nil then
+            LColumn := FColumns.Add;
+          DCApplyColumnFromJSON(LColumn, LItem);
+        end;
+      end;
+
+      if LRoot.TryGetValue<TJSONArray>('detailColumns', LColumns) then
+      begin
+        for I := 0 to LColumns.Count - 1 do
+        begin
+          if not (LColumns.Items[I] is TJSONObject) then
+            Continue;
+          LItem := TJSONObject(LColumns.Items[I]);
+          LFieldName := DCGetJSONValueText(LItem, 'field', '');
+          LColumn := DCFindColumnByFieldName(FDetailColumns, LFieldName);
+          if (LColumn = nil) and (I < FDetailColumns.Count) then
+            LColumn := FDetailColumns[I];
+          if LColumn = nil then
+            LColumn := FDetailColumns.Add;
+          DCApplyColumnFromJSON(LColumn, LItem);
+        end;
+      end;
+
+      LBusinessHighlightValue := LRoot.GetValue('businessHighlight');
+      if (LBusinessHighlightValue <> nil) and Assigned(FBusinessHighlight) then
+        FBusinessHighlight.FromJSON(LBusinessHighlightValue.ToJSON);
+
+      UpdateToolbarLayout;
+      RebuildFilter;
+      UpdateScrollBar;
+      Invalidate;
+    finally
+      FAutoSaveLayout := LOldAutoSave;
+    end;
+  except
+    on E: Exception do
+      LogDebug('LoadFromJSON ignored invalid JSON/config: ' + E.Message);
+  end;
+  LValue.Free;
+end;
+
+procedure TDCMasterDetailGrid.SaveConfigToFile(const AFileName: string);
+begin
+  if Trim(AFileName) = '' then
+    Exit;
+  if ExtractFilePath(AFileName) <> '' then
+    TDirectory.CreateDirectory(ExtractFilePath(AFileName));
+  TFile.WriteAllText(AFileName, SaveToJSON, TEncoding.UTF8);
+end;
+
+procedure TDCMasterDetailGrid.LoadConfigFromFile(const AFileName: string);
+begin
+  if (Trim(AFileName) = '') or (not TFile.Exists(AFileName)) then
+    Exit;
+  LoadFromJSON(TFile.ReadAllText(AFileName, TEncoding.UTF8));
+end;
+
+procedure TDCMasterDetailGrid.SaveLayout(const ALayoutName: string);
+begin
+  if Trim(ALayoutName) = '' then
+    Exit;
+  SaveConfigToFile(GetNamedLayoutFileName(ALayoutName));
+end;
+
+procedure TDCMasterDetailGrid.LoadLayout(const ALayoutName: string);
+begin
+  if Trim(ALayoutName) = '' then
+    Exit;
+  LoadConfigFromFile(GetNamedLayoutFileName(ALayoutName));
+end;
+
+procedure TDCMasterDetailGrid.ResetLayout(const ALayoutName: string);
+var
+  LFileName: string;
+begin
+  if Trim(ALayoutName) = '' then
+    Exit;
+
+  LFileName := GetNamedLayoutFileName(ALayoutName);
+  if TFile.Exists(LFileName) then
+    TFile.Delete(LFileName);
+end;
+
+
 procedure TDCMasterDetailGrid.SetAutoSaveLayout(const Value: Boolean);
 begin
   FAutoSaveLayout := Value;
 end;
 
 procedure TDCMasterDetailGrid.SaveLayout;
-var
-  Ini: TIniFile;
-  I: Integer;
-  Section: string;
 begin
-  Ini := TIniFile.Create(GetLayoutFileName);
-  try
-    Section := GetLayoutSectionName;
-    Ini.WriteInteger(Section, 'ColumnCount', FColumns.Count);
-    for I := 0 to FColumns.Count - 1 do
-      Ini.WriteInteger(Section, Format('ColWidth%d', [I]), FColumns[I].Width);
-
-    Ini.WriteInteger(Section, 'DetailColumnCount', FDetailColumns.Count);
-    for I := 0 to FDetailColumns.Count - 1 do
-      Ini.WriteInteger(Section, Format('DetailColWidth%d', [I]), FDetailColumns[I].Width);
-
-    Ini.WriteInteger(Section, 'SortedColumn', FSortedColumn);
-    Ini.WriteInteger(Section, 'SortDirection', Ord(FSortDirection));
-    Ini.WriteInteger(Section, 'ExpandMode', Ord(FExpandMode));
-  finally
-    Ini.Free;
-  end;
+  SaveConfigToFile(GetLayoutFileName);
 end;
 
 procedure TDCMasterDetailGrid.LoadLayout;
-var
-  Ini: TIniFile;
-  I: Integer;
-  Section: string;
-  V: Integer;
 begin
-
   if not FileExists(GetLayoutFileName) then
     Exit;
 
-  Ini := TIniFile.Create(GetLayoutFileName);
-  try
-    Section := GetLayoutSectionName;
-    if not Ini.SectionExists(Section) then
-      Exit;
-
-    for I := 0 to FColumns.Count - 1 do
-    begin
-      V := Ini.ReadInteger(Section, Format('ColWidth%d', [I]), FColumns[I].Width);
-      FColumns[I].Width := Max(FMinColumnWidth, V);
-    end;
-
-    for I := 0 to FDetailColumns.Count - 1 do
-    begin
-      V := Ini.ReadInteger(Section, Format('DetailColWidth%d', [I]), FDetailColumns[I].Width);
-      FDetailColumns[I].Width := Max(FMinColumnWidth, V);
-    end;
-
-    FSortedColumn := Ini.ReadInteger(Section, 'SortedColumn', FSortedColumn);
-    V := Ini.ReadInteger(Section, 'SortDirection', Ord(FSortDirection));
-    if (V >= Ord(Low(TDCSortDirection))) and (V <= Ord(High(TDCSortDirection))) then
-      FSortDirection := TDCSortDirection(V);
-
-    V := Ini.ReadInteger(Section, 'ExpandMode', Ord(FExpandMode));
-    if (V >= Ord(Low(TDCExpandMode))) and (V <= Ord(High(TDCExpandMode))) then
-      FExpandMode := TDCExpandMode(V);
-  finally
-    Ini.Free;
-  end;
-
-  UpdateScrollBar;
-  Invalidate;
+  LoadConfigFromFile(GetLayoutFileName);
 end;
 
 procedure TDCMasterDetailGrid.ResetLayout;
-var
-  Ini: TIniFile;
-  Section: string;
 begin
-  Ini := TIniFile.Create(GetLayoutFileName);
-  try
-    Section := GetLayoutSectionName;
-    Ini.EraseSection(Section);
-  finally
-    Ini.Free;
-  end;
+  if TFile.Exists(GetLayoutFileName) then
+    TFile.Delete(GetLayoutFileName);
 end;
 
 
 function TDCMasterDetailGrid.GetFilteredRowCount: Integer;
 begin
-  if FSearchText <> '' then
+  if (FSearchText <> '') or HasColumnFilters then
     Result := FFilteredRows.Count
   else
     Result := FRowCount;
@@ -4134,7 +6141,7 @@ end;
 
 function TDCMasterDetailGrid.GetActualRowIndex(AVisibleRow: Integer): Integer;
 begin
-  if FSearchText <> '' then
+  if (FSearchText <> '') or HasColumnFilters then
   begin
     if (AVisibleRow >= 0) and (AVisibleRow < FFilteredRows.Count) then
       Result := FFilteredRows[AVisibleRow]
@@ -4147,7 +6154,7 @@ end;
 
 function TDCMasterDetailGrid.GetVisibleIndexOfActualRow(AActualRow: Integer): Integer;
 begin
-  if FSearchText <> '' then
+  if (FSearchText <> '') or HasColumnFilters then
     Result := FFilteredRows.IndexOf(AActualRow)
   else
     Result := AActualRow;
@@ -4185,6 +6192,9 @@ var
   I: Integer;
   S: string;
 begin
+  if not RowMatchesColumnFilters(ARow) then
+    Exit(False);
+
   if Trim(FSearchText) = '' then
     Exit(True);
 
@@ -4214,7 +6224,7 @@ begin
   FFilteredRows.Clear;
   FTopRow := 0;
 
-  if Trim(FSearchText) <> '' then
+  if (Trim(FSearchText) <> '') or HasColumnFilters then
   begin
     { During active filtering, keep layout stable by collapsing expanded rows.
       AutoExpandOnSearch may selectively reopen matching rows below. }
@@ -4241,7 +6251,7 @@ begin
     end;
   end;
 
-  if (FSelectedRow <> -1) and (Trim(FSearchText) <> '') and (FFilteredRows.IndexOf(FSelectedRow) = -1) then
+  if (FSelectedRow <> -1) and ((Trim(FSearchText) <> '') or HasColumnFilters) and (FFilteredRows.IndexOf(FSelectedRow) = -1) then
     FSelectedRow := -1;
 
   if FTopRow > MaxTopRow then
@@ -4250,11 +6260,378 @@ begin
   Invalidate;
 end;
 
+
+procedure TDCMasterDetailGrid.EnsureColumnFilterEditors;
+var
+  I: Integer;
+  LEdit: TEdit;
+begin
+  if FColumnFilterEdits = nil then
+    FColumnFilterEdits := TObjectList<TEdit>.Create(True);
+
+  while FColumnFilterEdits.Count < FColumns.Count do
+  begin
+    LEdit := TEdit.Create(Self);
+    if Assigned(FColumnFilterPanel) then
+      LEdit.Parent := FColumnFilterPanel
+    else
+      LEdit.Parent := Self;
+    LEdit.Visible := False;
+    LEdit.Text := '';
+    LEdit.TabStop := True;
+    LEdit.OnChange := ColumnFilterChanged;
+    LEdit.Tag := FColumnFilterEdits.Count;
+    FColumnFilterEdits.Add(LEdit);
+  end;
+
+  while FColumnFilterEdits.Count > FColumns.Count do
+    FColumnFilterEdits.Delete(FColumnFilterEdits.Count - 1);
+
+  for I := 0 to FColumnFilterEdits.Count - 1 do
+  begin
+    FColumnFilterEdits[I].Tag := I;
+    if (I < FColumns.Count) and (FColumnFilterEdits[I].Text <> FColumns[I].FilterText) then
+    begin
+      FUpdatingColumnFilters := True;
+      try
+        FColumnFilterEdits[I].Text := FColumns[I].FilterText;
+      finally
+        FUpdatingColumnFilters := False;
+      end;
+    end;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.UpdateColumnFilterLayout;
+var
+  I: Integer;
+  R: TRect;
+  LEdit: TEdit;
+  LCol: TDCGridColumn;
+  LEditHeight: Integer;
+  LTop: Integer;
+  LScrollableLeft: Integer;
+  LPanelWidth: Integer;
+  LEditLeft: Integer;
+  LEditTop: Integer;
+  LFrozenBoundary: Integer;
+  LColLeft: Integer;
+  LEditWidth: Integer;
+begin
+  if not Assigned(FColumnFilterEdits) then
+    Exit;
+
+  EnsureColumnFilterEditors;
+
+  for I := 0 to FColumnFilterEdits.Count - 1 do
+    FColumnFilterEdits[I].Visible := False;
+
+  if Assigned(FColumnFilterPanel) then
+    FColumnFilterPanel.Visible := False;
+
+  if not FShowColumnFilters then
+    Exit;
+
+  R := GetColumnFiltersRect;
+  if (R.Bottom <= R.Top) or (R.Right <= R.Left) then
+    Exit;
+
+  LFrozenBoundary := GetFrozenColumnsBoundaryX(R.Left);
+  LScrollableLeft := LFrozenBoundary;
+
+  { The scrollable filter editors must be clipped after the frozen area. When no
+    columns are frozen, the fixed area is only the expand/indicator column. }
+  if FFrozenColumns <= 0 then
+  begin
+    LScrollableLeft := R.Left;
+    if FShowExpandButton then
+      Inc(LScrollableLeft, DC_DEFAULT_EXPAND_COL_WIDTH);
+  end;
+
+  LPanelWidth := R.Right - LScrollableLeft;
+  if LPanelWidth <= 0 then
+    Exit;
+
+  if Assigned(FColumnFilterPanel) then
+  begin
+    FColumnFilterPanel.SetBounds(LScrollableLeft, R.Top, LPanelWidth, R.Bottom - R.Top);
+    FColumnFilterPanel.BevelOuter := bvNone;
+    FColumnFilterPanel.Color := BlendColor(FTheme.GridBackgroundColor, clWhite, 18);
+    FColumnFilterPanel.ParentColor := False;
+    FColumnFilterPanel.Visible := True;
+    FColumnFilterPanel.BringToFront;
+  end;
+
+  LEditHeight := Max(23, Min(28, (R.Bottom - R.Top) - 6));
+  LTop := ((R.Bottom - R.Top) - LEditHeight) div 2;
+
+  for I := 0 to FColumns.Count - 1 do
+  begin
+    if I >= FColumnFilterEdits.Count then
+      Break;
+
+    LCol := FColumns[I];
+    LEdit := FColumnFilterEdits[I];
+    LEdit.Visible := False;
+
+    if (not LCol.Visible) or (not FShowColumnFilters) or (LCol.Width < 42) then
+      Continue;
+
+    LColLeft := GetColumnDrawLeft(I, R.Left);
+    LEditWidth := Max(24, LCol.Width - 10);
+
+    if IsFrozenColumn(I) then
+    begin
+      { Frozen column filters are native controls parented directly to the grid,
+        so they remain fixed and stay above the scrollable filter panel. }
+      if LEdit.Parent <> Self then
+        LEdit.Parent := Self;
+
+      LEditLeft := LColLeft + 5;
+      LEditTop := R.Top + LTop;
+
+      if (LEditLeft + LEditWidth <= R.Left) or (LEditLeft >= LFrozenBoundary) then
+        Continue;
+    end
+    else
+    begin
+      { Scrollable filters live inside FColumnFilterPanel. Their Left may be
+        negative while the column is partially scrolled out; the panel clips the
+        native edit correctly without shrinking it. }
+      if Assigned(FColumnFilterPanel) and (LEdit.Parent <> FColumnFilterPanel) then
+        LEdit.Parent := FColumnFilterPanel;
+
+      LEditLeft := LColLeft - LScrollableLeft + 5;
+      LEditTop := LTop;
+
+      if (LEditLeft + LEditWidth <= 0) or (LEditLeft >= LPanelWidth) then
+        Continue;
+    end;
+
+    LEdit.TextHint := DCColumnFilterHint(GetCurrentLanguage, FRulesDesignerLanguage, LCol.Caption);
+    LEdit.Font.Assign(Font);
+    LEdit.Font.Color := FTheme.TextColor;
+    LEdit.Color := clWhite;
+    LEdit.ParentColor := False;
+    LEdit.Enabled := True;
+    LEdit.TabStop := True;
+    LEdit.SetBounds(LEditLeft, LEditTop, LEditWidth, LEditHeight);
+    LEdit.Visible := True;
+    LEdit.BringToFront;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.ClearColumnFilterEditors;
+var
+  I: Integer;
+begin
+  if not Assigned(FColumnFilterEdits) then
+    Exit;
+  for I := 0 to FColumnFilterEdits.Count - 1 do
+    FColumnFilterEdits[I].Visible := False;
+  if Assigned(FColumnFilterPanel) then
+    FColumnFilterPanel.Visible := False;
+end;
+
+function TDCMasterDetailGrid.HasColumnFilters: Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 0 to FColumns.Count - 1 do
+    if Trim(FColumns[I].FilterText) <> '' then
+      Exit(True);
+end;
+
+function TDCMasterDetailGrid.RowMatchesColumnFilters(ARow: Integer): Boolean;
+var
+  I: Integer;
+  LFilter: string;
+  LText: string;
+  LMatch: Boolean;
+begin
+  Result := True;
+  for I := 0 to FColumns.Count - 1 do
+  begin
+    if not FColumns[I].Visible then
+      Continue;
+
+    LFilter := Trim(FColumns[I].FilterText);
+    if LFilter = '' then
+      Continue;
+
+    LText := GetDisplayText(ARow, I);
+    case FFilterMode of
+      fmStartsWith: LMatch := SameText(Copy(LText, 1, Length(LFilter)), LFilter);
+      fmEquals: LMatch := SameText(LText, LFilter);
+    else
+      LMatch := ContainsTextEx(LText, LFilter);
+    end;
+
+    if not LMatch then
+      Exit(False);
+  end;
+end;
+
+function TDCMasterDetailGrid.GetColumnFilterText(ACol: Integer): string;
+begin
+  if (ACol >= 0) and (ACol < FColumns.Count) then
+    Result := FColumns[ACol].FilterText
+  else
+    Result := '';
+end;
+
+procedure TDCMasterDetailGrid.SetColumnFilterText(ACol: Integer; const AText: string);
+begin
+  if (ACol < 0) or (ACol >= FColumns.Count) then
+    Exit;
+
+  if FColumns[ACol].FilterText <> AText then
+  begin
+    FColumns[ACol].FilterText := AText;
+    if Assigned(FColumnFilterEdits) and (ACol < FColumnFilterEdits.Count) and
+       (FColumnFilterEdits[ACol].Text <> AText) then
+    begin
+      FUpdatingColumnFilters := True;
+      try
+        FColumnFilterEdits[ACol].Text := AText;
+      finally
+        FUpdatingColumnFilters := False;
+      end;
+    end;
+    RebuildFilter;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.ColumnFilterChanged(Sender: TObject);
+var
+  LIndex: Integer;
+  LEdit: TEdit;
+  LSelStart: Integer;
+  LSelLength: Integer;
+begin
+  if FUpdatingColumnFilters then
+    Exit;
+
+  if not (Sender is TEdit) then
+    Exit;
+
+  LEdit := TEdit(Sender);
+  LIndex := LEdit.Tag;
+  if (LIndex < 0) or (LIndex >= FColumns.Count) then
+    Exit;
+
+  if FColumns[LIndex].FilterText = LEdit.Text then
+    Exit;
+
+  LSelStart := LEdit.SelStart;
+  LSelLength := LEdit.SelLength;
+
+  FColumns[LIndex].FilterText := LEdit.Text;
+  RebuildFilter;
+
+  { RebuildFilter invalidates the grid. Keep the active filter editor focused so
+    typing does not require clicking again after each character. }
+  if LEdit.HandleAllocated and LEdit.Visible and LEdit.Enabled then
+  begin
+    if LEdit.CanFocus then
+      LEdit.SetFocus;
+    LEdit.SelStart := LSelStart;
+    LEdit.SelLength := LSelLength;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.SetShowColumnFilters(const Value: Boolean);
+begin
+  if FShowColumnFilters <> Value then
+  begin
+    FShowColumnFilters := Value;
+    UpdateColumnFilterLayout;
+    UpdateScrollBar;
+    if FAutoSaveLayout and not (csLoading in ComponentState) then
+      SaveLayout;
+    Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.SetColumnFilterHeight(const Value: Integer);
+begin
+  if FColumnFilterHeight <> Value then
+  begin
+    FColumnFilterHeight := Max(26, Value);
+    UpdateColumnFilterLayout;
+    UpdateScrollBar;
+    if FAutoSaveLayout and not (csLoading in ComponentState) then
+      SaveLayout;
+    Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.ClearColumnFilters;
+var
+  I: Integer;
+begin
+  FUpdatingColumnFilters := True;
+  try
+    for I := 0 to FColumns.Count - 1 do
+      FColumns[I].FilterText := '';
+    if Assigned(FColumnFilterEdits) then
+      for I := 0 to FColumnFilterEdits.Count - 1 do
+        FColumnFilterEdits[I].Text := '';
+  finally
+    FUpdatingColumnFilters := False;
+  end;
+  RebuildFilter;
+end;
+
+procedure TDCMasterDetailGrid.SetColumnFilter(const AFieldName, AText: string);
+var
+  I: Integer;
+begin
+  for I := 0 to FColumns.Count - 1 do
+    if SameText(FColumns[I].FieldName, AFieldName) then
+    begin
+      SetColumnFilterText(I, AText);
+      Exit;
+    end;
+end;
+
+procedure TDCMasterDetailGrid.SetColumnFilter(ACol: Integer; const AText: string);
+begin
+  SetColumnFilterText(ACol, AText);
+end;
+
+function TDCMasterDetailGrid.GetColumnFilter(const AFieldName: string): string;
+var
+  I: Integer;
+begin
+  Result := '';
+  for I := 0 to FColumns.Count - 1 do
+    if SameText(FColumns[I].FieldName, AFieldName) then
+      Exit(FColumns[I].FilterText);
+end;
+
+function TDCMasterDetailGrid.GetColumnFilter(ACol: Integer): string;
+begin
+  Result := GetColumnFilterText(ACol);
+end;
+
 procedure TDCMasterDetailGrid.SetSearchText(const Value: string);
 begin
   if FSearchText <> Value then
   begin
     FSearchText := Value;
+
+    if Assigned(FToolbarSearchEdit) and (FToolbarSearchEdit.Text <> Value) then
+    begin
+      FUpdatingToolbarSearch := True;
+      try
+        FToolbarSearchEdit.Text := Value;
+      finally
+        FUpdatingToolbarSearch := False;
+      end;
+    end;
+
     RebuildFilter;
   end;
 end;
@@ -4337,7 +6714,11 @@ end;
 
 procedure TDCMasterDetailGrid.SetRulesDesignerLanguage(const Value: TDCRulesDesignerLanguage);
 begin
-  FRulesDesignerLanguage := Value;
+  if FRulesDesignerLanguage <> Value then
+  begin
+    FRulesDesignerLanguage := Value;
+    UpdateToolbarLanguage;
+  end;
 end;
 
 procedure TDCMasterDetailGrid.SetRulesDesignerAutoLoadPreferences(const Value: Boolean);
@@ -4358,16 +6739,9 @@ begin
     FRulesDesignerCustomLanguage := ALanguage.Clone;
     FRulesDesignerLanguage := rdlCustom;
   end;
+  UpdateToolbarLanguage;
 end;
 
-
-function TDCMasterDetailGrid.GetRules: TDCHighlightRules;
-begin
-  if Assigned(FBusinessHighlight) then
-    Result := FBusinessHighlight.Rules
-  else
-    Result := nil;
-end;
 
 function TDCMasterDetailGrid.GetRulesDesignerCustomLanguageClone: TDCGridLang;
 begin
@@ -4377,9 +6751,796 @@ begin
     Result := nil;
 end;
 
-procedure TDCMasterDetailGrid.ShowVisualRulesDesigner;
+function TDCMasterDetailGrid.GetRules: TDCHighlightRules;
 begin
-  ShowDCFlexGridVisualRulesDesigner(Self);
+  if Assigned(FBusinessHighlight) then
+    Result := FBusinessHighlight.Rules
+  else
+    Result := nil;
+end;
+
+
+
+
+function DCColumnFilterHint(ALang: TDCGridLang; ALanguageMode: TDCRulesDesignerLanguage; const ACaption: string): string;
+var
+  LPrefix: string;
+begin
+  LPrefix := '';
+  try
+    if Assigned(ALang) then
+      LPrefix := Trim(ALang.ColumnFilterHintPrefix);
+
+    if LPrefix = '' then
+    begin
+      if ALanguageMode = rdlEnglish then
+        LPrefix := 'Filter'
+      else
+        LPrefix := 'Filtrar';
+    end;
+
+    if Trim(ACaption) <> '' then
+      Result := LPrefix + ' ' + ACaption
+    else
+      Result := LPrefix;
+  finally
+    ALang.Free;
+  end;
+end;
+
+function TDCMasterDetailGrid.GetCurrentLanguage: TDCGridLang;
+begin
+  Result := nil;
+  case FRulesDesignerLanguage of
+    rdlPortuguese:
+      Result := TDCGridLang.Portuguese;
+    rdlEnglish:
+      Result := TDCGridLang.English;
+    rdlCustom:
+      if Assigned(FRulesDesignerCustomLanguage) then
+        Result := FRulesDesignerCustomLanguage.Clone
+      else
+        Result := TDCGridLang.Portuguese;
+  else
+    Result := TDCGridLang.Portuguese;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.UpdateToolbarLanguage;
+var
+  LLang: TDCGridLang;
+begin
+  if not Assigned(FToolbarSearchEdit) or not Assigned(FToolbarClearButton) or not Assigned(FToolbarRulesButton) then
+    Exit;
+
+  LLang := GetCurrentLanguage;
+  try
+    if Assigned(LLang) then
+    begin
+      if Trim(LLang.ToolbarSearchHint) <> '' then
+        FToolbarSearchEdit.TextHint := LLang.ToolbarSearchHint
+      else if FRulesDesignerLanguage = rdlEnglish then
+        FToolbarSearchEdit.TextHint := 'Search...'
+      else
+        FToolbarSearchEdit.TextHint := 'Buscar...';
+
+      if Trim(LLang.ToolbarClearCaption) <> '' then
+        FToolbarClearButton.Caption := LLang.ToolbarClearCaption
+      else if FRulesDesignerLanguage = rdlEnglish then
+        FToolbarClearButton.Caption := 'Clear'
+      else
+        FToolbarClearButton.Caption := 'Limpar';
+
+      if Trim(LLang.ToolbarRulesCaption) <> '' then
+        FToolbarRulesButton.Caption := LLang.ToolbarRulesCaption
+      else if FRulesDesignerLanguage = rdlEnglish then
+        FToolbarRulesButton.Caption := 'Rules'
+      else
+        FToolbarRulesButton.Caption := 'Regras';
+    end;
+  finally
+    LLang.Free;
+  end;
+
+  UpdateToolbarLayout;
+  UpdateColumnFilterLayout;
+end;
+
+procedure TDCMasterDetailGrid.SetShowToolbar(const Value: Boolean);
+begin
+  if FShowToolbar <> Value then
+  begin
+    FShowToolbar := Value;
+    UpdateToolbarLayout;
+    if FAutoSaveLayout and not (csLoading in ComponentState) then
+      SaveLayout;
+    UpdateScrollBar;
+    Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.SetToolbarHeight(const Value: Integer);
+begin
+  if FToolbarHeight <> Value then
+  begin
+    FToolbarHeight := Max(32, Value);
+    UpdateToolbarLayout;
+    if FAutoSaveLayout and not (csLoading in ComponentState) then
+      SaveLayout;
+    UpdateScrollBar;
+    Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.SetShowToolbarRulesDesignerButton(const Value: Boolean);
+begin
+  if FShowToolbarRulesDesignerButton <> Value then
+  begin
+    FShowToolbarRulesDesignerButton := Value;
+    UpdateToolbarLayout;
+    if FAutoSaveLayout and not (csLoading in ComponentState) then
+      SaveLayout;
+    Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.SetShowFooter(const Value: Boolean);
+begin
+  if FShowFooter <> Value then
+  begin
+    FShowFooter := Value;
+    UpdateScrollBar;
+    if FAutoSaveLayout and not (csLoading in ComponentState) then
+      SaveLayout;
+    Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.SetFooterHeight(const Value: Integer);
+begin
+  if FFooterHeight <> Value then
+  begin
+    FFooterHeight := Max(24, Value);
+    UpdateScrollBar;
+    if FAutoSaveLayout and not (csLoading in ComponentState) then
+      SaveLayout;
+    Invalidate;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.ToolbarSearchChanged(Sender: TObject);
+begin
+  if FUpdatingToolbarSearch then
+    Exit;
+  SearchText := FToolbarSearchEdit.Text;
+end;
+
+procedure TDCMasterDetailGrid.ToolbarClearClick(Sender: TObject);
+begin
+  SearchText := '';
+  if Assigned(FToolbarSearchEdit) then
+  begin
+    FToolbarSearchEdit.SetFocus;
+    FToolbarSearchEdit.SelectAll;
+  end;
+end;
+
+procedure TDCMasterDetailGrid.ToolbarRulesClick(Sender: TObject);
+begin
+  ShowVisualRulesDesigner;
+end;
+
+procedure TDCMasterDetailGrid.UpdateToolbarLayout;
+var
+  R: TRect;
+  LClearButtonWidth: Integer;
+  LRulesButtonWidth: Integer;
+  LButtonHeight: Integer;
+  LTop: Integer;
+  LEditRight: Integer;
+  LRight: Integer;
+begin
+  if not Assigned(FToolbarSearchEdit) or not Assigned(FToolbarClearButton) or not Assigned(FToolbarRulesButton) then
+    Exit;
+
+  FToolbarSearchEdit.Visible := FShowToolbar;
+  FToolbarClearButton.Visible := FShowToolbar;
+  FToolbarRulesButton.Visible := FShowToolbar and FShowToolbarRulesDesignerButton;
+
+  FToolbarSearchEdit.Enabled := FShowToolbar;
+  FToolbarClearButton.Enabled := FShowToolbar;
+  FToolbarRulesButton.Enabled := FToolbarRulesButton.Visible;
+
+  if not FShowToolbar then
+    Exit;
+
+  R := GetToolbarRect;
+  InflateRect(R, -DC_DEFAULT_PADDING, 0);
+
+  Canvas.Font.Assign(Font);
+  LClearButtonWidth := Max(78, Canvas.TextWidth(FToolbarClearButton.Caption) + 34);
+  LRulesButtonWidth := Max(88, Canvas.TextWidth(FToolbarRulesButton.Caption) + 34);
+  LButtonHeight := Max(23, Min(28, (R.Bottom - R.Top) - 18));
+  LTop := R.Top + ((R.Bottom - R.Top) - LButtonHeight) div 2;
+
+  LRight := R.Right;
+
+  if FToolbarRulesButton.Visible then
+  begin
+    FToolbarRulesButton.SetBounds(LRight - LRulesButtonWidth, LTop, LRulesButtonWidth, LButtonHeight);
+    LRight := FToolbarRulesButton.Left - DC_DEFAULT_PADDING;
+  end
+  else
+    FToolbarRulesButton.SetBounds(0, 0, 0, 0);
+
+  FToolbarClearButton.SetBounds(LRight - LClearButtonWidth, LTop, LClearButtonWidth, LButtonHeight);
+
+  LEditRight := FToolbarClearButton.Left - DC_DEFAULT_PADDING;
+  if LEditRight < R.Left + 80 then
+    LEditRight := R.Right;
+
+  FToolbarSearchEdit.SetBounds(R.Left, LTop,
+    Max(80, LEditRight - R.Left), LButtonHeight);
+
+  FToolbarSearchEdit.BringToFront;
+  FToolbarClearButton.BringToFront;
+  if FToolbarRulesButton.Visible then
+    FToolbarRulesButton.BringToFront;
+end;
+
+function TDCMasterDetailGrid.GetToolbarRect: TRect;
+begin
+  if FShowToolbar then
+    Result := Rect(0, 0, ClientWidth, FToolbarHeight)
+  else
+    Result := Rect(0, 0, ClientWidth, 0);
+end;
+
+function TDCMasterDetailGrid.GetFooterRect: TRect;
+var
+  LBottom: Integer;
+begin
+  LBottom := ClientHeight;
+  if FBorderWidth > 0 then
+    Dec(LBottom, FBorderWidth);
+
+  if FShowFooter then
+  begin
+    Result := Rect(0, Max(GetContentTop, LBottom - FFooterHeight), ClientWidth, LBottom);
+    if Result.Bottom < Result.Top then
+      Result.Bottom := Result.Top;
+  end
+  else
+    Result := Rect(0, LBottom, ClientWidth, LBottom);
+end;
+
+procedure TDCMasterDetailGrid.DrawToolbar;
+var
+  R: TRect;
+begin
+  if not FShowToolbar then
+    Exit;
+
+  R := GetToolbarRect;
+  FillRectColor(Canvas, R, BlendColor(FTheme.GridBackgroundColor, clWhite, 35));
+  Canvas.Pen.Color := FTheme.BorderColor;
+  Canvas.MoveTo(R.Left, R.Bottom - 1);
+  Canvas.LineTo(R.Right, R.Bottom - 1);
+end;
+
+function TryDCFlexTextToFloat(const AText: string; out AValue: Double): Boolean;
+var
+  S: string;
+  FS: TFormatSettings;
+begin
+  S := Trim(AText);
+  S := StringReplace(S, 'R$', '', [rfReplaceAll, rfIgnoreCase]);
+  S := StringReplace(S, '$', '', [rfReplaceAll]);
+  S := StringReplace(S, '€', '', [rfReplaceAll]);
+  S := StringReplace(S, '£', '', [rfReplaceAll]);
+  S := StringReplace(S, ' ', '', [rfReplaceAll]);
+
+  FS := TFormatSettings.Create;
+  FS.DecimalSeparator := ',';
+  FS.ThousandSeparator := '.';
+  Result := TryStrToFloat(S, AValue, FS);
+  if Result then
+    Exit;
+
+  FS.DecimalSeparator := '.';
+  FS.ThousandSeparator := ',';
+  Result := TryStrToFloat(S, AValue, FS);
+end;
+
+function TDCMasterDetailGrid.CalculateFooterSummary(ACol: Integer): string;
+var
+  I: Integer;
+  LActualRow: Integer;
+  LValue: Double;
+  LSum: Double;
+  LCount: Integer;
+  LMin: Double;
+  LMax: Double;
+  LText: string;
+  LSummary: TDCFooterSummary;
+begin
+  Result := '';
+  if (ACol < 0) or (ACol >= FColumns.Count) then
+    Exit;
+
+  LSummary := FColumns[ACol].FooterSummary;
+  if LSummary = fsNone then
+    Exit;
+
+  LSum := 0;
+  LCount := 0;
+  LMin := 0;
+  LMax := 0;
+
+  for I := 0 to GetActualRowCount - 1 do
+  begin
+    LActualRow := GetActualRowIndex(I);
+    if LActualRow < 0 then
+      Continue;
+
+    LText := GetDisplayText(LActualRow, ACol);
+    if LSummary = fsCount then
+    begin
+      if Trim(LText) <> '' then
+        Inc(LCount);
+      Continue;
+    end;
+
+    if TryDCFlexTextToFloat(LText, LValue) then
+    begin
+      if LCount = 0 then
+      begin
+        LMin := LValue;
+        LMax := LValue;
+      end
+      else
+      begin
+        if LValue < LMin then
+          LMin := LValue;
+        if LValue > LMax then
+          LMax := LValue;
+      end;
+      LSum := LSum + LValue;
+      Inc(LCount);
+    end;
+  end;
+
+  case LSummary of
+    fsCount:
+      Result := IntToStr(LCount);
+    fsSum:
+      if LCount > 0 then
+        Result := FormatFloat('#,##0.00', LSum);
+    fsAvg:
+      if LCount > 0 then
+        Result := FormatFloat('#,##0.00', LSum / LCount);
+    fsMin:
+      if LCount > 0 then
+        Result := FormatFloat('#,##0.00', LMin);
+    fsMax:
+      if LCount > 0 then
+        Result := FormatFloat('#,##0.00', LMax);
+  end;
+end;
+
+procedure TDCMasterDetailGrid.DrawFooter;
+var
+  I: Integer;
+  X: Integer;
+  R: TRect;
+  LCol: TDCGridColumn;
+  LColRect: TRect;
+  LTextRect: TRect;
+  LText: string;
+  LFlags: Cardinal;
+  LFooterColor: TColor;
+  LGridRight: Integer;
+  LClipState: Integer;
+begin
+  if not FShowFooter then
+    Exit;
+
+  R := GetFooterRect;
+  if (R.Bottom <= R.Top) or (R.Right <= R.Left) then
+    Exit;
+
+  LFooterColor := BlendColor(FTheme.HeaderColor, clWhite, 82);
+
+  { Footer must always be drawn after rows and over the grid background. }
+  FillRectColor(Canvas, R, LFooterColor);
+
+  Canvas.Pen.Color := FTheme.BorderColor;
+  Canvas.MoveTo(R.Left, R.Top);
+  Canvas.LineTo(R.Right, R.Top);
+  Canvas.MoveTo(R.Left, R.Bottom - 1);
+  Canvas.LineTo(R.Right, R.Bottom - 1);
+
+  Canvas.Font.Assign(Font);
+  Canvas.Font.Style := Canvas.Font.Style + [fsBold];
+  Canvas.Font.Color := FTheme.TextColor;
+  Canvas.Brush.Style := bsClear;
+  SetBkMode(Canvas.Handle, TRANSPARENT);
+
+  X := R.Left;
+  if FShowExpandButton then
+  begin
+    Canvas.Pen.Color := BlendColor(FTheme.BorderColor, clWhite, 30);
+    Canvas.MoveTo(X + DC_DEFAULT_EXPAND_COL_WIDTH - 1, R.Top + 6);
+    Canvas.LineTo(X + DC_DEFAULT_EXPAND_COL_WIDTH - 1, R.Bottom - 6);
+    Inc(X, DC_DEFAULT_EXPAND_COL_WIDTH);
+  end;
+
+  LClipState := SaveDC(Canvas.Handle);
+  try
+    IntersectClipRect(Canvas.Handle, X, R.Top, R.Right, R.Bottom);
+    Dec(X, FHorizontalOffset);
+
+    LGridRight := X;
+  for I := 0 to FColumns.Count - 1 do
+    if FColumns[I].Visible then
+      Inc(LGridRight, FColumns[I].Width);
+
+  for I := 0 to FColumns.Count - 1 do
+  begin
+    LCol := FColumns[I];
+    if not LCol.Visible then
+      Continue;
+
+    LColRect := Rect(X, R.Top, X + LCol.Width, R.Bottom);
+    LTextRect := Rect(LColRect.Left + DC_DEFAULT_PADDING, LColRect.Top,
+      LColRect.Right - DC_DEFAULT_PADDING, LColRect.Bottom);
+    LText := CalculateFooterSummary(I);
+
+    case LCol.Alignment of
+      taCenter: LFlags := DT_CENTER;
+      taRight: LFlags := DT_RIGHT;
+    else
+      LFlags := DT_LEFT;
+    end;
+
+    if LText <> '' then
+      DrawText(Canvas.Handle, PChar(LText), Length(LText), LTextRect,
+        LFlags or DT_VCENTER or DT_SINGLELINE or DT_NOPREFIX or DT_END_ELLIPSIS);
+
+    Canvas.Pen.Color := BlendColor(FTheme.BorderColor, clWhite, 30);
+    Canvas.MoveTo(LColRect.Right - 1, LColRect.Top + 6);
+    Canvas.LineTo(LColRect.Right - 1, LColRect.Bottom - 6);
+
+    Inc(X, LCol.Width);
+  end;
+
+  if LGridRight < R.Right then
+  begin
+    FillRectColor(Canvas, Rect(LGridRight, R.Top + 1, R.Right, R.Bottom - 1), LFooterColor);
+  end;
+
+  finally
+    RestoreDC(Canvas.Handle, LClipState);
+  end;
+
+  DrawFrozenFooterOverlay(R, LFooterColor);
+  DrawFrozenColumnsSeparator(R, LFooterColor);
+
+  Canvas.Brush.Style := bsSolid;
+end;
+
+
+function TDCMasterDetailGrid.GetFrozenColumnsBoundaryX(ABaseLeft: Integer): Integer;
+var
+  I: Integer;
+  LVisibleFrozenCount: Integer;
+begin
+  Result := ABaseLeft;
+
+  if FShowExpandButton then
+    Inc(Result, DC_DEFAULT_EXPAND_COL_WIDTH);
+
+  if FFrozenColumns <= 0 then
+    Exit;
+
+  LVisibleFrozenCount := 0;
+  for I := 0 to FColumns.Count - 1 do
+  begin
+    if not FColumns[I].Visible then
+      Continue;
+
+    if LVisibleFrozenCount >= FFrozenColumns then
+      Break;
+
+    Inc(Result, FColumns[I].Width);
+    Inc(LVisibleFrozenCount);
+  end;
+end;
+
+
+procedure TDCMasterDetailGrid.DrawFrozenHeaderOverlay(const ARect: TRect; ABackColor: TColor);
+var
+  I: Integer;
+  X: Integer;
+  LVisibleFrozenCount: Integer;
+  LCol: TDCGridColumn;
+  LColRect: TRect;
+  LTextRect: TRect;
+  LGlyph: string;
+  LGlyphRect: TRect;
+  LHeaderCaption: string;
+  LHasFilter: Boolean;
+  LSaveDC: Integer;
+begin
+  if FFrozenColumns <= 0 then
+    Exit;
+
+  X := ARect.Left;
+  if FShowExpandButton then
+    Inc(X, DC_DEFAULT_EXPAND_COL_WIDTH);
+
+  LSaveDC := SaveDC(Canvas.Handle);
+  try
+    IntersectClipRect(Canvas.Handle, X, ARect.Top, GetFrozenColumnsBoundaryX(ARect.Left), ARect.Bottom);
+
+    LVisibleFrozenCount := 0;
+    for I := 0 to FColumns.Count - 1 do
+    begin
+      LCol := FColumns[I];
+      if not LCol.Visible then
+        Continue;
+      if LVisibleFrozenCount >= FFrozenColumns then
+        Break;
+
+      LColRect := Rect(X, ARect.Top, X + LCol.Width, ARect.Bottom);
+      FillRectColor(Canvas, LColRect, ABackColor);
+      if I = FHeaderHoverColumn then
+        FillRectColor(Canvas, LColRect, BlendColor(ABackColor, clWhite, 18));
+      if I = FSortedColumn then
+      begin
+        FillRectColor(Canvas, LColRect, BlendColor(ABackColor, clBlack, 10));
+        FillRectColor(Canvas, Rect(LColRect.Left, LColRect.Bottom - 3, LColRect.Right, LColRect.Bottom),
+          BlendColor(FTheme.SelectedRowColor, clWhite, 40));
+      end;
+
+      Canvas.Font.Assign(FTitleFont);
+      Canvas.Font.Style := [fsBold];
+      Canvas.Font.Color := FTheme.HeaderFontColor;
+      Canvas.Brush.Style := bsClear;
+      SetBkMode(Canvas.Handle, TRANSPARENT);
+
+      LHasFilter := Trim(LCol.FilterText) <> '';
+      LHeaderCaption := LCol.Caption;
+      if LHasFilter then
+        LHeaderCaption := LHeaderCaption + ' *';
+
+      LTextRect := Rect(LColRect.Left + DC_DEFAULT_PADDING + 1, LColRect.Top,
+        LColRect.Right - DC_DEFAULT_PADDING - 16, LColRect.Bottom - 2);
+      DrawText(Canvas.Handle, PChar(LHeaderCaption), Length(LHeaderCaption), LTextRect,
+        DT_VCENTER or DT_SINGLELINE or DT_LEFT or DT_NOPREFIX or DT_END_ELLIPSIS);
+
+      if I = FSortedColumn then
+      begin
+        if FSortDirection = sdAscending then
+          LGlyph := WideChar($25B2)
+        else if FSortDirection = sdDescending then
+          LGlyph := WideChar($25BC)
+        else
+          LGlyph := '';
+
+        if LGlyph <> '' then
+        begin
+          LGlyphRect := Rect(LColRect.Right - 22, LColRect.Top, LColRect.Right - 4, LColRect.Bottom);
+          Canvas.Font.Name := 'Segoe UI Symbol';
+          Canvas.Font.Style := [];
+          Canvas.Font.Size := Max(9, FTitleFont.Size);
+          Canvas.Font.Color := FTheme.HeaderFontColor;
+          DrawText(Canvas.Handle, PChar(LGlyph), Length(LGlyph), LGlyphRect,
+            DT_CENTER or DT_VCENTER or DT_SINGLELINE or DT_NOPREFIX);
+        end;
+      end;
+
+      if FShowHeaderColumnLines then
+      begin
+        Canvas.Pen.Color := BlendColor(FTheme.BorderColor, ABackColor, 120);
+        Canvas.MoveTo(LColRect.Right - 1, ARect.Top + 4);
+        Canvas.LineTo(LColRect.Right - 1, ARect.Bottom - 4);
+      end;
+
+      Inc(X, LCol.Width);
+      Inc(LVisibleFrozenCount);
+    end;
+  finally
+    RestoreDC(Canvas.Handle, LSaveDC);
+  end;
+end;
+
+procedure TDCMasterDetailGrid.DrawFrozenRowOverlay(ARow: Integer; const ARect: TRect);
+var
+  I: Integer;
+  X: Integer;
+  LVisibleFrozenCount: Integer;
+  LCol: TDCGridColumn;
+  LCellRect: TRect;
+  LPaintRect: TRect;
+  LText: string;
+  LFlags: Cardinal;
+  LRowColor: TColor;
+  LFontColor: TColor;
+  LFontStyles: TFontStyles;
+  LBusinessTarget: TDCHighlightTarget;
+  LBusinessMatched: Boolean;
+  LBusinessFieldName: string;
+  LSaveDC: Integer;
+begin
+  if FFrozenColumns <= 0 then
+    Exit;
+
+  if ARow = FHoverRow then
+    LRowColor := FTheme.HoverRowColor
+  else if FAlternateColors and Odd(ARow) then
+    LRowColor := FTheme.AlternateRowColor
+  else
+    LRowColor := FTheme.RowColor;
+
+  LFontColor := FTheme.TextColor;
+  LFontStyles := [];
+  LBusinessMatched := ApplyBusinessHighlight(ARow, LRowColor, LFontColor, LFontStyles, LBusinessTarget, LBusinessFieldName);
+  if LBusinessMatched and (LBusinessTarget = htCell) then
+  begin
+    if ARow = FHoverRow then
+      LRowColor := FTheme.HoverRowColor
+    else if FAlternateColors and Odd(ARow) then
+      LRowColor := FTheme.AlternateRowColor
+    else
+      LRowColor := FTheme.RowColor;
+    LFontColor := FTheme.TextColor;
+    LFontStyles := [];
+  end;
+
+  if ARow = FSelectedRow then
+    LFontStyles := LFontStyles + [fsBold];
+  if Assigned(FOnGetMasterRowStyle) then
+    FOnGetMasterRowStyle(Self, ARow, LRowColor, LFontColor, LFontStyles);
+
+  X := ARect.Left;
+  if FShowExpandButton then
+    Inc(X, DC_DEFAULT_EXPAND_COL_WIDTH);
+
+  LSaveDC := SaveDC(Canvas.Handle);
+  try
+    IntersectClipRect(Canvas.Handle, X, ARect.Top, GetFrozenColumnsBoundaryX(ARect.Left), ARect.Bottom);
+
+    Canvas.Font.Assign(Font);
+    Canvas.Font.Style := LFontStyles;
+    Canvas.Font.Color := LFontColor;
+    Canvas.Brush.Style := bsClear;
+    SetBkMode(Canvas.Handle, TRANSPARENT);
+
+    LVisibleFrozenCount := 0;
+    for I := 0 to FColumns.Count - 1 do
+    begin
+      LCol := FColumns[I];
+      if not LCol.Visible then
+        Continue;
+      if LVisibleFrozenCount >= FFrozenColumns then
+        Break;
+
+      LPaintRect := Rect(X, ARect.Top, X + LCol.Width, ARect.Bottom);
+      FillRectColor(Canvas, LPaintRect, LRowColor);
+
+      LCellRect := LPaintRect;
+      InflateRect(LCellRect, -DC_DEFAULT_PADDING, 0);
+      LText := GetDisplayText(ARow, I);
+      case LCol.Alignment of
+        taLeft: LFlags := DT_LEFT;
+        taCenter: LFlags := DT_CENTER;
+      else
+        LFlags := DT_RIGHT;
+      end;
+      DrawText(Canvas.Handle, PChar(LText), Length(LText), LCellRect,
+        DT_VCENTER or DT_SINGLELINE or DT_NOPREFIX or DT_END_ELLIPSIS or LFlags);
+
+      if FShowRowColumnLines then
+      begin
+        Canvas.Pen.Color := BlendColor(FTheme.BorderColor, LRowColor, 45);
+        Canvas.MoveTo(LPaintRect.Right - 1, ARect.Top + 2);
+        Canvas.LineTo(LPaintRect.Right - 1, ARect.Bottom - 2);
+      end;
+
+      Inc(X, LCol.Width);
+      Inc(LVisibleFrozenCount);
+    end;
+  finally
+    RestoreDC(Canvas.Handle, LSaveDC);
+  end;
+end;
+
+procedure TDCMasterDetailGrid.DrawFrozenFooterOverlay(const ARect: TRect; ABackColor: TColor);
+var
+  I: Integer;
+  X: Integer;
+  LVisibleFrozenCount: Integer;
+  LCol: TDCGridColumn;
+  LColRect: TRect;
+  LTextRect: TRect;
+  LText: string;
+  LFlags: Cardinal;
+  LSaveDC: Integer;
+begin
+  if (FFrozenColumns <= 0) or (not FShowFooter) then
+    Exit;
+
+  X := ARect.Left;
+  if FShowExpandButton then
+    Inc(X, DC_DEFAULT_EXPAND_COL_WIDTH);
+
+  LSaveDC := SaveDC(Canvas.Handle);
+  try
+    IntersectClipRect(Canvas.Handle, X, ARect.Top, GetFrozenColumnsBoundaryX(ARect.Left), ARect.Bottom);
+
+    Canvas.Font.Assign(Font);
+    Canvas.Font.Style := Canvas.Font.Style + [fsBold];
+    Canvas.Font.Color := FTheme.TextColor;
+    Canvas.Brush.Style := bsClear;
+    SetBkMode(Canvas.Handle, TRANSPARENT);
+
+    LVisibleFrozenCount := 0;
+    for I := 0 to FColumns.Count - 1 do
+    begin
+      LCol := FColumns[I];
+      if not LCol.Visible then
+        Continue;
+      if LVisibleFrozenCount >= FFrozenColumns then
+        Break;
+
+      LColRect := Rect(X, ARect.Top, X + LCol.Width, ARect.Bottom);
+      FillRectColor(Canvas, LColRect, ABackColor);
+      LTextRect := Rect(LColRect.Left + DC_DEFAULT_PADDING, LColRect.Top,
+        LColRect.Right - DC_DEFAULT_PADDING, LColRect.Bottom);
+      LText := CalculateFooterSummary(I);
+
+      case LCol.Alignment of
+        taCenter: LFlags := DT_CENTER;
+        taRight: LFlags := DT_RIGHT;
+      else
+        LFlags := DT_LEFT;
+      end;
+
+      if LText <> '' then
+        DrawText(Canvas.Handle, PChar(LText), Length(LText), LTextRect,
+          LFlags or DT_VCENTER or DT_SINGLELINE or DT_NOPREFIX or DT_END_ELLIPSIS);
+
+      Canvas.Pen.Color := BlendColor(FTheme.BorderColor, clWhite, 30);
+      Canvas.MoveTo(LColRect.Right - 1, LColRect.Top + 6);
+      Canvas.LineTo(LColRect.Right - 1, LColRect.Bottom - 6);
+
+      Inc(X, LCol.Width);
+      Inc(LVisibleFrozenCount);
+    end;
+  finally
+    RestoreDC(Canvas.Handle, LSaveDC);
+  end;
+end;
+
+procedure TDCMasterDetailGrid.DrawFrozenColumnsSeparator(const ARect: TRect; ABackColor: TColor);
+var
+  LX: Integer;
+begin
+  if FFrozenColumns <= 0 then
+    Exit;
+
+  LX := GetFrozenColumnsBoundaryX(ARect.Left);
+  if (LX <= ARect.Left) or (LX >= ARect.Right) then
+    Exit;
+
+  Canvas.Pen.Color := BlendColor(FTheme.SelectedRowColor, ABackColor, 80);
+  Canvas.MoveTo(LX - 1, ARect.Top + 2);
+  Canvas.LineTo(LX - 1, ARect.Bottom - 2);
+
+  Canvas.Pen.Color := BlendColor(FTheme.BorderColor, ABackColor, 45);
+  Canvas.MoveTo(LX, ARect.Top + 2);
+  Canvas.LineTo(LX, ARect.Bottom - 2);
 end;
 
 procedure TDCMasterDetailGrid.ShowRulesDesigner;
@@ -4387,10 +7548,176 @@ begin
   ShowVisualRulesDesigner;
 end;
 
+procedure TDCMasterDetailGrid.ShowVisualRulesDesigner;
+begin
+  ShowDCFlexGridVisualRulesDesigner(Self);
+end;
+
+
+function TDCMasterDetailGrid.GetVisibleFrozenColumnsWidth: Integer;
+var
+  I: Integer;
+  LVisibleFrozenCount: Integer;
+begin
+  Result := 0;
+  if FFrozenColumns <= 0 then
+    Exit;
+
+  LVisibleFrozenCount := 0;
+  for I := 0 to FColumns.Count - 1 do
+  begin
+    if not FColumns[I].Visible then
+      Continue;
+    if LVisibleFrozenCount >= FFrozenColumns then
+      Break;
+    Inc(Result, FColumns[I].Width);
+    Inc(LVisibleFrozenCount);
+  end;
+end;
+
+function TDCMasterDetailGrid.IsFrozenColumn(ACol: Integer): Boolean;
+var
+  I: Integer;
+  LVisibleIndex: Integer;
+begin
+  Result := False;
+  if (FFrozenColumns <= 0) or (ACol < 0) or (ACol >= FColumns.Count) then
+    Exit;
+  if not FColumns[ACol].Visible then
+    Exit;
+
+  LVisibleIndex := 0;
+  for I := 0 to FColumns.Count - 1 do
+  begin
+    if not FColumns[I].Visible then
+      Continue;
+    if I = ACol then
+      Exit(LVisibleIndex < FFrozenColumns);
+    Inc(LVisibleIndex);
+  end;
+end;
+
+function TDCMasterDetailGrid.GetColumnDrawLeft(ACol, ABaseLeft: Integer): Integer;
+var
+  I: Integer;
+  LStartX: Integer;
+  LVisibleIndex: Integer;
+begin
+  LStartX := ABaseLeft;
+  if FShowExpandButton then
+    Inc(LStartX, DC_DEFAULT_EXPAND_COL_WIDTH);
+
+  Result := LStartX;
+  if (ACol < 0) or (ACol >= FColumns.Count) then
+    Exit;
+
+  if IsFrozenColumn(ACol) then
+  begin
+    for I := 0 to ACol - 1 do
+      if FColumns[I].Visible then
+        Inc(Result, FColumns[I].Width);
+  end
+  else
+  begin
+    Result := LStartX + GetVisibleFrozenColumnsWidth - FHorizontalOffset;
+    LVisibleIndex := 0;
+    for I := 0 to ACol - 1 do
+    begin
+      if not FColumns[I].Visible then
+        Continue;
+      if LVisibleIndex >= FFrozenColumns then
+        Inc(Result, FColumns[I].Width);
+      Inc(LVisibleIndex);
+    end;
+  end;
+end;
+
+function TDCMasterDetailGrid.GetVisibleMasterColumnsWidth: Integer;
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := 0 to FColumns.Count - 1 do
+    if FColumns[I].Visible then
+      Inc(Result, FColumns[I].Width);
+end;
+
+function TDCMasterDetailGrid.GetVisibleDetailColumnsWidth: Integer;
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := 0 to FDetailColumns.Count - 1 do
+    if FDetailColumns[I].Visible then
+      Inc(Result, FDetailColumns[I].Width);
+end;
+
+function TDCMasterDetailGrid.GetHorizontalMax: Integer;
+var
+  LViewportWidth: Integer;
+  LContentWidth: Integer;
+  LFrozenWidth: Integer;
+begin
+  LViewportWidth := ClientWidth;
+  if FShowExpandButton then
+    Dec(LViewportWidth, DC_DEFAULT_EXPAND_COL_WIDTH);
+
+  LFrozenWidth := GetVisibleFrozenColumnsWidth;
+  Dec(LViewportWidth, LFrozenWidth);
+
+  { Important:
+    The master horizontal scrollbar must be driven only by master columns.
+    When columns are frozen, only the non-frozen portion participates in
+    horizontal scrolling. }
+  LContentWidth := GetVisibleMasterColumnsWidth - LFrozenWidth;
+  Result := Max(0, LContentWidth - Max(1, LViewportWidth));
+end;
+
+procedure TDCMasterDetailGrid.SetHorizontalOffset(const Value: Integer);
+var
+  LNewValue: Integer;
+  LInvalidateRect: TRect;
+begin
+  LNewValue := EnsureRange(Value, 0, GetHorizontalMax);
+  if FHorizontalOffset <> LNewValue then
+  begin
+    FHorizontalOffset := LNewValue;
+    UpdateColumnFilterLayout;
+    UpdateScrollBar;
+
+    { Horizontal scrolling only affects the grid surface below the toolbar.
+      Do not invalidate the toolbar area here, otherwise the real toolbar
+      controls can flicker while the user drags the horizontal scrollbar. }
+    LInvalidateRect := Rect(0, GetHeaderRect.Top, ClientWidth, ClientHeight);
+    if HandleAllocated then
+      Winapi.Windows.InvalidateRect(Handle, @LInvalidateRect, False)
+    else
+      Invalidate;
+  end;
+end;
+
+function TDCMasterDetailGrid.GetColumnsStartX(ABaseLeft: Integer): Integer;
+begin
+  Result := ABaseLeft;
+  if FShowExpandButton then
+    Inc(Result, DC_DEFAULT_EXPAND_COL_WIDTH);
+  Dec(Result, FHorizontalOffset);
+end;
+
+function TDCMasterDetailGrid.GetDetailColumnsStartX(ABaseLeft: Integer): Integer;
+begin
+  { Detail columns are isolated from the master horizontal scroll.
+    The master scrollbar must never shift the detail grid content.
+    A dedicated detail horizontal scroll can be added later. }
+  Result := ABaseLeft;
+end;
+
 procedure TDCMasterDetailGrid.UpdateScrollBar;
 var
   SI: TScrollInfo;
   LPageRows: Integer;
+  LHorizontalMax: Integer;
+  LHorizontalPage: Integer;
 begin
   if not HandleAllocated then
     Exit;
@@ -4405,6 +7732,38 @@ begin
   SI.nPage := Max(1, LPageRows);
   SI.nPos := FTopRow;
   SetScrollInfo(Handle, SB_VERT, SI, True);
+
+  LHorizontalMax := GetHorizontalMax;
+  if FHorizontalOffset > LHorizontalMax then
+  begin
+    FHorizontalOffset := LHorizontalMax;
+    UpdateColumnFilterLayout;
+  end;
+  if FHorizontalOffset < 0 then
+  begin
+    FHorizontalOffset := 0;
+    UpdateColumnFilterLayout;
+  end;
+
+  LHorizontalPage := ClientWidth;
+  if FShowExpandButton then
+    Dec(LHorizontalPage, DC_DEFAULT_EXPAND_COL_WIDTH);
+  LHorizontalPage := Max(1, LHorizontalPage);
+
+  { Important: keep the master horizontal scrollbar driven only by master
+    columns. If the master does not need horizontal scrolling, hide the bar
+    completely so resizing/detail columns cannot leave the grid in a stale
+    shifted state. }
+  ShowScrollBar(Handle, SB_HORZ, LHorizontalMax > 0);
+
+  FillChar(SI, SizeOf(SI), 0);
+  SI.cbSize := SizeOf(SI);
+  SI.fMask := SIF_RANGE or SIF_PAGE or SIF_POS;
+  SI.nMin := 0;
+  SI.nMax := LHorizontalMax + LHorizontalPage - 1;
+  SI.nPage := LHorizontalPage;
+  SI.nPos := FHorizontalOffset;
+  SetScrollInfo(Handle, SB_HORZ, SI, True);
 end;
 
 procedure TDCMasterDetailGrid.WMGetDlgCode(var Message: TWMGetDlgCode);
@@ -4427,12 +7786,14 @@ var
   MasterRow: Integer;
   DetailRow: Integer;
   Col: Integer;
+  LHandledContext: Boolean;
 begin
   ScreenPt := SmallPointToPoint(Message.Pos);
   if (ScreenPt.X = -1) and (ScreenPt.Y = -1) then
     ScreenPt := Mouse.CursorPos;
 
   ClientPt := ScreenToClient(ScreenPt);
+  LHandledContext := False;
 
   if PerformHitTest(ClientPt.X, ClientPt.Y, Area, MasterRow, DetailRow, Col) then
   begin
@@ -4457,6 +7818,12 @@ begin
         begin
           if Assigned(FOnHeaderRightClick) then
             FOnHeaderRightClick(Self, Col, ScreenPt);
+
+          if FAllowHeaderFooterSummaryMenu and (Col >= 0) then
+          begin
+            ShowHeaderFooterSummaryMenu(Col, ScreenPt);
+            LHandledContext := True;
+          end;
         end;
     end;
 
@@ -4464,15 +7831,83 @@ begin
       FOnRightClickHitTest(Self, Area, MasterRow, DetailRow, Col, ScreenPt);
 
     Invalidate;
+    if LHandledContext then
+      Exit;
   end;
 
   inherited;
 end;
 
+procedure TDCMasterDetailGrid.WMHScroll(var Message: TWMHScroll);
+var
+  LNewOffset: Integer;
+  LPage: Integer;
+begin
+  inherited;
+
+  LNewOffset := FHorizontalOffset;
+  LPage := Max(16, ClientWidth div 2);
+
+  case Message.ScrollCode of
+    SB_LINELEFT:
+      Dec(LNewOffset, 24);
+    SB_LINERIGHT:
+      Inc(LNewOffset, 24);
+    SB_PAGELEFT:
+      Dec(LNewOffset, LPage);
+    SB_PAGERIGHT:
+      Inc(LNewOffset, LPage);
+    SB_THUMBPOSITION,
+    SB_THUMBTRACK:
+      LNewOffset := Message.Pos;
+    SB_LEFT:
+      LNewOffset := 0;
+    SB_RIGHT:
+      LNewOffset := GetHorizontalMax;
+  end;
+
+  SetHorizontalOffset(LNewOffset);
+  Message.Result := 0;
+end;
+
 procedure TDCMasterDetailGrid.WMMouseWheel(var Message: TWMMouseWheel);
 var
   LNewTop: Integer;
+  LClientPt: TPoint;
+  I: Integer;
+  LMasterRow: Integer;
+  LGridRect: TRect;
+  LMaxOffset: Integer;
+  LNewDetailOffset: Integer;
 begin
+  LClientPt := ScreenToClient(Point(Message.XPos, Message.YPos));
+
+  if FDetailVerticalScroll and (FDetailStyle = dsGrid) then
+  begin
+    for I := 0 to FExpandedRows.Count - 1 do
+    begin
+      LMasterRow := FExpandedRows[I];
+      LGridRect := GetDetailGridRect(LMasterRow);
+      if PtInRect(LGridRect, LClientPt) then
+      begin
+        LMaxOffset := GetDetailGridMaxVerticalOffset(LMasterRow);
+        if LMaxOffset > 0 then
+        begin
+          if FDetailScrollMasterRow <> LMasterRow then
+          begin
+            FDetailScrollMasterRow := LMasterRow;
+            FDetailVerticalOffset := 0;
+          end;
+
+          LNewDetailOffset := FDetailVerticalOffset - Sign(Message.WheelDelta) * FDetailGridRowHeight;
+          SetDetailVerticalOffset(LMasterRow, LNewDetailOffset);
+          Message.Result := 1;
+          Exit;
+        end;
+      end;
+    end;
+  end;
+
   LNewTop := FTopRow - Sign(Message.WheelDelta) * DC_DEFAULT_SCROLL_STEP;
   TopRow := LNewTop;
   Message.Result := 1;

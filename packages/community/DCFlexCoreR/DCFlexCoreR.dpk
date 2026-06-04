@@ -1,0 +1,13 @@
+package DCFlexCoreR;
+
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  vcl;
+
+contains
+  DCFlex.Language in '..\..\..\src\DCFlex.Language.pas',
+  DCFlex.Controls in '..\..\..\src\DCFlex.Controls.pas';
+
+end.
