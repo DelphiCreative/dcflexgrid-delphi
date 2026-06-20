@@ -43,6 +43,7 @@ __recovery/
 
 # Runtime databases
 *.sqlite
+*.sqlite-journal
 *.db
 *.db3
 demo/*.scheduler.json

@@ -13,6 +13,9 @@ uses
   Vcl.ExtCtrls,
   Vcl.Controls,
   Vcl.Graphics,
+  DCFlex.Language,
+  DCFlex.Theme,
+  DCFlex.Dialogs,
   DCFlexGrid,
   DCFlex.Controls;
 
@@ -45,20 +48,20 @@ type
     lblPreviewHint: TLabel;
     lblStatus: TLabel;
 
-    cbField: TComboBox;
-    cbCondition: TComboBox;
-    edtValue: TEdit;
-    cbTarget: TComboBox;
-    cbBack: TDCFlexColorPicker;
-    cbFont: TDCFlexColorPicker;
+    cbField: TDCFlexComboBox;
+    cbCondition: TDCFlexComboBox;
+    edtValue: TDCFlexEdit;
+    cbTarget: TDCFlexComboBox;
+    cbBack: TDCFlexColorPaletteButton;
+    cbFont: TDCFlexColorPaletteButton;
     chkBold: TDCFlexToggleButton;
     chkItalic: TDCFlexToggleButton;
     chkUnderline: TDCFlexToggleButton;
 
-    btnAdd: TButton;
-    btnRemove: TButton;
-    btnClear: TButton;
-    btnClose: TButton;
+    btnAdd: TDCFlexButton;
+    btnRemove: TDCFlexButton;
+    btnClear: TDCFlexButton;
+    btnClose: TDCFlexButton;
 
     grdRules: TDCFlexGrid;
     pnlSample: TPanel;
@@ -73,8 +76,10 @@ type
     procedure SyncSelectedRuleToEditor;
     procedure ClearEditor;
     procedure ApplyLanguage;
+    procedure ApplyTheme;
     procedure SetLanguage(ALanguage: TDCGridLang);
     procedure SetStatus(const AText: string);
+    procedure NormalizeDpiScale;
     procedure BeginDesignerMode;
     procedure EndDesignerMode;
     function BuildRulesFileName: string;
@@ -114,111 +119,29 @@ implementation
 
 function ShowRulesDesignerConfirm(AOwner: TComponent; ALanguage: TDCGridLang): Boolean;
 var
-  LForm: TForm;
-  LHeader: TPanel;
-  LBody: TPanel;
-  LAccent: TPanel;
-  LFooter: TPanel;
-  LTitle: TLabel;
-  LMessage: TLabel;
-  LClear: TButton;
-  LCancel: TButton;
   LTitleText: string;
   LMessageText: string;
   LCancelText: string;
+  LClearText: string;
 begin
-  Result := False;
   LTitleText := Trim(ALanguage.ConfirmClearTitle);
   if LTitleText = '' then
     LTitleText := ALanguage.ClearAllCaption;
+
   LMessageText := Trim(ALanguage.ConfirmClearMessage);
   if LMessageText = '' then
     LMessageText := 'All visual rules will be removed.';
+
   LCancelText := Trim(ALanguage.CancelCaption);
   if LCancelText = '' then
     LCancelText := 'Cancel';
 
-  LForm := TForm.CreateNew(AOwner);
-  try
-    LForm.BorderStyle := bsDialog;
-    LForm.BorderIcons := [biSystemMenu];
-    LForm.Caption := LTitleText;
-    LForm.ClientWidth := 460;
-    LForm.ClientHeight := 190;
-    LForm.Position := poScreenCenter;
-    LForm.Color := clWhite;
-    LForm.Font.Name := 'Segoe UI';
-    LForm.Font.Size := 9;
+  LClearText := Trim(ALanguage.ClearAllCaption);
+  if LClearText = '' then
+    LClearText := 'Clear all';
 
-    LHeader := TPanel.Create(LForm);
-    LHeader.Parent := LForm;
-    LHeader.Align := alTop;
-    LHeader.Height := 62;
-    LHeader.BevelOuter := bvNone;
-    LHeader.Color := clWhite;
-    LHeader.ParentBackground := False;
-
-    LTitle := TLabel.Create(LForm);
-    LTitle.Parent := LHeader;
-    LTitle.Left := 24;
-    LTitle.Top := 18;
-    LTitle.Caption := LTitleText;
-    LTitle.Font.Name := 'Segoe UI Semibold';
-    LTitle.Font.Size := 14;
-    LTitle.Font.Style := [fsBold];
-    LTitle.Font.Color := $00253445;
-
-    LBody := TPanel.Create(LForm);
-    LBody.Parent := LForm;
-    LBody.Align := alClient;
-    LBody.BevelOuter := bvNone;
-    LBody.Color := $00FBF8F6;
-    LBody.ParentBackground := False;
-
-    LAccent := TPanel.Create(LForm);
-    LAccent.Parent := LBody;
-    LAccent.SetBounds(24, 14, 4, 48);
-    LAccent.BevelOuter := bvNone;
-    LAccent.Color := $002483DB;
-    LAccent.ParentBackground := False;
-
-    LMessage := TLabel.Create(LForm);
-    LMessage.Parent := LBody;
-    LMessage.Left := 42;
-    LMessage.Top := 17;
-    LMessage.Width := LForm.ClientWidth - 84;
-    LMessage.Height := 42;
-    LMessage.AutoSize := False;
-    LMessage.WordWrap := True;
-    LMessage.Caption := LMessageText;
-    LMessage.Font.Color := $005C524C;
-
-    LFooter := TPanel.Create(LForm);
-    LFooter.Parent := LForm;
-    LFooter.Align := alBottom;
-    LFooter.Height := 56;
-    LFooter.BevelOuter := bvNone;
-    LFooter.Color := $00F7F7F7;
-    LFooter.ParentBackground := False;
-
-    LCancel := TButton.Create(LForm);
-    LCancel.Parent := LFooter;
-    LCancel.SetBounds(LForm.ClientWidth - 24 - 96, 14, 96, 28);
-    LCancel.Caption := LCancelText;
-    LCancel.Cancel := True;
-    LCancel.ModalResult := mrCancel;
-
-    LClear := TButton.Create(LForm);
-    LClear.Parent := LFooter;
-    LClear.SetBounds(LCancel.Left - 128 - 10, 14, 128, 28);
-    LClear.Caption := ALanguage.ClearAllCaption;
-    LClear.Default := True;
-    LClear.ModalResult := mrOk;
-
-    Result := LForm.ShowModal = mrOk;
-  finally
-    LForm.Free;
-  end;
+  Result := DCFlexConfirm(AOwner, LTitleText, LMessageText, LClearText,
+    LClearText, LCancelText, ddkWarning) = dcrConfirm;
 end;
 
 { TDCFlexGridVisualRulesDesigner }
@@ -234,7 +157,7 @@ begin
   BorderIcons := [biSystemMenu];
   Position := poScreenCenter;
   Width := 1040;
-  Height := 660;
+  Height := 620;
   Color := clWhite;
   Font.Name := 'Segoe UI';
   Font.Size := 9;
@@ -243,6 +166,7 @@ begin
 
   BeginDesignerMode;
   BuildUI;
+  NormalizeDpiScale;
   ApplyGridLanguage;
   LoadFields;
   LoadConditions;
@@ -250,6 +174,7 @@ begin
   AutoLoadRules;
   RefreshRulesGrid;
   AutoLoadPreferences;
+  ApplyTheme;
   UpdatePreview;
   SetStatus(FLanguage.StatusReady);
 end;
@@ -339,7 +264,7 @@ begin
   pnlEditor := TPanel.Create(Self);
   pnlEditor.Parent := Self;
   pnlEditor.Align := alTop;
-  pnlEditor.Height := 210;
+  pnlEditor.Height := 198;
   pnlEditor.BevelOuter := bvNone;
   pnlEditor.Color := $00F5F7FA;
   pnlEditor.ParentBackground := False;
@@ -374,7 +299,7 @@ begin
   lblField.Font.Size := UI_LABEL_FONT_SIZE;
   lblField.Font.Color := $004A5663;
 
-  cbField := TComboBox.Create(Self);
+  cbField := TDCFlexComboBox.Create(Self);
   cbField.Parent := LEditorCard;
   cbField.Left := 20;
   cbField.Top := 70;
@@ -393,7 +318,7 @@ begin
   lblCondition.Font.Size := UI_LABEL_FONT_SIZE;
   lblCondition.Font.Color := $004A5663;
 
-  cbCondition := TComboBox.Create(Self);
+  cbCondition := TDCFlexComboBox.Create(Self);
   cbCondition.Parent := LEditorCard;
   cbCondition.Left := 226;
   cbCondition.Top := 70;
@@ -412,7 +337,7 @@ begin
   lblValue.Font.Size := UI_LABEL_FONT_SIZE;
   lblValue.Font.Color := $004A5663;
 
-  edtValue := TEdit.Create(Self);
+  edtValue := TDCFlexEdit.Create(Self);
   edtValue.Parent := LEditorCard;
   edtValue.Left := 432;
   edtValue.Top := 70;
@@ -430,7 +355,7 @@ begin
   lblApplyTo.Font.Size := UI_LABEL_FONT_SIZE;
   lblApplyTo.Font.Color := $004A5663;
 
-  cbTarget := TComboBox.Create(Self);
+  cbTarget := TDCFlexComboBox.Create(Self);
   cbTarget.Parent := LEditorCard;
   cbTarget.Left := 778;
   cbTarget.Top := 70;
@@ -449,13 +374,12 @@ begin
   lblBack.Font.Size := UI_LABEL_FONT_SIZE;
   lblBack.Font.Color := $004A5663;
 
-  cbBack := TDCFlexColorPicker.Create(Self);
+  cbBack := TDCFlexColorPaletteButton.Create(Self);
   cbBack.Parent := LEditorCard;
   cbBack.Left := 20;
   cbBack.Top := 134;
   cbBack.Width := 184;
   cbBack.Height := UI_INPUT_HEIGHT;
-  cbBack.ItemHeight:= 18;
   cbBack.Font.Name := 'Segoe UI';
   cbBack.Font.Size := UI_INPUT_FONT_SIZE;
   cbBack.OnChange := EditorChanged;
@@ -468,13 +392,12 @@ begin
   lblFont.Font.Size := UI_LABEL_FONT_SIZE;
   lblFont.Font.Color := $004A5663;
 
-  cbFont := TDCFlexColorPicker.Create(Self);
+  cbFont := TDCFlexColorPaletteButton.Create(Self);
   cbFont.Parent := LEditorCard;
   cbFont.Left := 226;
   cbFont.Top := 134;
   cbFont.Width := 184;
   cbFont.Height := UI_INPUT_HEIGHT;
-  cbFont.ItemHeight:= 18;
   cbFont.Font.Name := 'Segoe UI';
   cbFont.Font.Size := UI_INPUT_FONT_SIZE;
   cbFont.OnChange := EditorChanged;
@@ -483,7 +406,7 @@ begin
   chkBold.Parent := LEditorCard;
   chkBold.Left := 432;
   chkBold.Top := 132;
-  chkBold.Width := 88;
+  chkBold.Width := 104;
   chkBold.Height := 28;
   chkBold.Font.Name := 'Segoe UI';
   chkBold.Font.Size := UI_LABEL_FONT_SIZE;
@@ -492,9 +415,9 @@ begin
 
   chkItalic := TDCFlexToggleButton.Create(Self);
   chkItalic.Parent := LEditorCard;
-  chkItalic.Left := 526;
+  chkItalic.Left := 542;
   chkItalic.Top := 132;
-  chkItalic.Width := 88;
+  chkItalic.Width := 104;
   chkItalic.Height := 28;
   chkItalic.Font.Name := 'Segoe UI';
   chkItalic.Font.Size := UI_LABEL_FONT_SIZE;
@@ -503,21 +426,21 @@ begin
 
   chkUnderline := TDCFlexToggleButton.Create(Self);
   chkUnderline.Parent := LEditorCard;
-  chkUnderline.Left := 620;
+  chkUnderline.Left := 652;
   chkUnderline.Top := 132;
-  chkUnderline.Width := 112;
+  chkUnderline.Width := 104;
   chkUnderline.Height := 28;
   chkUnderline.Font.Name := 'Segoe UI';
   chkUnderline.Font.Size := UI_LABEL_FONT_SIZE;
   chkUnderline.Font.Style := [fsUnderline];
   chkUnderline.OnChange := EditorChanged;
 
-  btnAdd := TButton.Create(Self);
+  btnAdd := TDCFlexButton.Create(Self);
   btnAdd.Parent := LEditorCard;
   btnAdd.Left := 778;
-  btnAdd.Top := 120;
-  btnAdd.Width := 188;
-  btnAdd.Height := 36;
+  btnAdd.Top := 132;
+  btnAdd.Width := 184;
+  btnAdd.Height := 28;
   btnAdd.OnClick := AddRuleClick;
   btnAdd.Font.Name := 'Segoe UI Semibold';
   btnAdd.Font.Style := [fsBold];
@@ -582,9 +505,14 @@ begin
   LRulesHeader := TPanel.Create(Self);
   LRulesHeader.Parent := Self;
   LRulesHeader.Align := alClient;
-  LRulesHeader.Padding.Top := 0;
+  LRulesHeader.Padding.Left := 20;
+  LRulesHeader.Padding.Top := 12;
+  LRulesHeader.Padding.Right := 20;
+  LRulesHeader.Padding.Bottom := 12;
   LRulesHeader.AlignWithMargins := True;
   LRulesHeader.Margins.Left := 18;
+  LRulesHeader.Margins.Right := 18;
+  LRulesHeader.Margins.Bottom := 8;
   LRulesHeader.BevelOuter := bvNone;
   LRulesHeader.Color := clWhite;
   LRulesHeader.ParentBackground := False;
@@ -592,7 +520,7 @@ begin
   lblSectionRules := TLabel.Create(Self);
   lblSectionRules.Parent := LRulesHeader;
   lblSectionRules.Align := alTop;
-  lblSectionRules.Left := 0;
+  lblSectionRules.Left := 20;
   lblSectionRules.Top := 12;
   lblSectionRules.Font.Name := 'Segoe UI Semibold';
   lblSectionRules.Font.Style := [fsBold];
@@ -619,6 +547,10 @@ begin
   grdRules.RowCount := 0;
   grdRules.ShowExpandButton := False;
   grdRules.ExpandOnRowClick := False;
+  grdRules.AllowContextMenuActions := False;
+  grdRules.AllowHeaderFooterSummaryMenu := False;
+  grdRules.AllowColumnFiltersMenu := False;
+  grdRules.ShowToolbarRulesDesignerButton := False;
   grdRules.DetailStyle := dsText;
   grdRules.ShowHeader := True;
   grdRules.RowHeight := 34;
@@ -632,18 +564,18 @@ begin
   grdRules.OnRowClick := RulesGridRowClick;
   grdRules.OnDblClick := RulesGridDblClick;
   grdRules.Columns.Clear;
-  with grdRules.Columns.Add do begin FieldName := 'field'; Width := 170; end;
-  with grdRules.Columns.Add do begin FieldName := 'condition'; Width := 160; end;
-  with grdRules.Columns.Add do begin FieldName := 'value'; Width := 160; end;
-  with grdRules.Columns.Add do begin FieldName := 'applyto'; Width := 130; end;
-  with grdRules.Columns.Add do begin FieldName := 'back'; Width := 140; end;
-  with grdRules.Columns.Add do begin FieldName := 'font'; Width := 140; end;
-  with grdRules.Columns.Add do begin FieldName := 'styles'; Width := 110; end;
+  with grdRules.Columns.Add do begin FieldName := 'field'; Width := 160; end;
+  with grdRules.Columns.Add do begin FieldName := 'condition'; Width := 150; end;
+  with grdRules.Columns.Add do begin FieldName := 'value'; Width := 150; end;
+  with grdRules.Columns.Add do begin FieldName := 'applyto'; Width := 120; end;
+  with grdRules.Columns.Add do begin FieldName := 'back'; Width := 120; end;
+  with grdRules.Columns.Add do begin FieldName := 'font'; Width := 120; end;
+  with grdRules.Columns.Add do begin FieldName := 'styles'; Width := 90; end;
 
   pnlFooter := TPanel.Create(Self);
   pnlFooter.Parent := Self;
   pnlFooter.Align := alBottom;
-  pnlFooter.Height := 72;
+  pnlFooter.Height := 68;
   pnlFooter.BevelOuter := bvNone;
   pnlFooter.Color := clWhite;
   pnlFooter.ParentBackground := False;
@@ -658,26 +590,26 @@ begin
   lblSectionActions := TLabel.Create(Self);
   lblSectionActions.Parent := pnlFooter;
   lblSectionActions.Left := 20;
-  lblSectionActions.Top := 12;
+  lblSectionActions.Top := 10;
   lblSectionActions.Font.Name := 'Segoe UI Semibold';
   lblSectionActions.Font.Style := [fsBold];
   lblSectionActions.Font.Size := UI_SECTION_FONT_SIZE;
   lblSectionActions.Font.Color := $00253445;
 
-  btnRemove := TButton.Create(Self);
+  btnRemove := TDCFlexButton.Create(Self);
   btnRemove.Parent := pnlFooter;
   btnRemove.Left := 20;
-  btnRemove.Top := 34;
+  btnRemove.Top := 30;
   btnRemove.Width := 142;
   btnRemove.Height := 32;
   btnRemove.Font.Name := 'Segoe UI';
   btnRemove.Font.Size := UI_SMALL_BUTTON_FONT_SIZE;
   btnRemove.OnClick := RemoveRuleClick;
 
-  btnClear := TButton.Create(Self);
+  btnClear := TDCFlexButton.Create(Self);
   btnClear.Parent := pnlFooter;
   btnClear.Left := 170;
-  btnClear.Top := 34;
+  btnClear.Top := 30;
   btnClear.Width := 118;
   btnClear.Height := 32;
   btnClear.Font.Name := 'Segoe UI';
@@ -687,18 +619,18 @@ begin
   lblStatus := TLabel.Create(Self);
   lblStatus.Parent := pnlFooter;
   lblStatus.Left := 308;
-  lblStatus.Top := 42;
+  lblStatus.Top := 38;
   lblStatus.Font.Name := 'Segoe UI';
   lblStatus.Font.Size := UI_LABEL_FONT_SIZE;
   lblStatus.Font.Color := $00616A74;
 
-  btnClose := TButton.Create(Self);
+  btnClose := TDCFlexButton.Create(Self);
   btnClose.Parent := pnlFooter;
   btnClose.Width := 110;
   btnClose.Height := 32;
   btnClose.Font.Name := 'Segoe UI';
   btnClose.Font.Size := UI_SMALL_BUTTON_FONT_SIZE;
-  btnClose.Top := 34;
+  btnClose.Top := 30;
   btnClose.Left := 910;
   btnClose.Anchors := [akTop, akRight];
   btnClose.OnClick := CloseClick;
@@ -804,6 +736,17 @@ begin
   begin
     SetLanguage(TDCGridLang.Portuguese);
   end
+  else if Assigned(FGrid.LanguageSource) then
+  begin
+    LCustom := FGrid.GetEffectiveRulesDesignerLanguageClone;
+    if Assigned(LCustom) then
+      SetLanguage(LCustom)
+    else
+      SetLanguage(TDCGridLang.Portuguese);
+
+    if FGrid.LanguageSource.Language = dlcEnglish then
+      LPaletteLanguage := cplEnglish;
+  end
   else
   begin
     case FGrid.RulesDesignerLanguage of
@@ -849,8 +792,8 @@ begin
     if not Assigned(LJSON) then
       Exit;
 
-    Width := LJSON.GetValue<Integer>('width', Width);
-    Height := LJSON.GetValue<Integer>('height', Height);
+    Width := EnsureRange(LJSON.GetValue<Integer>('width', Width), 960, 1080);
+    Height := EnsureRange(LJSON.GetValue<Integer>('height', Height), 560, 620);
     Left := LJSON.GetValue<Integer>('left', Left);
     Top := LJSON.GetValue<Integer>('top', Top);
 
@@ -864,7 +807,8 @@ begin
     LArr := LJSON.GetValue<TJSONArray>('columnWidths');
     if Assigned(LArr) then
       for I := 0 to Min(LArr.Count - 1, grdRules.Columns.Count - 1) do
-        grdRules.Columns[I].Width := StrToIntDef(LArr.Items[I].Value, grdRules.Columns[I].Width);
+        grdRules.Columns[I].Width := Min(grdRules.Columns[I].Width,
+          StrToIntDef(LArr.Items[I].Value, grdRules.Columns[I].Width));
 
     if (grdRules.SelectedRow >= 0) and (grdRules.SelectedRow < FGrid.BusinessHighlight.Rules.Count) then
       SyncSelectedRuleToEditor;
@@ -1154,9 +1098,196 @@ begin
   lblStatus.Caption := AText;
 end;
 
+procedure TDCFlexGridVisualRulesDesigner.ApplyTheme;
+var
+  LMode: TDCFlexThemeMode;
+  LPalette: TDCFlexThemePalette;
+  LDark: Boolean;
+  LBack: TColor;
+  LSurface: TColor;
+  LSurfaceAlt: TColor;
+  LText: TColor;
+  LMuted: TColor;
+  LBorder: TColor;
+
+  procedure ApplyControl(AControl: TControl);
+  var
+    I: Integer;
+    LWinControl: TWinControl;
+  begin
+    if AControl is TWinControl then
+      DCFlexApplyNativeDarkMode(TWinControl(AControl), LDark);
+
+    if AControl is TPanel then
+    begin
+      TPanel(AControl).Color := LSurface;
+      TPanel(AControl).ParentBackground := False;
+    end
+    else if AControl is TLabel then
+      TLabel(AControl).Font.Color := LText
+    else if AControl is TDCFlexEdit then
+    begin
+      TDCFlexEdit(AControl).ThemeMode := LMode;
+      TDCFlexEdit(AControl).BackColor := LPalette.InputBack;
+      TDCFlexEdit(AControl).TextColor := LText;
+      TDCFlexEdit(AControl).BorderColor := LBorder;
+      TDCFlexEdit(AControl).FocusedBorderColor := LPalette.Accent;
+    end
+    else if AControl is TEdit then
+    begin
+      TEdit(AControl).Color := LPalette.InputBack;
+      TEdit(AControl).Font.Color := LText;
+    end
+    else if AControl is TMemo then
+    begin
+      TMemo(AControl).Color := LPalette.InputBack;
+      TMemo(AControl).Font.Color := LText;
+    end
+    else if AControl is TDCFlexComboBox then
+    begin
+      TDCFlexComboBox(AControl).ThemeMode := LMode;
+      TDCFlexComboBox(AControl).BackColor := LPalette.InputBack;
+      TDCFlexComboBox(AControl).TextColor := LText;
+      TDCFlexComboBox(AControl).BorderColor := LBorder;
+      TDCFlexComboBox(AControl).HoverColor := LPalette.Hover;
+      TDCFlexComboBox(AControl).AccentColor := LPalette.Accent;
+    end
+    else if AControl is TComboBox then
+    begin
+      TComboBox(AControl).Color := LPalette.InputBack;
+      TComboBox(AControl).Font.Color := LText;
+    end
+    else if AControl is TDCFlexButton then
+    begin
+      TDCFlexButton(AControl).ThemeMode := LMode;
+      TDCFlexButton(AControl).BackColor := LPalette.Surface;
+      TDCFlexButton(AControl).TextColor := LText;
+      TDCFlexButton(AControl).BorderColor := LBorder;
+      TDCFlexButton(AControl).HoverColor := LPalette.Hover;
+      TDCFlexButton(AControl).PressedColor := LPalette.Pressed;
+      TDCFlexButton(AControl).AccentColor := LPalette.Accent;
+    end;
+
+    if AControl is TWinControl then
+    begin
+      LWinControl := TWinControl(AControl);
+      for I := 0 to LWinControl.ControlCount - 1 do
+        ApplyControl(LWinControl.Controls[I]);
+    end;
+  end;
+begin
+  LMode := dtmLight;
+  if Assigned(FGrid) then
+    LMode := FGrid.ThemeMode;
+
+  LPalette := DCFlexPaletteForMode(LMode);
+  LDark := LMode = dtmDark;
+  LBack := LPalette.Background;
+  LSurface := LPalette.Surface;
+  LSurfaceAlt := LPalette.SurfaceAlt;
+  LText := LPalette.Text;
+  LMuted := LPalette.MutedText;
+  LBorder := LPalette.Border;
+
+  if not LDark then
+  begin
+    LBack := LPalette.SurfaceAlt;
+    LSurface := LPalette.PopupBack;
+    LSurfaceAlt := LPalette.HeaderBack;
+    LBorder := LPalette.GridLine;
+  end;
+
+  DCFlexApplyNativeDarkMode(Self, LDark);
+  Color := LBack;
+  ApplyControl(Self);
+
+  pnlHeader.Color := LBack;
+  pnlEditor.Color := LBack;
+  pnlFooter.Color := LSurface;
+  lblTitle.Font.Color := LText;
+  lblSubtitle.Font.Color := LMuted;
+  lblSectionRuleSetup.Font.Color := LText;
+  lblSectionRules.Font.Color := LText;
+  lblSectionActions.Font.Color := LText;
+  lblField.Font.Color := LMuted;
+  lblCondition.Font.Color := LMuted;
+  lblValue.Font.Color := LMuted;
+  lblApplyTo.Font.Color := LMuted;
+  lblBack.Font.Color := LMuted;
+  lblFont.Font.Color := LMuted;
+  lblStatus.Font.Color := LMuted;
+
+  pnlPreview.Color := LBorder;
+  pnlSample.Color := LSurface;
+  lblSample.Font.Color := LText;
+
+  if not LDark then
+  begin
+    pnlHeader.Color := LPalette.PopupBack;
+    pnlEditor.Color := LBack;
+    pnlFooter.Color := LPalette.PopupBack;
+  end;
+
+  cbBack.ThemeMode := LMode;
+  cbBack.BorderColor := LBorder;
+  cbBack.HoverColor := LPalette.Hover;
+  cbBack.Font.Color := LText;
+  cbFont.ThemeMode := LMode;
+  cbFont.BorderColor := LBorder;
+  cbFont.HoverColor := LPalette.Hover;
+  cbFont.Font.Color := LText;
+  chkBold.ThemeMode := LMode;
+  chkItalic.ThemeMode := LMode;
+  chkUnderline.ThemeMode := LMode;
+  btnAdd.ThemeMode := LMode;
+  btnRemove.ThemeMode := LMode;
+  btnClear.ThemeMode := LMode;
+  btnClose.ThemeMode := LMode;
+
+  grdRules.ThemeMode := LMode;
+  if LDark then
+  begin
+    grdRules.Theme.HeaderColor := LSurfaceAlt;
+    grdRules.Theme.HeaderFontColor := LText;
+    grdRules.Theme.GridBackgroundColor := LSurface;
+    grdRules.Theme.RowColor := LSurface;
+    grdRules.Theme.AlternateRowColor := LSurfaceAlt;
+    grdRules.Theme.HoverRowColor := LPalette.Hover;
+    grdRules.Theme.SelectedRowColor := LPalette.Selection;
+    grdRules.Theme.SelectedTextColor := LPalette.SelectionText;
+    grdRules.Theme.BorderColor := LBorder;
+    grdRules.Theme.TextColor := LText;
+  end;
+  if not LDark then
+  begin
+    grdRules.Theme.HeaderColor := LSurfaceAlt;
+    grdRules.Theme.HeaderFontColor := LText;
+    grdRules.Theme.GridBackgroundColor := LSurface;
+    grdRules.Theme.RowColor := LSurface;
+    grdRules.Theme.AlternateRowColor := $00FCFAF8;
+    grdRules.Theme.HoverRowColor := LPalette.Hover;
+    grdRules.Theme.SelectedRowColor := LPalette.Selection;
+    grdRules.Theme.SelectedTextColor := LPalette.SelectionText;
+    grdRules.Theme.BorderColor := LBorder;
+    grdRules.Theme.TextColor := LText;
+  end;
+end;
+
+procedure TDCFlexGridVisualRulesDesigner.NormalizeDpiScale;
+var
+  LCurrentPPI: Integer;
+begin
+  LCurrentPPI := PixelsPerInch;
+  if LCurrentPPI <= 96 then
+    Exit;
+
+  ScaleBy(96, LCurrentPPI);
+  PixelsPerInch := 96;
+end;
+
 procedure TDCFlexGridVisualRulesDesigner.ClearEditor;
 begin
-  edtValue.Clear;
+  edtValue.Text := '';
   cbCondition.ItemIndex := 0;
   cbTarget.ItemIndex := 0;
   chkBold.Checked := False;

@@ -17,6 +17,7 @@ type
     function Width(AValue: Integer): IDCGridColumnBuilder;
     function Visible(AValue: Boolean = True): IDCGridColumnBuilder;
     function Hidden: IDCGridColumnBuilder;
+    function DisplayFormat(const AValue: string): IDCGridColumnBuilder;
     function AlignLeft: IDCGridColumnBuilder;
     function AlignCenter: IDCGridColumnBuilder;
     function AlignRight: IDCGridColumnBuilder;
@@ -40,6 +41,7 @@ type
     function Width(AValue: Integer): IDCGridColumnBuilder;
     function Visible(AValue: Boolean = True): IDCGridColumnBuilder;
     function Hidden: IDCGridColumnBuilder;
+    function DisplayFormat(const AValue: string): IDCGridColumnBuilder;
     function AlignLeft: IDCGridColumnBuilder;
     function AlignCenter: IDCGridColumnBuilder;
     function AlignRight: IDCGridColumnBuilder;
@@ -174,6 +176,12 @@ begin
   Result := Visible(False);
 end;
 
+function TDCGridColumnBuilder.DisplayFormat(const AValue: string): IDCGridColumnBuilder;
+begin
+  FColumn.DisplayFormat := AValue;
+  Result := Self;
+end;
+
 function TDCGridColumnBuilder.AlignLeft: IDCGridColumnBuilder;
 begin
   FColumn.Alignment := taLeft;
@@ -204,6 +212,7 @@ end;
 
 function TDCGridColumnBuilder.AsCurrency: IDCGridColumnBuilder;
 begin
+  FColumn.DisplayFormat := '#,##0.00';
   Result := AlignRight;
 end;
 

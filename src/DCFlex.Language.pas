@@ -7,7 +7,8 @@ uses
   System.SysUtils,
   System.Generics.Collections,
   System.JSON,
-  System.IOUtils;
+  System.IOUtils,
+  System.TypInfo;
 
 type
   TDCFlexLanguageCode = (dlcEnglish, dlcPortuguese, dlcCustom);
@@ -56,6 +57,10 @@ type
       write SetItem; default;
   end;
 
+  TDCFlexLanguageExtractOption = (leoIncludeCaption, leoIncludeHint,
+    leoSkipEmptyValues);
+  TDCFlexLanguageExtractOptions = set of TDCFlexLanguageExtractOption;
+
   TDCFlexLanguage = class(TComponent)
   private
     FItems: TDCFlexLanguageItems;
@@ -63,7 +68,16 @@ type
     FChangeListeners: TObjectList<TDCFlexLanguageNotifyListener>;
     FOnChange: TNotifyEvent;
     procedure Changed;
+    procedure ApplyTextProperty(AComponent: TComponent;
+      AScope: TDCFlexLanguageScope; const ABaseKey, APropertyName: string);
+    procedure ExtractTextProperty(AComponent: TComponent;
+      AScope: TDCFlexLanguageScope; const ABaseKey, APropertyName: string;
+      AOptions: TDCFlexLanguageExtractOptions);
     function DefaultText(AScope: TDCFlexLanguageScope; const AKey,
+      ADefault: string): string;
+    function ComponentNameKey(const AName: string): string;
+    function NormalizeTextKey(const AValue: string): string;
+    function ResolvedText(AScope: TDCFlexLanguageScope; const AKey,
       ADefault: string): string;
     procedure SetItems(const Value: TDCFlexLanguageItems);
     procedure SetLanguage(const Value: TDCFlexLanguageCode);
@@ -73,7 +87,21 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure AddChangeListener(AHandler: TNotifyEvent);
+    procedure ApplyTo(AComponent: TComponent;
+      AScope: TDCFlexLanguageScope = dlsCommon; const AKey: string = '');
+    procedure ApplyToChildren(AOwner: TComponent;
+      AScope: TDCFlexLanguageScope = dlsCommon;
+      ARecursive: Boolean = True; const AKeyPrefix: string = '');
     procedure Assign(Source: TPersistent); override;
+    procedure ExtractFrom(AComponent: TComponent;
+      AScope: TDCFlexLanguageScope = dlsCommon; const AKey: string = '';
+      AOptions: TDCFlexLanguageExtractOptions = [leoIncludeCaption,
+      leoIncludeHint, leoSkipEmptyValues]);
+    procedure ExtractFromChildren(AOwner: TComponent;
+      AScope: TDCFlexLanguageScope = dlsCommon;
+      ARecursive: Boolean = True; const AKeyPrefix: string = '';
+      AOptions: TDCFlexLanguageExtractOptions = [leoIncludeCaption,
+      leoIncludeHint, leoSkipEmptyValues]);
     procedure LoadFromFile(const AFileName: string);
     procedure ResetToDefaults;
     procedure SaveToFile(const AFileName: string);
@@ -217,6 +245,160 @@ begin
   FChangeListeners.Add(TDCFlexLanguageNotifyListener.Create(AHandler));
 end;
 
+procedure TDCFlexLanguage.ApplyTextProperty(AComponent: TComponent;
+  AScope: TDCFlexLanguageScope; const ABaseKey, APropertyName: string);
+var
+  LCurrent: string;
+  LDefaultKey: string;
+  LNew: string;
+  LPropInfo: PPropInfo;
+begin
+  LPropInfo := GetPropInfo(AComponent, APropertyName);
+  if not Assigned(LPropInfo) or
+    not (LPropInfo^.PropType^.Kind in [tkString, tkLString, tkWString,
+    tkUString]) then
+    Exit;
+
+  LCurrent := GetStrProp(AComponent, LPropInfo);
+  LNew := ResolvedText(AScope, ABaseKey + '.' + LowerCase(APropertyName), '');
+
+  if (LNew = '') and SameText(APropertyName, 'Caption') then
+  begin
+    LDefaultKey := ComponentNameKey(AComponent.Name);
+    if LDefaultKey <> '' then
+      LNew := ResolvedText(dlsCommon, LDefaultKey, '');
+    if LNew = '' then
+      LNew := ResolvedText(AScope, NormalizeTextKey(LCurrent), LCurrent);
+    if (LNew = LCurrent) and (AScope <> dlsCommon) then
+      LNew := ResolvedText(dlsCommon, NormalizeTextKey(LCurrent), LCurrent);
+  end
+  else if (LNew = '') and SameText(APropertyName, 'Hint') then
+    LNew := ResolvedText(AScope, ABaseKey + '.hint', LCurrent);
+
+  if (LNew <> '') and (LNew <> LCurrent) then
+    SetStrProp(AComponent, LPropInfo, LNew);
+end;
+
+procedure TDCFlexLanguage.ApplyTo(AComponent: TComponent;
+  AScope: TDCFlexLanguageScope; const AKey: string);
+var
+  LBaseKey: string;
+begin
+  if not Assigned(AComponent) then
+    Exit;
+
+  LBaseKey := AKey;
+  if LBaseKey = '' then
+    LBaseKey := AComponent.Name;
+  if LBaseKey = '' then
+    Exit;
+
+  ApplyTextProperty(AComponent, AScope, LBaseKey, 'Caption');
+  ApplyTextProperty(AComponent, AScope, LBaseKey, 'Hint');
+end;
+
+procedure TDCFlexLanguage.ApplyToChildren(AOwner: TComponent;
+  AScope: TDCFlexLanguageScope; ARecursive: Boolean; const AKeyPrefix: string);
+var
+  I: Integer;
+  LComponent: TComponent;
+  LKey: string;
+begin
+  if not Assigned(AOwner) then
+    Exit;
+
+  for I := 0 to AOwner.ComponentCount - 1 do
+  begin
+    LComponent := AOwner.Components[I];
+    if LComponent = Self then
+      Continue;
+
+    LKey := LComponent.Name;
+    if (AKeyPrefix <> '') and (LKey <> '') then
+      LKey := AKeyPrefix + '.' + LKey;
+
+    ApplyTo(LComponent, AScope, LKey);
+
+    if ARecursive and (LComponent.ComponentCount > 0) then
+      ApplyToChildren(LComponent, AScope, ARecursive, AKeyPrefix);
+  end;
+end;
+
+procedure TDCFlexLanguage.ExtractTextProperty(AComponent: TComponent;
+  AScope: TDCFlexLanguageScope; const ABaseKey, APropertyName: string;
+  AOptions: TDCFlexLanguageExtractOptions);
+var
+  LCurrent: string;
+  LPropInfo: PPropInfo;
+begin
+  if SameText(APropertyName, 'Caption') and
+    not (leoIncludeCaption in AOptions) then
+    Exit;
+  if SameText(APropertyName, 'Hint') and
+    not (leoIncludeHint in AOptions) then
+    Exit;
+
+  LPropInfo := GetPropInfo(AComponent, APropertyName);
+  if not Assigned(LPropInfo) or
+    not (LPropInfo^.PropType^.Kind in [tkString, tkLString, tkWString,
+    tkUString]) then
+    Exit;
+
+  LCurrent := GetStrProp(AComponent, LPropInfo);
+  if (LCurrent = '') and (leoSkipEmptyValues in AOptions) then
+    Exit;
+
+  SetText(AScope, ABaseKey + '.' + LowerCase(APropertyName), LCurrent);
+end;
+
+procedure TDCFlexLanguage.ExtractFrom(AComponent: TComponent;
+  AScope: TDCFlexLanguageScope; const AKey: string;
+  AOptions: TDCFlexLanguageExtractOptions);
+var
+  LBaseKey: string;
+begin
+  if not Assigned(AComponent) then
+    Exit;
+
+  LBaseKey := AKey;
+  if LBaseKey = '' then
+    LBaseKey := AComponent.Name;
+  if LBaseKey = '' then
+    Exit;
+
+  ExtractTextProperty(AComponent, AScope, LBaseKey, 'Caption', AOptions);
+  ExtractTextProperty(AComponent, AScope, LBaseKey, 'Hint', AOptions);
+end;
+
+procedure TDCFlexLanguage.ExtractFromChildren(AOwner: TComponent;
+  AScope: TDCFlexLanguageScope; ARecursive: Boolean; const AKeyPrefix: string;
+  AOptions: TDCFlexLanguageExtractOptions);
+var
+  I: Integer;
+  LComponent: TComponent;
+  LKey: string;
+begin
+  if not Assigned(AOwner) then
+    Exit;
+
+  for I := 0 to AOwner.ComponentCount - 1 do
+  begin
+    LComponent := AOwner.Components[I];
+    if LComponent = Self then
+      Continue;
+
+    LKey := LComponent.Name;
+    if (AKeyPrefix <> '') and (LKey <> '') then
+      LKey := AKeyPrefix + '.' + LKey;
+
+    ExtractFrom(LComponent, AScope, LKey, AOptions);
+
+    if ARecursive and (LComponent.ComponentCount > 0) then
+      ExtractFromChildren(LComponent, AScope, ARecursive, AKeyPrefix,
+        AOptions);
+  end;
+end;
+
 procedure TDCFlexLanguage.Assign(Source: TPersistent);
 begin
   if Source is TDCFlexLanguage then
@@ -248,6 +430,31 @@ begin
   FChangeListeners := TObjectList<TDCFlexLanguageNotifyListener>.Create(True);
 end;
 
+function TDCFlexLanguage.ComponentNameKey(const AName: string): string;
+var
+  LName: string;
+begin
+  Result := '';
+  LName := Trim(AName);
+  if LName = '' then
+    Exit;
+
+  if (Length(LName) > 3) and
+    ((Copy(LowerCase(LName), 1, 3) = 'btn') or
+    (Copy(LowerCase(LName), 1, 3) = 'lbl') or
+    (Copy(LowerCase(LName), 1, 3) = 'chk')) then
+    Delete(LName, 1, 3)
+  else if (Length(LName) > 2) and
+    ((Copy(LowerCase(LName), 1, 2) = 'mi') or
+    (Copy(LowerCase(LName), 1, 2) = 'rb')) then
+    Delete(LName, 1, 2)
+  else if (Length(LName) > 4) and
+    (Copy(LowerCase(LName), 1, 4) = 'menu') then
+    Delete(LName, 1, 4);
+
+  Result := NormalizeTextKey(LName);
+end;
+
 function TDCFlexLanguage.DefaultText(AScope: TDCFlexLanguageScope; const AKey,
   ADefault: string): string;
 var
@@ -255,6 +462,23 @@ var
 begin
   Result := ADefault;
   LKey := LowerCase(AKey);
+
+  if FLanguage = dlcEnglish then
+  begin
+    if AScope = dlsCommon then
+    begin
+      if LKey = 'ok' then Exit('OK');
+      if LKey = 'cancel' then Exit('Cancel');
+      if LKey = 'close' then Exit('Close');
+      if LKey = 'delete' then Exit('Delete');
+      if LKey = 'clear' then Exit('Clear');
+      if LKey = 'save' then Exit('Save');
+      if LKey = 'load' then Exit('Load');
+      if LKey = 'reset' then Exit('Reset');
+      if LKey = 'language' then Exit('Language');
+      if LKey = 'storage' then Exit('Storage');
+    end;
+  end;
 
   if FLanguage = dlcPortuguese then
   begin
@@ -419,6 +643,53 @@ begin
   FChangeListeners.Free;
   FItems.Free;
   inherited Destroy;
+end;
+
+function TDCFlexLanguage.NormalizeTextKey(const AValue: string): string;
+var
+  I: Integer;
+  C: Char;
+  LWasSeparator: Boolean;
+begin
+  Result := '';
+  LWasSeparator := True;
+
+  for I := 1 to Length(AValue) do
+  begin
+    C := AValue[I];
+    if C = '&' then
+      Continue;
+
+    if CharInSet(C, ['A'..'Z']) then
+      C := Char(Ord(C) + 32);
+
+    if CharInSet(C, ['a'..'z', '0'..'9']) then
+    begin
+      Result := Result + C;
+      LWasSeparator := False;
+    end
+    else if not LWasSeparator then
+    begin
+      Result := Result + '.';
+      LWasSeparator := True;
+    end;
+  end;
+
+  while (Result <> '') and (Result[Length(Result)] = '.') do
+    Delete(Result, Length(Result), 1);
+end;
+
+function TDCFlexLanguage.ResolvedText(AScope: TDCFlexLanguageScope; const AKey,
+  ADefault: string): string;
+const
+  MissingText = #1#2#3;
+begin
+  if AKey = '' then
+    Exit(ADefault);
+
+  Result := Text(AScope, AKey, MissingText);
+  if Result = MissingText then
+    Result := ADefault;
 end;
 
 procedure TDCFlexLanguage.LoadFromFile(const AFileName: string);

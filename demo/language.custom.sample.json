@@ -33,6 +33,26 @@
       "value": "Category"
     },
     {
+      "scope": "grid",
+      "key": "toolbar.search.hint",
+      "value": "Find orders..."
+    },
+    {
+      "scope": "grid",
+      "key": "rules.title",
+      "value": "Highlight Rules"
+    },
+    {
+      "scope": "grid",
+      "key": "menu.choose.columns",
+      "value": "Visible fields..."
+    },
+    {
+      "scope": "grid",
+      "key": "column.chooser.keep.one.visible",
+      "value": "Keep at least one field visible."
+    },
+    {
       "scope": "sheets",
       "key": "style.clear",
       "value": "Reset format"

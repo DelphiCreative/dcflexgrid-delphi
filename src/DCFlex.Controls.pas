@@ -5,6 +5,7 @@ interface
 uses
   Winapi.Windows,
   Winapi.Messages,
+  Winapi.CommCtrl,
   System.Classes,
   System.SysUtils,
   System.Types,
@@ -12,12 +13,530 @@ uses
   Vcl.Graphics,
   Vcl.Controls,
   Vcl.ExtCtrls,
+  Vcl.ComCtrls,
   Vcl.Dialogs,
   Vcl.Forms,
-  DCFlex.Language;
+  DCFlex.Language,
+  DCFlex.Theme;
 
 type
   TDCFlexColorPickerLanguage = (cplEnglish, cplPortuguese);
+
+  TDCFlexButton = class(TCustomControl)
+  private
+    FBackColor: TColor;
+    FAccentColor: TColor;
+    FBorderColor: TColor;
+    FCancel: Boolean;
+    FDefault: Boolean;
+    FDisabledColor: TColor;
+    FDisabledTextColor: TColor;
+    FHoverColor: TColor;
+    FModalResult: TModalResult;
+    FMouseDown: Boolean;
+    FMouseOver: Boolean;
+    FPressedColor: TColor;
+    FTextColor: TColor;
+    FThemeMode: TDCFlexThemeMode;
+    procedure CMDialogKey(var Message: TCMDialogKey); message CM_DIALOGKEY;
+    procedure CMEnter(var Message: TCMGotFocus); message CM_ENTER;
+    procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
+    procedure CMExit(var Message: TCMLostFocus); message CM_EXIT;
+    procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
+    procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
+    procedure CMTextChanged(var Message: TMessage); message CM_TEXTCHANGED;
+    procedure SetBackColor(const Value: TColor);
+    procedure SetAccentColor(const Value: TColor);
+    procedure SetBorderColor(const Value: TColor);
+    procedure SetDisabledColor(const Value: TColor);
+    procedure SetDisabledTextColor(const Value: TColor);
+    procedure SetHoverColor(const Value: TColor);
+    procedure SetPressedColor(const Value: TColor);
+    procedure SetTextColor(const Value: TColor);
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
+  protected
+    procedure Click; override;
+    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
+    procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
+    procedure Paint; override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
+  published
+    property Align;
+    property Anchors;
+    property AccentColor: TColor read FAccentColor write SetAccentColor default $00F86F62;
+    property BackColor: TColor read FBackColor write SetBackColor default clWhite;
+    property BorderColor: TColor read FBorderColor write SetBorderColor default $00D0D7DE;
+    property Cancel: Boolean read FCancel write FCancel default False;
+    property Caption;
+    property Constraints;
+    property Cursor;
+    property Default: Boolean read FDefault write FDefault default False;
+    property DisabledColor: TColor read FDisabledColor write SetDisabledColor default $00F0F0F0;
+    property DisabledTextColor: TColor read FDisabledTextColor write SetDisabledTextColor default clGrayText;
+    property Enabled;
+    property Font;
+    property Height default 30;
+    property Hint;
+    property HoverColor: TColor read FHoverColor write SetHoverColor default $00F1F5F9;
+    property ModalResult: TModalResult read FModalResult write FModalResult default mrNone;
+    property ParentFont;
+    property ParentShowHint;
+    property PopupMenu;
+    property PressedColor: TColor read FPressedColor write SetPressedColor default $00E2E8F0;
+    property ShowHint;
+    property TabOrder;
+    property TabStop default True;
+    property TextColor: TColor read FTextColor write SetTextColor default clBlack;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
+    property Visible;
+    property Width default 96;
+    property OnClick;
+    property OnDblClick;
+    property OnEnter;
+    property OnExit;
+    property OnKeyDown;
+    property OnKeyPress;
+    property OnKeyUp;
+    property OnMouseDown;
+    property OnMouseEnter;
+    property OnMouseLeave;
+    property OnMouseMove;
+    property OnMouseUp;
+  end;
+
+  TDCFlexEdit = class(TCustomControl)
+  private
+    FBackColor: TColor;
+    FBorderColor: TColor;
+    FDisabledColor: TColor;
+    FDisabledTextColor: TColor;
+    FEdit: TEdit;
+    FFocusedBorderColor: TColor;
+    FOnChange: TNotifyEvent;
+    FText: string;
+    FTextHint: string;
+    FTextColor: TColor;
+    FThemeMode: TDCFlexThemeMode;
+    function GetReadOnly: Boolean;
+    function GetText: string;
+    function GetTextHint: string;
+    procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
+    procedure CMFontChanged(var Message: TMessage); message CM_FONTCHANGED;
+    procedure EditEnter(Sender: TObject);
+    procedure EditExit(Sender: TObject);
+    procedure EditChange(Sender: TObject);
+    procedure SetBackColor(const Value: TColor);
+    procedure SetBorderColor(const Value: TColor);
+    procedure SetDisabledColor(const Value: TColor);
+    procedure SetDisabledTextColor(const Value: TColor);
+    procedure SetFocusedBorderColor(const Value: TColor);
+    procedure SetReadOnly(const Value: Boolean);
+    procedure SetText(const Value: string);
+    procedure SetTextHint(const Value: string);
+    procedure SetTextColor(const Value: TColor);
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
+    procedure EnsureEdit;
+    procedure UpdateEditBounds;
+    procedure UpdateEditStyle;
+    procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
+  protected
+    procedure Paint; override;
+    procedure Resize; override;
+    procedure SetParent(AParent: TWinControl); override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
+    procedure SelectAll;
+    property EditControl: TEdit read FEdit;
+  published
+    property Align;
+    property Anchors;
+    property BackColor: TColor read FBackColor write SetBackColor default clWhite;
+    property BorderColor: TColor read FBorderColor write SetBorderColor default $00D0D7DE;
+    property Constraints;
+    property Cursor;
+    property DisabledColor: TColor read FDisabledColor write SetDisabledColor default $00F0F0F0;
+    property DisabledTextColor: TColor read FDisabledTextColor write SetDisabledTextColor default clGrayText;
+    property Enabled;
+    property FocusedBorderColor: TColor read FFocusedBorderColor write SetFocusedBorderColor default $00F86F62;
+    property Font;
+    property Height default 30;
+    property Hint;
+    property ParentFont;
+    property ParentShowHint;
+    property PopupMenu;
+    property ReadOnly: Boolean read GetReadOnly write SetReadOnly default False;
+    property ShowHint;
+    property TabOrder;
+    property TabStop default True;
+    property Text: string read GetText write SetText;
+    property TextHint: string read GetTextHint write SetTextHint;
+    property TextColor: TColor read FTextColor write SetTextColor default clBlack;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
+    property Visible;
+    property Width default 160;
+    property OnClick;
+    property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    property OnDblClick;
+    property OnEnter;
+    property OnExit;
+    property OnKeyDown;
+    property OnKeyPress;
+    property OnKeyUp;
+    property OnMouseDown;
+    property OnMouseEnter;
+    property OnMouseLeave;
+    property OnMouseMove;
+    property OnMouseUp;
+  end;
+
+  TDCFlexMemo = class(TCustomControl)
+  private
+    FBackColor: TColor;
+    FBorderColor: TColor;
+    FDisabledColor: TColor;
+    FDisabledTextColor: TColor;
+    FFocusedBorderColor: TColor;
+    FLines: TStringList;
+    FMemo: TMemo;
+    FOnChange: TNotifyEvent;
+    FScrollBars: TScrollStyle;
+    FTextColor: TColor;
+    FThemeMode: TDCFlexThemeMode;
+    function GetLines: TStrings;
+    function GetReadOnly: Boolean;
+    function GetScrollBars: TScrollStyle;
+    procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
+    procedure CMFontChanged(var Message: TMessage); message CM_FONTCHANGED;
+    procedure MemoChange(Sender: TObject);
+    procedure MemoEnter(Sender: TObject);
+    procedure MemoExit(Sender: TObject);
+    procedure SetBackColor(const Value: TColor);
+    procedure SetBorderColor(const Value: TColor);
+    procedure SetDisabledColor(const Value: TColor);
+    procedure SetDisabledTextColor(const Value: TColor);
+    procedure SetFocusedBorderColor(const Value: TColor);
+    procedure SetLines(const Value: TStrings);
+    procedure SetReadOnly(const Value: Boolean);
+    procedure SetScrollBars(const Value: TScrollStyle);
+    procedure SetTextColor(const Value: TColor);
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
+    procedure EnsureMemo;
+    procedure UpdateMemoBounds;
+    procedure UpdateMemoStyle;
+    procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
+  protected
+    procedure Paint; override;
+    procedure Resize; override;
+    procedure SetParent(AParent: TWinControl); override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
+    property MemoControl: TMemo read FMemo;
+  published
+    property Align;
+    property Anchors;
+    property BackColor: TColor read FBackColor write SetBackColor default clWhite;
+    property BorderColor: TColor read FBorderColor write SetBorderColor default $00D0D7DE;
+    property Constraints;
+    property Cursor;
+    property DisabledColor: TColor read FDisabledColor write SetDisabledColor default $00F0F0F0;
+    property DisabledTextColor: TColor read FDisabledTextColor write SetDisabledTextColor default clGrayText;
+    property Enabled;
+    property FocusedBorderColor: TColor read FFocusedBorderColor write SetFocusedBorderColor default $00F86F62;
+    property Font;
+    property Height default 72;
+    property Hint;
+    property Lines: TStrings read GetLines write SetLines;
+    property ParentFont;
+    property ParentShowHint;
+    property PopupMenu;
+    property ReadOnly: Boolean read GetReadOnly write SetReadOnly default False;
+    property ScrollBars: TScrollStyle read GetScrollBars write SetScrollBars default ssNone;
+    property ShowHint;
+    property TabOrder;
+    property TabStop default True;
+    property TextColor: TColor read FTextColor write SetTextColor default clBlack;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
+    property Visible;
+    property Width default 240;
+    property OnClick;
+    property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    property OnDblClick;
+    property OnEnter;
+    property OnExit;
+    property OnKeyDown;
+    property OnKeyPress;
+    property OnKeyUp;
+    property OnMouseDown;
+    property OnMouseEnter;
+    property OnMouseLeave;
+    property OnMouseMove;
+    property OnMouseUp;
+  end;
+
+  TDCFlexCheckBox = class(TCustomControl)
+  private
+    FAccentColor: TColor;
+    FBorderColor: TColor;
+    FChecked: Boolean;
+    FHoverColor: TColor;
+    FMouseOver: Boolean;
+    FTextColor: TColor;
+    FThemePalette: TDCFlexThemePalette;
+    FThemeMode: TDCFlexThemeMode;
+    FOnChange: TNotifyEvent;
+    procedure CMEnter(var Message: TCMGotFocus); message CM_ENTER;
+    procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
+    procedure CMExit(var Message: TCMLostFocus); message CM_EXIT;
+    procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
+    procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
+    procedure CMTextChanged(var Message: TMessage); message CM_TEXTCHANGED;
+    procedure SetChecked(const Value: Boolean);
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
+  protected
+    procedure Click; override;
+    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    procedure Paint; override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
+  published
+    property Align;
+    property Anchors;
+    property Caption;
+    property Checked: Boolean read FChecked write SetChecked default False;
+    property Enabled;
+    property Font;
+    property Height default 22;
+    property ParentFont;
+    property TabOrder;
+    property TabStop default True;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
+    property Visible;
+    property Width default 140;
+    property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    property OnClick;
+    property OnEnter;
+    property OnExit;
+    property OnKeyDown;
+  end;
+
+  TDCFlexDateEdit = class(TCustomControl)
+  private
+    FAccentColor: TColor;
+    FBackColor: TColor;
+    FBorderColor: TColor;
+    FDate: TDateTime;
+    FDropDown: TForm;
+    FEditText: string;
+    FMouseOver: Boolean;
+    FTextColor: TColor;
+    FThemePalette: TDCFlexThemePalette;
+    FThemeMode: TDCFlexThemeMode;
+    FOnChange: TNotifyEvent;
+    procedure CalendarClick(Sender: TObject);
+    procedure CalendarMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure CMEnter(var Message: TCMGotFocus); message CM_ENTER;
+    procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
+    procedure CMExit(var Message: TCMLostFocus); message CM_EXIT;
+    procedure DropDownDeactivate(Sender: TObject);
+    procedure SetDate(const Value: TDateTime);
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
+    procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
+    procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
+    procedure WMGetDlgCode(var Message: TWMGetDlgCode); message WM_GETDLGCODE;
+  protected
+    procedure Change; virtual;
+    procedure CloseDropDown;
+    procedure DropDown;
+    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    procedure KeyPress(var Key: Char); override;
+    procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
+    procedure Paint; override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
+  published
+    property Align;
+    property Anchors;
+    property Date: TDateTime read FDate write SetDate;
+    property Enabled;
+    property Font;
+    property Height default 28;
+    property ParentFont;
+    property TabOrder;
+    property TabStop default True;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
+    property Visible;
+    property Width default 140;
+    property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    property OnClick;
+    property OnEnter;
+    property OnExit;
+    property OnKeyDown;
+  end;
+
+  TDCFlexTimeEdit = class(TCustomControl)
+  private
+    FAccentColor: TColor;
+    FBackColor: TColor;
+    FBorderColor: TColor;
+    FEditText: string;
+    FMouseOver: Boolean;
+    FTextColor: TColor;
+    FThemePalette: TDCFlexThemePalette;
+    FThemeMode: TDCFlexThemeMode;
+    FTime: TDateTime;
+    FOnChange: TNotifyEvent;
+    procedure CMEnter(var Message: TCMGotFocus); message CM_ENTER;
+    procedure CMExit(var Message: TCMLostFocus); message CM_EXIT;
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
+    procedure SetTime(const Value: TDateTime);
+    procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
+    procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
+    procedure WMGetDlgCode(var Message: TWMGetDlgCode); message WM_GETDLGCODE;
+  protected
+    procedure Change; virtual;
+    procedure IncrementMinutes(AMinutes: Integer);
+    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    procedure KeyPress(var Key: Char); override;
+    procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
+    procedure Paint; override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
+  published
+    property Align;
+    property Anchors;
+    property Enabled;
+    property Font;
+    property Height default 28;
+    property ParentFont;
+    property TabOrder;
+    property TabStop default True;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
+    property Time: TDateTime read FTime write SetTime;
+    property Visible;
+    property Width default 86;
+    property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    property OnClick;
+    property OnEnter;
+    property OnExit;
+    property OnKeyDown;
+  end;
+
+  TDCFlexComboBox = class(TCustomControl)
+  private
+    FAccentColor: TColor;
+    FBackColor: TColor;
+    FBorderColor: TColor;
+    FDisabledColor: TColor;
+    FDisabledTextColor: TColor;
+    FDropDown: TForm;
+    FDropDownCount: Integer;
+    FHoverColor: TColor;
+    FItems: TStringList;
+    FItemIndex: Integer;
+    FListBox: TListBox;
+    FOnChange: TNotifyEvent;
+    FStyle: TComboBoxStyle;
+    FText: string;
+    FTextColor: TColor;
+    FThemeMode: TDCFlexThemeMode;
+    procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
+    procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
+    procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
+    procedure DropDownDeactivate(Sender: TObject);
+    function GetItems: TStrings;
+    procedure ItemsChanged(Sender: TObject);
+    procedure ListBoxDrawItem(Control: TWinControl; Index: Integer;
+      Rect: TRect; State: TOwnerDrawState);
+    procedure ListBoxKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure ListBoxMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure SelectListIndex(AIndex: Integer);
+    procedure SetAccentColor(const Value: TColor);
+    procedure SetBackColor(const Value: TColor);
+    procedure SetBorderColor(const Value: TColor);
+    procedure SetDisabledColor(const Value: TColor);
+    procedure SetDisabledTextColor(const Value: TColor);
+    procedure SetDropDownCount(const Value: Integer);
+    procedure SetHoverColor(const Value: TColor);
+    procedure SetItemIndex(const Value: Integer);
+    procedure SetItems(const Value: TStrings);
+    procedure SetText(const Value: string);
+    procedure SetTextColor(const Value: TColor);
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
+    procedure WMGetDlgCode(var Message: TWMGetDlgCode); message WM_GETDLGCODE;
+    procedure WMKillFocus(var Message: TWMKillFocus); message WM_KILLFOCUS;
+    procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
+  protected
+    procedure Change; virtual;
+    procedure CloseDropDown;
+    procedure DropDown; virtual;
+    function GetText: string; virtual;
+    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    procedure KeyPress(var Key: Char); override;
+    procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X,
+      Y: Integer); override;
+    procedure Paint; override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
+    property DroppedDown: TForm read FDropDown;
+  published
+    property Align;
+    property Anchors;
+    property AccentColor: TColor read FAccentColor write SetAccentColor default $00F86F62;
+    property BackColor: TColor read FBackColor write SetBackColor default clWhite;
+    property BorderColor: TColor read FBorderColor write SetBorderColor default $00D0D7DE;
+    property Constraints;
+    property Cursor;
+    property DisabledColor: TColor read FDisabledColor write SetDisabledColor default $00F0F0F0;
+    property DisabledTextColor: TColor read FDisabledTextColor write SetDisabledTextColor default clGrayText;
+    property DropDownCount: Integer read FDropDownCount write SetDropDownCount default 8;
+    property Enabled;
+    property Font;
+    property Height default 24;
+    property Hint;
+    property HoverColor: TColor read FHoverColor write SetHoverColor default $00F1F5F9;
+    property ItemIndex: Integer read FItemIndex write SetItemIndex default -1;
+    property Items: TStrings read GetItems write SetItems;
+    property ParentFont;
+    property ParentShowHint;
+    property PopupMenu;
+    property ShowHint;
+    property Style: TComboBoxStyle read FStyle write FStyle default csDropDownList;
+    property TabOrder;
+    property TabStop default True;
+    property Text: string read GetText write SetText;
+    property TextColor: TColor read FTextColor write SetTextColor default clBlack;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
+    property Visible;
+    property Width default 160;
+    property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    property OnClick;
+    property OnDblClick;
+    property OnEnter;
+    property OnExit;
+    property OnKeyDown;
+    property OnKeyPress;
+    property OnKeyUp;
+    property OnMouseDown;
+    property OnMouseEnter;
+    property OnMouseLeave;
+    property OnMouseMove;
+    property OnMouseUp;
+  end;
 
   TDCFlexColorPicker = class(TComboBox)
   private
@@ -25,11 +544,17 @@ type
     FAllowCustomColor: Boolean;
     FPaletteLoaded: Boolean;
     FPaletteLanguage: TDCFlexColorPickerLanguage;
+    FThemeMode: TDCFlexThemeMode;
+    FThemePalette: TDCFlexThemePalette;
     FLanguageSource: TDCFlexLanguage;
     function GetSelected: TColor;
     procedure SetSelected(const Value: TColor);
     procedure SetLanguageSource(const Value: TDCFlexLanguage);
     procedure SetPaletteLanguage(const Value: TDCFlexColorPickerLanguage);
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
+    procedure ApplyDropDownTheme;
+    procedure CNCommand(var Message: TWMCommand); message CN_COMMAND;
+    procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
     function ColorText(AColor: TColor): string;
     procedure AddColorItem(const ACaption: string; AColor: TColor);
     procedure EnsureColorItem(AColor: TColor);
@@ -39,11 +564,13 @@ type
   protected
     procedure DrawItem(Index: Integer; Rect: TRect; State: TOwnerDrawState); override;
     procedure DblClick; override;
+    procedure DrawClosedState;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure SetParent(AParent: TWinControl); override;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
     procedure LoadDefaultPalette;
     function DisplayText(AColor: TColor): string;
     function SelectCustomColor: Boolean;
@@ -53,6 +580,7 @@ type
       write SetLanguageSource;
     property PaletteLanguage: TDCFlexColorPickerLanguage read FPaletteLanguage write SetPaletteLanguage default cplEnglish;
     property Selected: TColor read GetSelected write SetSelected default clBlack;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
   end;
 
   TDCFlexColorPaletteButton = class(TCustomControl)
@@ -63,6 +591,8 @@ type
     FMouseOver: Boolean;
     FOnChange: TNotifyEvent;
     FPaletteLanguage: TDCFlexColorPickerLanguage;
+    FThemeMode: TDCFlexThemeMode;
+    FThemePalette: TDCFlexThemePalette;
     FLanguageSource: TDCFlexLanguage;
     FSelected: TColor;
     procedure CMEnter(var Message: TMessage); message CM_ENTER;
@@ -70,12 +600,14 @@ type
     procedure CMExit(var Message: TMessage); message CM_EXIT;
     procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
     procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
+    function ColorText(AColor: TColor): string;
     function PaletteText(const AEnglish, APortuguese: string): string;
     procedure SetBorderColor(const Value: TColor);
     procedure SetHoverColor(const Value: TColor);
     procedure SetLanguageSource(const Value: TDCFlexLanguage);
     procedure SetPaletteLanguage(const Value: TDCFlexColorPickerLanguage);
     procedure SetSelected(const Value: TColor);
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
     procedure LanguageSourceChange(Sender: TObject);
   protected
     procedure Change; virtual;
@@ -86,6 +618,8 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
+    function DisplayText(AColor: TColor): string;
     procedure DropDown;
     function SelectCustomColor: Boolean;
   published
@@ -95,18 +629,21 @@ type
     property BorderColor: TColor read FBorderColor write SetBorderColor default $00D0D7DE;
     property Color default clWhite;
     property Enabled;
+    property Font;
     property Height default 26;
     property Hint;
     property HoverColor: TColor read FHoverColor write SetHoverColor default $00F1F5F9;
     property LanguageSource: TDCFlexLanguage read FLanguageSource
       write SetLanguageSource;
     property PaletteLanguage: TDCFlexColorPickerLanguage read FPaletteLanguage write SetPaletteLanguage default cplEnglish;
+    property ParentFont;
     property ParentShowHint;
     property PopupMenu;
     property Selected: TColor read FSelected write SetSelected default clBlack;
     property ShowHint;
     property TabOrder;
     property TabStop default True;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
     property Visible;
     property Width default 42;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
@@ -139,6 +676,9 @@ type
     FGroupIndex: Integer;
     FAllowAllUp: Boolean;
     FAutoSizeToCaption: Boolean;
+    FThemeMode: TDCFlexThemeMode;
+    FLanguageSource: TDCFlexLanguage;
+    procedure LanguageSourceChange(Sender: TObject);
     procedure SetAllowToggle(const Value: Boolean);
     procedure SetChecked(const Value: Boolean);
     procedure SetBorderRadius(const Value: Integer);
@@ -156,17 +696,23 @@ type
     procedure SetGroupIndex(const Value: Integer);
     procedure SetAllowAllUp(const Value: Boolean);
     procedure SetAutoSizeToCaption(const Value: Boolean);
+    procedure SetLanguageSource(const Value: TDCFlexLanguage);
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
     procedure UpdateExclusiveGroup;
     procedure UpdateAutoSizeToCaption;
     procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
+    procedure CMEnter(var Message: TCMGotFocus); message CM_ENTER;
+    procedure CMExit(var Message: TCMLostFocus); message CM_EXIT;
     procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
     procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
     procedure CMTextChanged(var Message: TMessage); message CM_TEXTCHANGED;
     procedure CMFontChanged(var Message: TMessage); message CM_FONTCHANGED;
   protected
+    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure Paint; override;
     procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
     procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
+    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
     procedure Click; override;
     procedure Change; virtual;
     function GetBackColor: TColor; virtual;
@@ -174,6 +720,8 @@ type
     function GetTextColor: TColor; virtual;
   public
     constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
     procedure Toggle;
   published
     property Align;
@@ -191,12 +739,15 @@ type
     property Font;
     property Height default 28;
     property Hint;
+    property LanguageSource: TDCFlexLanguage read FLanguageSource
+      write SetLanguageSource;
     property ParentFont;
     property ParentShowHint;
     property PopupMenu;
     property ShowHint;
     property TabOrder;
     property TabStop default True;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
     property Visible;
     property Width default 80;
 
@@ -238,6 +789,7 @@ type
     FPaddingLeft: Integer;
     FPaddingRight: Integer;
     FPaddingTop: Integer;
+    FThemeMode: TDCFlexThemeMode;
     FVerticalSpacing: Integer;
     FWrap: Boolean;
     procedure SetAutoHeight(const Value: Boolean);
@@ -247,6 +799,7 @@ type
     procedure SetPaddingLeft(const Value: Integer);
     procedure SetPaddingRight(const Value: Integer);
     procedure SetPaddingTop(const Value: Integer);
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
     procedure SetVerticalSpacing(const Value: Integer);
     procedure SetWrap(const Value: Boolean);
   protected
@@ -258,6 +811,7 @@ type
     procedure LayoutControls; virtual;
   public
     constructor Create(AOwner: TComponent); override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
   published
     property Align;
     property Anchors;
@@ -280,6 +834,7 @@ type
     property ShowHint;
     property TabOrder;
     property TabStop default False;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
     property VerticalSpacing: Integer read FVerticalSpacing write SetVerticalSpacing default 4;
     property Visible;
     property Wrap: Boolean read FWrap write SetWrap default True;
@@ -309,6 +864,8 @@ type
     FPaddingTop: Integer;
     FPaddingRight: Integer;
     FPaddingBottom: Integer;
+    FThemeMode: TDCFlexThemeMode;
+    FThemePalette: TDCFlexThemePalette;
     procedure SetBackColor(const Value: TColor);
     procedure SetBorderColor(const Value: TColor);
     procedure SetButtonSpacing(const Value: Integer);
@@ -321,6 +878,7 @@ type
     procedure SetPaddingTop(const Value: Integer);
     procedure SetPaddingRight(const Value: Integer);
     procedure SetPaddingBottom(const Value: Integer);
+    procedure SetThemeMode(const Value: TDCFlexThemeMode);
     function GetContentHeight: Integer;
     function GetButtonWidth(const ACaption: string; ARequestedWidth: Integer): Integer;
   protected
@@ -332,6 +890,7 @@ type
     procedure LayoutControls; virtual;
   public
     constructor Create(AOwner: TComponent); override;
+    procedure ApplyThemePalette(const APalette: TDCFlexThemePalette);
     function AddToggleButton(const ACaption: string; AWidth: Integer = 0;
       AGroupIndex: Integer = 0; AChecked: Boolean = False): TDCFlexToggleButton;
     procedure AddSeparator(AWidth: Integer = 0);
@@ -351,6 +910,7 @@ type
     property PaddingTop: Integer read FPaddingTop write SetPaddingTop default 6;
     property PaddingRight: Integer read FPaddingRight write SetPaddingRight default 8;
     property PaddingBottom: Integer read FPaddingBottom write SetPaddingBottom default 6;
+    property ThemeMode: TDCFlexThemeMode read FThemeMode write SetThemeMode default dtmLight;
     property Constraints;
     property Cursor;
     property Enabled;
@@ -377,6 +937,2256 @@ type
 
 implementation
 
+type
+  TDCFlexDateCalendar = class(TMonthCalendar)
+  public
+    property OnMouseUp;
+  end;
+
+  TDCFlexComboListBox = class(TListBox)
+  private
+    procedure WMGetDlgCode(var Message: TWMGetDlgCode); message WM_GETDLGCODE;
+  end;
+
+procedure TDCFlexComboListBox.WMGetDlgCode(var Message: TWMGetDlgCode);
+begin
+  inherited;
+  Message.Result := Message.Result or DLGC_WANTTAB or DLGC_WANTARROWS;
+end;
+
+{ TDCFlexButton }
+
+constructor TDCFlexButton.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  ControlStyle := ControlStyle + [csCaptureMouse, csClickEvents, csDoubleClicks, csOpaque];
+  Width := 96;
+  Height := 30;
+  TabStop := True;
+  Font.Name := 'Segoe UI';
+  Font.Size := 9;
+  FThemeMode := dtmLight;
+  FAccentColor := $00F86F62;
+  FBackColor := clWhite;
+  FHoverColor := $00F1F5F9;
+  FPressedColor := $00E2E8F0;
+  FDisabledColor := $00F0F0F0;
+  FBorderColor := $00D0D7DE;
+  FTextColor := clBlack;
+  FDisabledTextColor := clGrayText;
+end;
+
+procedure TDCFlexButton.ApplyThemePalette(const APalette: TDCFlexThemePalette);
+begin
+  FThemeMode := dtmCustom;
+  FAccentColor := APalette.Accent;
+  FBackColor := APalette.InputBack;
+  FHoverColor := APalette.Hover;
+  FPressedColor := APalette.Pressed;
+  FDisabledColor := APalette.Disabled;
+  FBorderColor := APalette.InputBorder;
+  FTextColor := APalette.Text;
+  FDisabledTextColor := APalette.DisabledText;
+  Font.Color := FTextColor;
+  Invalidate;
+end;
+
+procedure TDCFlexButton.Click;
+var
+  LForm: TCustomForm;
+begin
+  inherited Click;
+  if FModalResult <> mrNone then
+  begin
+    LForm := GetParentForm(Self);
+    if Assigned(LForm) then
+      LForm.ModalResult := FModalResult;
+  end;
+end;
+
+procedure TDCFlexButton.CMDialogKey(var Message: TCMDialogKey);
+begin
+  if Enabled and (((Message.CharCode = VK_RETURN) and FDefault) or
+    ((Message.CharCode = VK_ESCAPE) and FCancel)) then
+  begin
+    Click;
+    Message.Result := 1;
+    Exit;
+  end;
+  inherited;
+end;
+
+procedure TDCFlexButton.CMEnter(var Message: TCMGotFocus);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexButton.CMEnabledChanged(var Message: TMessage);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexButton.CMExit(var Message: TCMLostFocus);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexButton.CMMouseEnter(var Message: TMessage);
+begin
+  inherited;
+  FMouseOver := True;
+  Invalidate;
+end;
+
+procedure TDCFlexButton.CMMouseLeave(var Message: TMessage);
+begin
+  inherited;
+  FMouseOver := False;
+  FMouseDown := False;
+  Invalidate;
+end;
+
+procedure TDCFlexButton.CMTextChanged(var Message: TMessage);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexButton.KeyDown(var Key: Word; Shift: TShiftState);
+begin
+  inherited KeyDown(Key, Shift);
+  if Enabled and ((Key = VK_RETURN) or (Key = VK_SPACE)) then
+  begin
+    Click;
+    Key := 0;
+  end;
+end;
+
+procedure TDCFlexButton.MouseDown(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  inherited MouseDown(Button, Shift, X, Y);
+  if (Button = mbLeft) and Enabled then
+  begin
+    SetFocus;
+    FMouseDown := True;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexButton.MouseUp(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  inherited MouseUp(Button, Shift, X, Y);
+  if Button = mbLeft then
+  begin
+    FMouseDown := False;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexButton.Paint;
+var
+  R: TRect;
+  LBack: TColor;
+  LBorder: TColor;
+  LText: TColor;
+  LCaption: string;
+begin
+  R := ClientRect;
+  LBack := FBackColor;
+  LBorder := FBorderColor;
+  LText := FTextColor;
+
+  if not Enabled then
+  begin
+    LBack := FDisabledColor;
+    LText := FDisabledTextColor;
+  end
+  else if FDefault then
+  begin
+    LBack := FAccentColor;
+    LBorder := FAccentColor;
+    LText := clWhite;
+    if FMouseOver or FMouseDown then
+      LBack := FPressedColor;
+  end
+  else if FMouseDown then
+    LBack := FPressedColor
+  else if FMouseOver then
+    LBack := FHoverColor;
+
+  Canvas.Brush.Color := LBack;
+  Canvas.Pen.Color := LBorder;
+  Canvas.Rectangle(R);
+
+  if Focused and Enabled then
+  begin
+    InflateRect(R, -3, -3);
+    Canvas.Brush.Style := bsClear;
+    Canvas.Pen.Color := FAccentColor;
+    Canvas.Rectangle(R);
+    Canvas.Brush.Style := bsSolid;
+    R := ClientRect;
+  end;
+
+  Canvas.Font.Assign(Font);
+  Canvas.Font.Color := LText;
+  Canvas.Brush.Style := bsClear;
+  LCaption := Caption;
+  DrawText(Canvas.Handle, PChar(LCaption), Length(LCaption), R,
+    DT_SINGLELINE or DT_CENTER or DT_VCENTER or DT_END_ELLIPSIS);
+  Canvas.Brush.Style := bsSolid;
+end;
+
+procedure TDCFlexButton.SetAccentColor(const Value: TColor);
+begin
+  if FAccentColor <> Value then
+  begin
+    FAccentColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexButton.SetBackColor(const Value: TColor);
+begin
+  if FBackColor <> Value then
+  begin
+    FBackColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexButton.SetBorderColor(const Value: TColor);
+begin
+  if FBorderColor <> Value then
+  begin
+    FBorderColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexButton.SetDisabledColor(const Value: TColor);
+begin
+  if FDisabledColor <> Value then
+  begin
+    FDisabledColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexButton.SetDisabledTextColor(const Value: TColor);
+begin
+  if FDisabledTextColor <> Value then
+  begin
+    FDisabledTextColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexButton.SetHoverColor(const Value: TColor);
+begin
+  if FHoverColor <> Value then
+  begin
+    FHoverColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexButton.SetPressedColor(const Value: TColor);
+begin
+  if FPressedColor <> Value then
+  begin
+    FPressedColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexButton.SetTextColor(const Value: TColor);
+begin
+  if FTextColor <> Value then
+  begin
+    FTextColor := Value;
+    Font.Color := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexButton.SetThemeMode(const Value: TDCFlexThemeMode);
+var
+  LPalette: TDCFlexThemePalette;
+begin
+  if FThemeMode = Value then
+    Exit;
+
+  FThemeMode := Value;
+  if FThemeMode = dtmCustom then
+    Exit;
+
+  LPalette := DCFlexPaletteForMode(FThemeMode);
+  FAccentColor := LPalette.Accent;
+  FBackColor := LPalette.InputBack;
+  FHoverColor := LPalette.Hover;
+  FPressedColor := LPalette.Pressed;
+  FDisabledColor := LPalette.Disabled;
+  FBorderColor := LPalette.InputBorder;
+  FTextColor := LPalette.Text;
+  FDisabledTextColor := LPalette.DisabledText;
+  Font.Color := FTextColor;
+  Invalidate;
+end;
+
+{ TDCFlexEdit }
+
+constructor TDCFlexEdit.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  ControlStyle := ControlStyle + [csAcceptsControls];
+  Width := 160;
+  Height := 30;
+  TabStop := True;
+  Font.Name := 'Segoe UI';
+  Font.Size := 9;
+  FThemeMode := dtmLight;
+  FBackColor := clWhite;
+  FBorderColor := $00D0D7DE;
+  FFocusedBorderColor := $00F86F62;
+  FDisabledColor := $00F0F0F0;
+  FTextColor := clBlack;
+  FDisabledTextColor := clGrayText;
+end;
+
+procedure TDCFlexEdit.ApplyThemePalette(const APalette: TDCFlexThemePalette);
+begin
+  FThemeMode := dtmCustom;
+  FBackColor := APalette.InputBack;
+  FBorderColor := APalette.InputBorder;
+  FFocusedBorderColor := APalette.Accent;
+  FDisabledColor := APalette.Disabled;
+  FTextColor := APalette.Text;
+  FDisabledTextColor := APalette.DisabledText;
+  UpdateEditStyle;
+  Invalidate;
+end;
+
+procedure TDCFlexEdit.CMEnabledChanged(var Message: TMessage);
+begin
+  inherited;
+  EnsureEdit;
+  if Assigned(FEdit) then
+    FEdit.Enabled := Enabled;
+  UpdateEditStyle;
+  Invalidate;
+end;
+
+procedure TDCFlexEdit.CMFontChanged(var Message: TMessage);
+begin
+  inherited;
+  UpdateEditStyle;
+  UpdateEditBounds;
+end;
+
+procedure TDCFlexEdit.EditChange(Sender: TObject);
+begin
+  if Assigned(FEdit) then
+    FText := FEdit.Text;
+  if Assigned(FOnChange) then
+    FOnChange(Self);
+end;
+
+procedure TDCFlexEdit.EditEnter(Sender: TObject);
+begin
+  Invalidate;
+end;
+
+procedure TDCFlexEdit.EditExit(Sender: TObject);
+begin
+  Invalidate;
+end;
+
+function TDCFlexEdit.GetReadOnly: Boolean;
+begin
+  Result := Assigned(FEdit) and FEdit.ReadOnly;
+end;
+
+function TDCFlexEdit.GetText: string;
+begin
+  if Assigned(FEdit) then
+    Result := FEdit.Text
+  else
+    Result := FText;
+end;
+
+function TDCFlexEdit.GetTextHint: string;
+begin
+  if Assigned(FEdit) then
+    Result := FEdit.TextHint
+  else
+    Result := FTextHint;
+end;
+
+procedure TDCFlexEdit.Paint;
+var
+  R: TRect;
+begin
+  R := ClientRect;
+  if Enabled then
+    Canvas.Brush.Color := FBackColor
+  else
+    Canvas.Brush.Color := FDisabledColor;
+
+  if Assigned(FEdit) and FEdit.Focused then
+    Canvas.Pen.Color := FFocusedBorderColor
+  else
+    Canvas.Pen.Color := FBorderColor;
+
+  Canvas.Rectangle(R);
+end;
+
+procedure TDCFlexEdit.Resize;
+begin
+  inherited;
+  UpdateEditBounds;
+end;
+
+procedure TDCFlexEdit.SelectAll;
+begin
+  EnsureEdit;
+  if Assigned(FEdit) then
+    FEdit.SelectAll;
+end;
+
+procedure TDCFlexEdit.SetParent(AParent: TWinControl);
+begin
+  inherited SetParent(AParent);
+  if Assigned(AParent) then
+  begin
+    EnsureEdit;
+    UpdateEditStyle;
+    UpdateEditBounds;
+  end;
+end;
+
+procedure TDCFlexEdit.SetBackColor(const Value: TColor);
+begin
+  if FBackColor <> Value then
+  begin
+    FBackColor := Value;
+    UpdateEditStyle;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexEdit.SetBorderColor(const Value: TColor);
+begin
+  if FBorderColor <> Value then
+  begin
+    FBorderColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexEdit.SetDisabledColor(const Value: TColor);
+begin
+  if FDisabledColor <> Value then
+  begin
+    FDisabledColor := Value;
+    UpdateEditStyle;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexEdit.SetDisabledTextColor(const Value: TColor);
+begin
+  if FDisabledTextColor <> Value then
+  begin
+    FDisabledTextColor := Value;
+    UpdateEditStyle;
+  end;
+end;
+
+procedure TDCFlexEdit.SetFocusedBorderColor(const Value: TColor);
+begin
+  if FFocusedBorderColor <> Value then
+  begin
+    FFocusedBorderColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexEdit.SetReadOnly(const Value: Boolean);
+begin
+  EnsureEdit;
+  if Assigned(FEdit) then
+    FEdit.ReadOnly := Value;
+end;
+
+procedure TDCFlexEdit.SetText(const Value: string);
+begin
+  FText := Value;
+  EnsureEdit;
+  if Assigned(FEdit) then
+    FEdit.Text := Value;
+end;
+
+procedure TDCFlexEdit.SetTextHint(const Value: string);
+begin
+  if FTextHint <> Value then
+  begin
+    FTextHint := Value;
+    EnsureEdit;
+    if Assigned(FEdit) then
+      FEdit.TextHint := Value;
+  end;
+end;
+
+procedure TDCFlexEdit.SetTextColor(const Value: TColor);
+begin
+  if FTextColor <> Value then
+  begin
+    FTextColor := Value;
+    UpdateEditStyle;
+  end;
+end;
+
+procedure TDCFlexEdit.SetThemeMode(const Value: TDCFlexThemeMode);
+var
+  LPalette: TDCFlexThemePalette;
+begin
+  if FThemeMode = Value then
+    Exit;
+
+  FThemeMode := Value;
+  if FThemeMode = dtmCustom then
+    Exit;
+
+  LPalette := DCFlexPaletteForMode(FThemeMode);
+  FBackColor := LPalette.InputBack;
+  FBorderColor := LPalette.InputBorder;
+  FFocusedBorderColor := LPalette.Accent;
+  FDisabledColor := LPalette.Disabled;
+  FTextColor := LPalette.Text;
+  FDisabledTextColor := LPalette.DisabledText;
+  UpdateEditStyle;
+  Invalidate;
+end;
+
+procedure TDCFlexEdit.EnsureEdit;
+begin
+  if Assigned(FEdit) or (not Assigned(Parent)) then
+    Exit;
+
+  FEdit := TEdit.Create(Self);
+  FEdit.Parent := Self;
+  FEdit.BorderStyle := bsNone;
+  FEdit.AutoSize := False;
+  FEdit.ParentColor := False;
+  FEdit.ParentFont := False;
+  FEdit.TabStop := False;
+  FEdit.OnEnter := EditEnter;
+  FEdit.OnExit := EditExit;
+  FEdit.OnChange := EditChange;
+  FEdit.Text := FText;
+  FEdit.TextHint := FTextHint;
+end;
+
+procedure TDCFlexEdit.UpdateEditBounds;
+var
+  LEditHeight: Integer;
+  LTop: Integer;
+begin
+  EnsureEdit;
+  if (not Assigned(FEdit)) or (FEdit.Parent <> Self) then
+    Exit;
+
+  LEditHeight := Abs(FEdit.Font.Height) + 8;
+  if LEditHeight < 18 then
+    LEditHeight := 18;
+  if (Height > 8) and (LEditHeight > Height - 6) then
+    LEditHeight := Height - 6;
+
+  LTop := (Height - LEditHeight) div 2 + 1;
+  if LTop < 3 then
+    LTop := 3;
+  FEdit.SetBounds(8, LTop, Width - 16, LEditHeight);
+end;
+
+procedure TDCFlexEdit.UpdateEditStyle;
+begin
+  EnsureEdit;
+  if not Assigned(FEdit) then
+    Exit;
+
+  FEdit.Font.Assign(Font);
+  FEdit.ParentColor := False;
+  FEdit.ParentFont := False;
+  if Enabled then
+  begin
+    FEdit.Color := FBackColor;
+    FEdit.Font.Color := FTextColor;
+  end
+  else
+  begin
+    FEdit.Color := FDisabledColor;
+    FEdit.Font.Color := FDisabledTextColor;
+  end;
+  FEdit.Invalidate;
+end;
+
+procedure TDCFlexEdit.WMSetFocus(var Message: TWMSetFocus);
+begin
+  inherited;
+  EnsureEdit;
+  if Assigned(FEdit) and FEdit.CanFocus then
+    FEdit.SetFocus;
+end;
+
+{ TDCFlexMemo }
+
+constructor TDCFlexMemo.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  ControlStyle := ControlStyle + [csAcceptsControls];
+  Width := 240;
+  Height := 72;
+  TabStop := True;
+  Font.Name := 'Segoe UI';
+  Font.Size := 9;
+  FThemeMode := dtmLight;
+  FBackColor := clWhite;
+  FBorderColor := $00D0D7DE;
+  FFocusedBorderColor := $00F86F62;
+  FDisabledColor := $00F0F0F0;
+  FTextColor := clBlack;
+  FDisabledTextColor := clGrayText;
+  FLines := TStringList.Create;
+  FScrollBars := ssNone;
+end;
+
+destructor TDCFlexMemo.Destroy;
+begin
+  FLines.Free;
+  inherited Destroy;
+end;
+
+procedure TDCFlexMemo.ApplyThemePalette(const APalette: TDCFlexThemePalette);
+begin
+  FThemeMode := dtmCustom;
+  FBackColor := APalette.InputBack;
+  FBorderColor := APalette.InputBorder;
+  FFocusedBorderColor := APalette.Accent;
+  FDisabledColor := APalette.Disabled;
+  FTextColor := APalette.Text;
+  FDisabledTextColor := APalette.DisabledText;
+  UpdateMemoStyle;
+  Invalidate;
+end;
+
+procedure TDCFlexMemo.CMEnabledChanged(var Message: TMessage);
+begin
+  inherited;
+  EnsureMemo;
+  if Assigned(FMemo) then
+    FMemo.Enabled := Enabled;
+  UpdateMemoStyle;
+  Invalidate;
+end;
+
+procedure TDCFlexMemo.CMFontChanged(var Message: TMessage);
+begin
+  inherited;
+  UpdateMemoStyle;
+  UpdateMemoBounds;
+end;
+
+procedure TDCFlexMemo.EnsureMemo;
+begin
+  if Assigned(FMemo) or (not Assigned(Parent)) then
+    Exit;
+
+  FMemo := TMemo.Create(Self);
+  FMemo.Parent := Self;
+  FMemo.BorderStyle := bsNone;
+  FMemo.ParentColor := False;
+  FMemo.ParentFont := False;
+  FMemo.TabStop := False;
+  FMemo.ScrollBars := FScrollBars;
+  FMemo.OnEnter := MemoEnter;
+  FMemo.OnExit := MemoExit;
+  FMemo.OnChange := MemoChange;
+  FMemo.Lines.Assign(FLines);
+end;
+
+function TDCFlexMemo.GetLines: TStrings;
+begin
+  EnsureMemo;
+  if Assigned(FMemo) then
+    Result := FMemo.Lines
+  else
+    Result := FLines;
+end;
+
+function TDCFlexMemo.GetReadOnly: Boolean;
+begin
+  Result := Assigned(FMemo) and FMemo.ReadOnly;
+end;
+
+function TDCFlexMemo.GetScrollBars: TScrollStyle;
+begin
+  EnsureMemo;
+  if Assigned(FMemo) then
+    Result := FMemo.ScrollBars
+  else
+    Result := FScrollBars;
+end;
+
+procedure TDCFlexMemo.MemoChange(Sender: TObject);
+begin
+  if Assigned(FMemo) then
+    FLines.Assign(FMemo.Lines);
+  if Assigned(FOnChange) then
+    FOnChange(Self);
+end;
+
+procedure TDCFlexMemo.MemoEnter(Sender: TObject);
+begin
+  Invalidate;
+end;
+
+procedure TDCFlexMemo.MemoExit(Sender: TObject);
+begin
+  Invalidate;
+end;
+
+procedure TDCFlexMemo.Paint;
+var
+  R: TRect;
+begin
+  R := ClientRect;
+  if Enabled then
+    Canvas.Brush.Color := FBackColor
+  else
+    Canvas.Brush.Color := FDisabledColor;
+
+  if Assigned(FMemo) and FMemo.Focused then
+    Canvas.Pen.Color := FFocusedBorderColor
+  else
+    Canvas.Pen.Color := FBorderColor;
+
+  Canvas.Rectangle(R);
+end;
+
+procedure TDCFlexMemo.Resize;
+begin
+  inherited;
+  UpdateMemoBounds;
+end;
+
+procedure TDCFlexMemo.SetBackColor(const Value: TColor);
+begin
+  if FBackColor <> Value then
+  begin
+    FBackColor := Value;
+    UpdateMemoStyle;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexMemo.SetBorderColor(const Value: TColor);
+begin
+  if FBorderColor <> Value then
+  begin
+    FBorderColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexMemo.SetDisabledColor(const Value: TColor);
+begin
+  if FDisabledColor <> Value then
+  begin
+    FDisabledColor := Value;
+    UpdateMemoStyle;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexMemo.SetDisabledTextColor(const Value: TColor);
+begin
+  if FDisabledTextColor <> Value then
+  begin
+    FDisabledTextColor := Value;
+    UpdateMemoStyle;
+  end;
+end;
+
+procedure TDCFlexMemo.SetFocusedBorderColor(const Value: TColor);
+begin
+  if FFocusedBorderColor <> Value then
+  begin
+    FFocusedBorderColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexMemo.SetLines(const Value: TStrings);
+begin
+  EnsureMemo;
+  if Assigned(Value) then
+  begin
+    FLines.Assign(Value);
+    if Assigned(FMemo) then
+      FMemo.Lines.Assign(Value);
+  end
+  else
+  begin
+    FLines.Clear;
+    if Assigned(FMemo) then
+      FMemo.Lines.Clear;
+  end;
+end;
+
+procedure TDCFlexMemo.SetParent(AParent: TWinControl);
+begin
+  inherited SetParent(AParent);
+  if Assigned(AParent) then
+  begin
+    EnsureMemo;
+    UpdateMemoStyle;
+    UpdateMemoBounds;
+  end;
+end;
+
+procedure TDCFlexMemo.SetReadOnly(const Value: Boolean);
+begin
+  EnsureMemo;
+  if Assigned(FMemo) then
+    FMemo.ReadOnly := Value;
+end;
+
+procedure TDCFlexMemo.SetScrollBars(const Value: TScrollStyle);
+begin
+  EnsureMemo;
+  FScrollBars := Value;
+  if Assigned(FMemo) then
+  begin
+    FMemo.ScrollBars := Value;
+    UpdateMemoBounds;
+  end;
+end;
+
+procedure TDCFlexMemo.SetTextColor(const Value: TColor);
+begin
+  if FTextColor <> Value then
+  begin
+    FTextColor := Value;
+    UpdateMemoStyle;
+  end;
+end;
+
+procedure TDCFlexMemo.SetThemeMode(const Value: TDCFlexThemeMode);
+var
+  LPalette: TDCFlexThemePalette;
+begin
+  if FThemeMode = Value then
+    Exit;
+
+  FThemeMode := Value;
+  if FThemeMode = dtmCustom then
+    Exit;
+
+  LPalette := DCFlexPaletteForMode(FThemeMode);
+  FBackColor := LPalette.InputBack;
+  FBorderColor := LPalette.InputBorder;
+  FFocusedBorderColor := LPalette.Accent;
+  FDisabledColor := LPalette.Disabled;
+  FTextColor := LPalette.Text;
+  FDisabledTextColor := LPalette.DisabledText;
+  UpdateMemoStyle;
+  Invalidate;
+end;
+
+procedure TDCFlexMemo.UpdateMemoBounds;
+begin
+  EnsureMemo;
+  if (not Assigned(FMemo)) or (FMemo.Parent <> Self) then
+    Exit;
+
+  FMemo.SetBounds(8, 6, Width - 16, Height - 12);
+end;
+
+procedure TDCFlexMemo.UpdateMemoStyle;
+begin
+  EnsureMemo;
+  if not Assigned(FMemo) then
+    Exit;
+
+  FMemo.Font.Assign(Font);
+  FMemo.ParentColor := False;
+  FMemo.ParentFont := False;
+  if Enabled then
+  begin
+    FMemo.Color := FBackColor;
+    FMemo.Font.Color := FTextColor;
+  end
+  else
+  begin
+    FMemo.Color := FDisabledColor;
+    FMemo.Font.Color := FDisabledTextColor;
+  end;
+  FMemo.Invalidate;
+end;
+
+procedure TDCFlexMemo.WMSetFocus(var Message: TWMSetFocus);
+begin
+  inherited;
+  EnsureMemo;
+  if Assigned(FMemo) and FMemo.CanFocus then
+    FMemo.SetFocus;
+end;
+
+{ TDCFlexCheckBox }
+
+constructor TDCFlexCheckBox.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  Width := 140;
+  Height := 22;
+  TabStop := True;
+  Font.Name := 'Segoe UI';
+  Font.Size := 9;
+  FThemeMode := dtmLight;
+  FThemePalette := DCFlexLightPalette;
+  FAccentColor := FThemePalette.Accent;
+  FBorderColor := FThemePalette.InputBorder;
+  FHoverColor := FThemePalette.Hover;
+  FTextColor := FThemePalette.Text;
+end;
+
+procedure TDCFlexCheckBox.ApplyThemePalette(const APalette: TDCFlexThemePalette);
+begin
+  FThemeMode := dtmCustom;
+  FThemePalette := APalette;
+  FAccentColor := APalette.Accent;
+  FBorderColor := APalette.InputBorder;
+  FHoverColor := APalette.Hover;
+  FTextColor := APalette.Text;
+  Font.Color := FTextColor;
+  Invalidate;
+end;
+
+procedure TDCFlexCheckBox.Click;
+begin
+  SetChecked(not FChecked);
+  inherited Click;
+end;
+
+procedure TDCFlexCheckBox.CMEnabledChanged(var Message: TMessage);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexCheckBox.CMEnter(var Message: TCMGotFocus);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexCheckBox.CMExit(var Message: TCMLostFocus);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexCheckBox.CMMouseEnter(var Message: TMessage);
+begin
+  inherited;
+  FMouseOver := True;
+  Invalidate;
+end;
+
+procedure TDCFlexCheckBox.CMMouseLeave(var Message: TMessage);
+begin
+  inherited;
+  FMouseOver := False;
+  Invalidate;
+end;
+
+procedure TDCFlexCheckBox.CMTextChanged(var Message: TMessage);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexCheckBox.KeyDown(var Key: Word; Shift: TShiftState);
+begin
+  inherited KeyDown(Key, Shift);
+  if Key in [VK_SPACE, VK_RETURN] then
+  begin
+    Click;
+    Key := 0;
+  end;
+end;
+
+procedure TDCFlexCheckBox.Paint;
+var
+  R: TRect;
+  Box: TRect;
+  LTextRect: TRect;
+  LBack: TColor;
+  LBorder: TColor;
+begin
+  R := ClientRect;
+  Canvas.Brush.Color := FThemePalette.Surface;
+  Canvas.FillRect(R);
+
+  Box := Rect(0, 0, 14, 14);
+  OffsetRect(Box, 0, (Height - 14) div 2);
+  LBack := FThemePalette.InputBack;
+  if FMouseOver and Enabled then
+    LBack := FHoverColor;
+  LBorder := FBorderColor;
+  if Focused and Enabled then
+    LBorder := FAccentColor;
+
+  Canvas.Brush.Color := LBack;
+  Canvas.Pen.Color := LBorder;
+  Canvas.Rectangle(Box);
+
+  if FChecked then
+  begin
+    Canvas.Pen.Color := FAccentColor;
+    Canvas.Pen.Width := 2;
+    Canvas.MoveTo(Box.Left + 3, Box.Top + 7);
+    Canvas.LineTo(Box.Left + 6, Box.Bottom - 3);
+    Canvas.LineTo(Box.Right - 3, Box.Top + 3);
+    Canvas.Pen.Width := 1;
+  end;
+
+  Canvas.Font.Assign(Font);
+  if Enabled then
+    Canvas.Font.Color := FTextColor
+  else
+    Canvas.Font.Color := FThemePalette.DisabledText;
+  Canvas.Brush.Style := bsClear;
+  LTextRect := Rect(22, 0, Width, Height);
+  DrawText(Canvas.Handle, PChar(Caption), Length(Caption), LTextRect,
+    DT_SINGLELINE or DT_VCENTER or DT_END_ELLIPSIS);
+  Canvas.Brush.Style := bsSolid;
+end;
+
+procedure TDCFlexCheckBox.SetChecked(const Value: Boolean);
+begin
+  if FChecked <> Value then
+  begin
+    FChecked := Value;
+    Invalidate;
+    if Assigned(FOnChange) then
+      FOnChange(Self);
+  end;
+end;
+
+procedure TDCFlexCheckBox.SetThemeMode(const Value: TDCFlexThemeMode);
+var
+  LPalette: TDCFlexThemePalette;
+begin
+  if FThemeMode = Value then
+    Exit;
+  FThemeMode := Value;
+  if FThemeMode = dtmCustom then
+    Exit;
+
+  LPalette := DCFlexPaletteForMode(FThemeMode);
+  FThemePalette := LPalette;
+  FAccentColor := LPalette.Accent;
+  FBorderColor := LPalette.InputBorder;
+  FHoverColor := LPalette.Hover;
+  FTextColor := LPalette.Text;
+  Font.Color := FTextColor;
+  Invalidate;
+end;
+
+{ TDCFlexDateEdit }
+
+constructor TDCFlexDateEdit.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  Width := 140;
+  Height := 28;
+  TabStop := True;
+  Font.Name := 'Segoe UI';
+  Font.Size := 9;
+  FDate := System.SysUtils.Date;
+  FThemeMode := dtmLight;
+  FThemePalette := DCFlexLightPalette;
+  FAccentColor := FThemePalette.Accent;
+  FBackColor := FThemePalette.InputBack;
+  FBorderColor := FThemePalette.InputBorder;
+  FTextColor := FThemePalette.Text;
+end;
+
+destructor TDCFlexDateEdit.Destroy;
+begin
+  CloseDropDown;
+  inherited Destroy;
+end;
+
+procedure TDCFlexDateEdit.ApplyThemePalette(const APalette: TDCFlexThemePalette);
+begin
+  FThemeMode := dtmCustom;
+  FThemePalette := APalette;
+  FAccentColor := APalette.Accent;
+  FBackColor := APalette.InputBack;
+  FBorderColor := APalette.InputBorder;
+  FTextColor := APalette.Text;
+  Font.Color := FTextColor;
+  Invalidate;
+end;
+
+procedure TDCFlexDateEdit.CalendarClick(Sender: TObject);
+begin
+  if Sender is TMonthCalendar then
+  begin
+    Date := TMonthCalendar(Sender).Date;
+    CloseDropDown;
+    SetFocus;
+  end;
+end;
+
+procedure TDCFlexDateEdit.CalendarMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+var
+  LHitInfo: TMCHitTestInfo;
+  LHit: DWORD;
+begin
+  if (Button <> mbLeft) or (not (Sender is TMonthCalendar)) then
+    Exit;
+
+  FillChar(LHitInfo, SizeOf(LHitInfo), 0);
+  LHitInfo.cbSize := SizeOf(LHitInfo);
+  LHitInfo.pt := Point(X, Y);
+  LHit := MonthCal_HitTest(TMonthCalendar(Sender).Handle, LHitInfo);
+
+  if (LHit and MCHT_CALENDARDATE) = MCHT_CALENDARDATE then
+  begin
+    Date := TMonthCalendar(Sender).Date;
+    CloseDropDown;
+    SetFocus;
+  end;
+end;
+
+procedure TDCFlexDateEdit.Change;
+begin
+  if Assigned(FOnChange) then
+    FOnChange(Self);
+end;
+
+procedure TDCFlexDateEdit.CMEnabledChanged(var Message: TMessage);
+begin
+  inherited;
+  if not Enabled then
+    CloseDropDown;
+  Invalidate;
+end;
+
+procedure TDCFlexDateEdit.CMEnter(var Message: TCMGotFocus);
+begin
+  inherited;
+  FEditText := '';
+  Invalidate;
+end;
+
+procedure TDCFlexDateEdit.CMExit(var Message: TCMLostFocus);
+var
+  LValue: TDateTime;
+begin
+  inherited;
+  if (FEditText <> '') and TryStrToDate(FEditText, LValue) then
+    Date := LValue;
+  FEditText := '';
+  Invalidate;
+end;
+
+procedure TDCFlexDateEdit.CloseDropDown;
+begin
+  if Assigned(FDropDown) then
+  begin
+    FDropDown.Release;
+    FDropDown := nil;
+  end;
+end;
+
+procedure TDCFlexDateEdit.CMMouseEnter(var Message: TMessage);
+begin
+  inherited;
+  FMouseOver := True;
+  Invalidate;
+end;
+
+procedure TDCFlexDateEdit.CMMouseLeave(var Message: TMessage);
+begin
+  inherited;
+  FMouseOver := False;
+  Invalidate;
+end;
+
+procedure TDCFlexDateEdit.DropDown;
+const
+  DC_DATE_DROPDOWN_WIDTH = 270;
+  DC_DATE_DROPDOWN_HEIGHT = 220;
+var
+  P: TPoint;
+  LWorkArea: TRect;
+  LCalendar: TDCFlexDateCalendar;
+begin
+  if not Enabled then
+    Exit;
+
+  if Assigned(FDropDown) then
+  begin
+    CloseDropDown;
+    Exit;
+  end;
+
+  FDropDown := TForm.CreateNew(Self);
+  FDropDown.BorderStyle := bsNone;
+  FDropDown.Position := poDesigned;
+  FDropDown.FormStyle := fsStayOnTop;
+  FDropDown.Color := FBorderColor;
+  FDropDown.OnDeactivate := DropDownDeactivate;
+  DCFlexApplyNativeDarkMode(FDropDown, FThemeMode = dtmDark);
+
+  LCalendar := TDCFlexDateCalendar.Create(FDropDown);
+  LCalendar.Parent := FDropDown;
+  LCalendar.Date := FDate;
+  LCalendar.OnMouseUp := CalendarMouseUp;
+  LCalendar.SetBounds(1, 1, DC_DATE_DROPDOWN_WIDTH - 2,
+    DC_DATE_DROPDOWN_HEIGHT - 2);
+  LCalendar.Font.Color := FThemePalette.Text;
+  LCalendar.CalColors.BackColor := FThemePalette.PopupBack;
+  LCalendar.CalColors.MonthBackColor := FThemePalette.PopupBack;
+  LCalendar.CalColors.TextColor := FThemePalette.Text;
+  LCalendar.CalColors.TitleBackColor := FThemePalette.SurfaceAlt;
+  LCalendar.CalColors.TitleTextColor := FThemePalette.Text;
+  LCalendar.CalColors.TrailingTextColor := FThemePalette.MutedText;
+  DCFlexApplyNativeDarkMode(LCalendar, FThemeMode = dtmDark);
+
+  P := ClientToScreen(Point(0, Height));
+  SystemParametersInfo(SPI_GETWORKAREA, 0, @LWorkArea, 0);
+  if P.Y + DC_DATE_DROPDOWN_HEIGHT > LWorkArea.Bottom then
+    P := ClientToScreen(Point(0, -DC_DATE_DROPDOWN_HEIGHT));
+  if P.X + DC_DATE_DROPDOWN_WIDTH > LWorkArea.Right then
+    P.X := LWorkArea.Right - DC_DATE_DROPDOWN_WIDTH;
+  if P.X < LWorkArea.Left then
+    P.X := LWorkArea.Left;
+
+  FDropDown.SetBounds(P.X, P.Y, DC_DATE_DROPDOWN_WIDTH,
+    DC_DATE_DROPDOWN_HEIGHT);
+  FDropDown.Show;
+  LCalendar.SetFocus;
+end;
+
+procedure TDCFlexDateEdit.DropDownDeactivate(Sender: TObject);
+begin
+  CloseDropDown;
+end;
+
+procedure TDCFlexDateEdit.KeyDown(var Key: Word; Shift: TShiftState);
+var
+  LValue: TDateTime;
+begin
+  inherited KeyDown(Key, Shift);
+  if not Enabled then
+    Exit;
+
+  case Key of
+    VK_BACK:
+      begin
+        if FEditText <> '' then
+        begin
+          Delete(FEditText, Length(FEditText), 1);
+          Invalidate;
+        end;
+        Key := 0;
+      end;
+    VK_DELETE, VK_ESCAPE:
+      begin
+        FEditText := '';
+        Invalidate;
+        Key := 0;
+      end;
+    VK_RETURN:
+      begin
+        if (FEditText <> '') and TryStrToDate(FEditText, LValue) then
+          Date := LValue;
+        FEditText := '';
+        Invalidate;
+        Key := 0;
+      end;
+    VK_DOWN:
+      begin
+        DropDown;
+        Key := 0;
+      end;
+    VK_UP:
+      begin
+        Date := FDate - 1;
+        Key := 0;
+      end;
+    VK_RIGHT:
+      begin
+        Date := FDate + 1;
+        Key := 0;
+      end;
+    VK_LEFT:
+      begin
+        Date := FDate - 1;
+        Key := 0;
+      end;
+  end;
+end;
+
+procedure TDCFlexDateEdit.KeyPress(var Key: Char);
+var
+  LDigits: string;
+  LText: string;
+  LValue: TDateTime;
+  I: Integer;
+begin
+  inherited KeyPress(Key);
+  if not Enabled then
+  begin
+    Key := #0;
+    Exit;
+  end;
+
+  if Key = #13 then
+  begin
+    Key := #0;
+    Exit;
+  end;
+
+  if (Key >= '0') and (Key <= '9') then
+  begin
+    LDigits := '';
+    for I := 1 to Length(FEditText) do
+      if (FEditText[I] >= '0') and (FEditText[I] <= '9') then
+        LDigits := LDigits + FEditText[I];
+    if Length(LDigits) >= 8 then
+      LDigits := '';
+    LDigits := LDigits + Key;
+
+    LText := Copy(LDigits, 1, 2);
+    if Length(LDigits) > 2 then
+      LText := LText + '/' + Copy(LDigits, 3, 2);
+    if Length(LDigits) > 4 then
+      LText := LText + '/' + Copy(LDigits, 5, 4);
+    FEditText := LText;
+
+    if (Length(LDigits) = 8) and TryStrToDate(FEditText, LValue) then
+      Date := LValue;
+    Invalidate;
+    Key := #0;
+  end
+  else if (Key = '/') and (Length(FEditText) < 10) then
+  begin
+    FEditText := FEditText + Key;
+    Invalidate;
+    Key := #0;
+  end
+  else
+    Key := #0;
+end;
+
+procedure TDCFlexDateEdit.MouseDown(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  inherited MouseDown(Button, Shift, X, Y);
+  if (Button = mbLeft) and Enabled then
+  begin
+    SetFocus;
+    if X >= Width - 28 then
+      DropDown;
+  end;
+end;
+
+procedure TDCFlexDateEdit.Paint;
+var
+  R: TRect;
+  LTextRect: TRect;
+  LArrowX: Integer;
+  LArrowY: Integer;
+  LBorder: TColor;
+  LDisplayText: string;
+  LBack: TColor;
+  LText: TColor;
+begin
+  R := ClientRect;
+  if Enabled then
+  begin
+    LBack := FBackColor;
+    LText := FTextColor;
+  end
+  else
+  begin
+    LBack := FThemePalette.Disabled;
+    LText := FThemePalette.DisabledText;
+  end;
+
+  Canvas.Brush.Color := LBack;
+  Canvas.FillRect(R);
+  LBorder := FBorderColor;
+  if Focused and Enabled then
+    LBorder := FAccentColor;
+  Canvas.Pen.Color := LBorder;
+  Canvas.Brush.Style := bsClear;
+  Canvas.Rectangle(R);
+
+  Canvas.Font.Assign(Font);
+  Canvas.Font.Color := LText;
+  LTextRect := Rect(8, 0, Width - 42, Height);
+  if Focused and (FEditText <> '') then
+    LDisplayText := FEditText
+  else
+    LDisplayText := FormatDateTime('dd/mm/yyyy', FDate);
+  DrawText(Canvas.Handle, PChar(LDisplayText), -1,
+    LTextRect, DT_SINGLELINE or DT_VCENTER or DT_END_ELLIPSIS);
+
+  Canvas.Pen.Color := LText;
+  Canvas.Rectangle(Rect(Width - 36, (Height - 12) div 2, Width - 24, (Height - 12) div 2 + 12));
+  Canvas.MoveTo(Width - 34, (Height - 12) div 2 + 3);
+  Canvas.LineTo(Width - 26, (Height - 12) div 2 + 3);
+  Canvas.MoveTo(Width - 34, (Height - 12) div 2 + 6);
+  Canvas.LineTo(Width - 26, (Height - 12) div 2 + 6);
+
+  LArrowX := Width - 17;
+  LArrowY := Height div 2;
+  Canvas.Pen.Color := LText;
+  Canvas.Pen.Width := 2;
+  Canvas.MoveTo(LArrowX, LArrowY - 2);
+  Canvas.LineTo(LArrowX + 4, LArrowY + 2);
+  Canvas.LineTo(LArrowX + 8, LArrowY - 2);
+  Canvas.Pen.Width := 1;
+  Canvas.Brush.Style := bsSolid;
+end;
+
+procedure TDCFlexDateEdit.SetDate(const Value: TDateTime);
+begin
+  if Trunc(FDate) <> Trunc(Value) then
+  begin
+    FDate := Trunc(Value);
+    FEditText := '';
+    Invalidate;
+    Change;
+  end;
+end;
+
+procedure TDCFlexDateEdit.SetThemeMode(const Value: TDCFlexThemeMode);
+var
+  LPalette: TDCFlexThemePalette;
+begin
+  if FThemeMode = Value then
+    Exit;
+  FThemeMode := Value;
+  if FThemeMode = dtmCustom then
+    Exit;
+
+  LPalette := DCFlexPaletteForMode(FThemeMode);
+  FThemePalette := LPalette;
+  FAccentColor := LPalette.Accent;
+  FBackColor := LPalette.InputBack;
+  FBorderColor := LPalette.InputBorder;
+  FTextColor := LPalette.Text;
+  Font.Color := FTextColor;
+  Invalidate;
+end;
+
+procedure TDCFlexDateEdit.WMGetDlgCode(var Message: TWMGetDlgCode);
+begin
+  inherited;
+  Message.Result := Message.Result or DLGC_WANTARROWS or DLGC_WANTCHARS;
+end;
+
+{ TDCFlexTimeEdit }
+
+constructor TDCFlexTimeEdit.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  Width := 86;
+  Height := 28;
+  TabStop := True;
+  Font.Name := 'Segoe UI';
+  Font.Size := 9;
+  FTime := EncodeTime(8, 0, 0, 0);
+  FThemeMode := dtmLight;
+  FThemePalette := DCFlexLightPalette;
+  FAccentColor := FThemePalette.Accent;
+  FBackColor := FThemePalette.InputBack;
+  FBorderColor := FThemePalette.InputBorder;
+  FTextColor := FThemePalette.Text;
+end;
+
+procedure TDCFlexTimeEdit.ApplyThemePalette(const APalette: TDCFlexThemePalette);
+begin
+  FThemeMode := dtmCustom;
+  FThemePalette := APalette;
+  FAccentColor := APalette.Accent;
+  FBackColor := APalette.InputBack;
+  FBorderColor := APalette.InputBorder;
+  FTextColor := APalette.Text;
+  Font.Color := FTextColor;
+  Invalidate;
+end;
+
+procedure TDCFlexTimeEdit.Change;
+begin
+  if Assigned(FOnChange) then
+    FOnChange(Self);
+end;
+
+procedure TDCFlexTimeEdit.CMEnter(var Message: TCMGotFocus);
+begin
+  inherited;
+  FEditText := '';
+  Invalidate;
+end;
+
+procedure TDCFlexTimeEdit.CMExit(var Message: TCMLostFocus);
+var
+  LValue: TDateTime;
+begin
+  inherited;
+  if (FEditText <> '') and TryStrToTime(FEditText, LValue) then
+    Time := LValue;
+  FEditText := '';
+  Invalidate;
+end;
+
+procedure TDCFlexTimeEdit.CMMouseEnter(var Message: TMessage);
+begin
+  inherited;
+  FMouseOver := True;
+  Invalidate;
+end;
+
+procedure TDCFlexTimeEdit.CMMouseLeave(var Message: TMessage);
+begin
+  inherited;
+  FMouseOver := False;
+  Invalidate;
+end;
+
+procedure TDCFlexTimeEdit.IncrementMinutes(AMinutes: Integer);
+var
+  LTime: TDateTime;
+begin
+  if AMinutes >= 0 then
+    LTime := Frac(FTime + EncodeTime(0, AMinutes, 0, 0))
+  else
+    LTime := Frac(FTime - EncodeTime(0, Abs(AMinutes), 0, 0));
+  if LTime < 0 then
+    LTime := LTime + 1;
+  Time := LTime;
+end;
+
+procedure TDCFlexTimeEdit.KeyDown(var Key: Word; Shift: TShiftState);
+var
+  LValue: TDateTime;
+begin
+  inherited KeyDown(Key, Shift);
+  case Key of
+    VK_BACK:
+      begin
+        if FEditText <> '' then
+        begin
+          Delete(FEditText, Length(FEditText), 1);
+          Invalidate;
+        end;
+        Key := 0;
+      end;
+    VK_DELETE, VK_ESCAPE:
+      begin
+        FEditText := '';
+        Invalidate;
+        Key := 0;
+      end;
+    VK_RETURN:
+      begin
+        if (FEditText <> '') and TryStrToTime(FEditText, LValue) then
+          Time := LValue;
+        FEditText := '';
+        Invalidate;
+        Key := 0;
+      end;
+    VK_UP:
+      begin
+        IncrementMinutes(15);
+        Key := 0;
+      end;
+    VK_DOWN:
+      begin
+        IncrementMinutes(-15);
+        Key := 0;
+      end;
+  end;
+end;
+
+procedure TDCFlexTimeEdit.KeyPress(var Key: Char);
+var
+  LDigits: string;
+  LText: string;
+  LValue: TDateTime;
+  I: Integer;
+begin
+  inherited KeyPress(Key);
+
+  if Key = #13 then
+  begin
+    Key := #0;
+    Exit;
+  end;
+
+  if (Key >= '0') and (Key <= '9') then
+  begin
+    LDigits := '';
+    for I := 1 to Length(FEditText) do
+      if (FEditText[I] >= '0') and (FEditText[I] <= '9') then
+        LDigits := LDigits + FEditText[I];
+    if Length(LDigits) >= 4 then
+      LDigits := '';
+    LDigits := LDigits + Key;
+
+    LText := Copy(LDigits, 1, 2);
+    if Length(LDigits) > 2 then
+      LText := LText + ':' + Copy(LDigits, 3, 2);
+    FEditText := LText;
+
+    if (Length(LDigits) = 4) and TryStrToTime(FEditText, LValue) then
+      Time := LValue;
+    Invalidate;
+    Key := #0;
+  end
+  else if (Key = ':') and (Pos(':', FEditText) = 0) and (Length(FEditText) > 0) then
+  begin
+    FEditText := FEditText + Key;
+    Invalidate;
+    Key := #0;
+  end
+  else
+    Key := #0;
+end;
+
+procedure TDCFlexTimeEdit.MouseDown(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  inherited MouseDown(Button, Shift, X, Y);
+  if (Button = mbLeft) and Enabled then
+  begin
+    SetFocus;
+    if X >= Width - 22 then
+    begin
+      if Y < Height div 2 then
+        IncrementMinutes(15)
+      else
+        IncrementMinutes(-15);
+    end;
+  end;
+end;
+
+procedure TDCFlexTimeEdit.Paint;
+var
+  R: TRect;
+  LTextRect: TRect;
+  LBorder: TColor;
+  LDisplayText: string;
+begin
+  R := ClientRect;
+  Canvas.Brush.Color := FBackColor;
+  Canvas.FillRect(R);
+  LBorder := FBorderColor;
+  if Focused and Enabled then
+    LBorder := FAccentColor;
+  Canvas.Pen.Color := LBorder;
+  Canvas.Brush.Style := bsClear;
+  Canvas.Rectangle(R);
+
+  Canvas.Font.Assign(Font);
+  Canvas.Font.Color := FTextColor;
+  LTextRect := Rect(8, 0, Width - 24, Height);
+  if Focused and (FEditText <> '') then
+    LDisplayText := FEditText
+  else
+    LDisplayText := FormatDateTime('hh:nn', FTime);
+  DrawText(Canvas.Handle, PChar(LDisplayText), -1,
+    LTextRect, DT_SINGLELINE or DT_VCENTER or DT_END_ELLIPSIS);
+
+  Canvas.Pen.Color := FThemePalette.InputBorder;
+  Canvas.MoveTo(Width - 22, 1);
+  Canvas.LineTo(Width - 22, Height - 1);
+  Canvas.MoveTo(Width - 22, Height div 2);
+  Canvas.LineTo(Width - 1, Height div 2);
+
+  Canvas.Pen.Color := FTextColor;
+  Canvas.MoveTo(Width - 15, Height div 2 - 5);
+  Canvas.LineTo(Width - 11, Height div 2 - 9);
+  Canvas.LineTo(Width - 7, Height div 2 - 5);
+  Canvas.MoveTo(Width - 15, Height div 2 + 5);
+  Canvas.LineTo(Width - 11, Height div 2 + 9);
+  Canvas.LineTo(Width - 7, Height div 2 + 5);
+  Canvas.Brush.Style := bsSolid;
+end;
+
+procedure TDCFlexTimeEdit.SetThemeMode(const Value: TDCFlexThemeMode);
+var
+  LPalette: TDCFlexThemePalette;
+begin
+  if FThemeMode = Value then
+    Exit;
+  FThemeMode := Value;
+  if FThemeMode = dtmCustom then
+    Exit;
+
+  LPalette := DCFlexPaletteForMode(FThemeMode);
+  FThemePalette := LPalette;
+  FAccentColor := LPalette.Accent;
+  FBackColor := LPalette.InputBack;
+  FBorderColor := LPalette.InputBorder;
+  FTextColor := LPalette.Text;
+  Font.Color := FTextColor;
+  Invalidate;
+end;
+
+procedure TDCFlexTimeEdit.SetTime(const Value: TDateTime);
+begin
+  if Frac(FTime) <> Frac(Value) then
+  begin
+    FTime := Frac(Value);
+    FEditText := '';
+    Invalidate;
+    Change;
+  end;
+end;
+
+procedure TDCFlexTimeEdit.WMGetDlgCode(var Message: TWMGetDlgCode);
+begin
+  inherited;
+  Message.Result := Message.Result or DLGC_WANTARROWS or DLGC_WANTCHARS;
+end;
+
+{ TDCFlexComboBox }
+
+constructor TDCFlexComboBox.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  ControlStyle := ControlStyle + [csCaptureMouse, csClickEvents, csDoubleClicks, csOpaque];
+  Width := 160;
+  Height := 24;
+  TabStop := True;
+  Font.Name := 'Segoe UI';
+  Font.Size := 9;
+  FItems := TStringList.Create;
+  FItems.OnChange := ItemsChanged;
+  FItemIndex := -1;
+  FText := '';
+  FDropDownCount := 8;
+  FStyle := csDropDownList;
+  FThemeMode := dtmLight;
+  FAccentColor := $00F86F62;
+  FBackColor := clWhite;
+  FHoverColor := $00F1F5F9;
+  FBorderColor := $00D0D7DE;
+  FTextColor := clBlack;
+  FDisabledColor := $00F0F0F0;
+  FDisabledTextColor := clGrayText;
+end;
+
+destructor TDCFlexComboBox.Destroy;
+begin
+  CloseDropDown;
+  FItems.Free;
+  inherited Destroy;
+end;
+
+procedure TDCFlexComboBox.ApplyThemePalette(const APalette: TDCFlexThemePalette);
+begin
+  FThemeMode := dtmCustom;
+  FAccentColor := APalette.Accent;
+  FBackColor := APalette.InputBack;
+  FHoverColor := APalette.Hover;
+  FBorderColor := APalette.InputBorder;
+  FTextColor := APalette.Text;
+  FDisabledColor := APalette.Disabled;
+  FDisabledTextColor := APalette.DisabledText;
+  Font.Color := FTextColor;
+  Invalidate;
+end;
+
+procedure TDCFlexComboBox.Change;
+begin
+  if Assigned(FOnChange) then
+    FOnChange(Self);
+end;
+
+procedure TDCFlexComboBox.CloseDropDown;
+begin
+  if Assigned(FDropDown) then
+  begin
+    FDropDown.Release;
+    FDropDown := nil;
+    FListBox := nil;
+  end;
+end;
+
+procedure TDCFlexComboBox.CMEnabledChanged(var Message: TMessage);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexComboBox.CMMouseEnter(var Message: TMessage);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexComboBox.CMMouseLeave(var Message: TMessage);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexComboBox.DropDown;
+var
+  P: TPoint;
+  LItemHeight: Integer;
+  LVisibleCount: Integer;
+  LHeight: Integer;
+begin
+  if Assigned(FDropDown) then
+  begin
+    CloseDropDown;
+    Exit;
+  end;
+
+  if FItems.Count = 0 then
+    Exit;
+
+  LItemHeight := Abs(Font.Height) + 8;
+  if LItemHeight < 22 then
+    LItemHeight := 22;
+
+  LVisibleCount := FItems.Count;
+  if LVisibleCount > FDropDownCount then
+    LVisibleCount := FDropDownCount;
+  if LVisibleCount < 1 then
+    LVisibleCount := 1;
+  LHeight := LVisibleCount * LItemHeight + 2;
+
+  FDropDown := TForm.CreateNew(Self);
+  FDropDown.BorderStyle := bsNone;
+  FDropDown.Position := poDesigned;
+  FDropDown.FormStyle := fsStayOnTop;
+  FDropDown.Color := FBorderColor;
+  FDropDown.OnDeactivate := DropDownDeactivate;
+
+  FListBox := TDCFlexComboListBox.Create(FDropDown);
+  FListBox.Parent := FDropDown;
+  FListBox.Align := alNone;
+  FListBox.BorderStyle := bsNone;
+  FListBox.Style := lbOwnerDrawFixed;
+  FListBox.ItemHeight := LItemHeight;
+  FListBox.Items.Assign(FItems);
+  FListBox.ItemIndex := FItemIndex;
+  FListBox.Color := FBackColor;
+  FListBox.Font.Assign(Font);
+  FListBox.Font.Color := FTextColor;
+  FListBox.OnDrawItem := ListBoxDrawItem;
+  FListBox.OnMouseUp := ListBoxMouseUp;
+  FListBox.OnKeyDown := ListBoxKeyDown;
+
+  P := ClientToScreen(Point(0, Height));
+  FDropDown.SetBounds(P.X, P.Y, Width, LHeight);
+  FListBox.SetBounds(1, 1, FDropDown.ClientWidth - 2, FDropDown.ClientHeight - 2);
+  FDropDown.Show;
+  FListBox.SetFocus;
+end;
+
+procedure TDCFlexComboBox.DropDownDeactivate(Sender: TObject);
+begin
+  CloseDropDown;
+end;
+
+function TDCFlexComboBox.GetText: string;
+begin
+  if FStyle = csDropDown then
+    Result := FText
+  else if (FItemIndex >= 0) and (FItemIndex < FItems.Count) then
+    Result := FItems[FItemIndex]
+  else
+    Result := '';
+end;
+
+function TDCFlexComboBox.GetItems: TStrings;
+begin
+  Result := FItems;
+end;
+
+procedure TDCFlexComboBox.ItemsChanged(Sender: TObject);
+begin
+  if FItemIndex >= FItems.Count then
+    FItemIndex := FItems.Count - 1;
+  Invalidate;
+end;
+
+procedure TDCFlexComboBox.KeyDown(var Key: Word; Shift: TShiftState);
+begin
+  inherited KeyDown(Key, Shift);
+  if not Enabled then
+    Exit;
+
+  case Key of
+    VK_BACK:
+      begin
+        if (FStyle = csDropDown) and (FText <> '') then
+        begin
+          Delete(FText, Length(FText), 1);
+          FItemIndex := -1;
+          Invalidate;
+          Change;
+        end;
+        Key := 0;
+      end;
+    VK_DELETE:
+      begin
+        if FStyle = csDropDown then
+        begin
+          FText := '';
+          FItemIndex := -1;
+          Invalidate;
+          Change;
+        end;
+        Key := 0;
+      end;
+    VK_RETURN, VK_SPACE, VK_DOWN:
+      begin
+        DropDown;
+        Key := 0;
+      end;
+    VK_UP:
+      begin
+        if FItemIndex > 0 then
+          SetItemIndex(FItemIndex - 1);
+        Key := 0;
+      end;
+    VK_ESCAPE:
+      begin
+        CloseDropDown;
+        Key := 0;
+      end;
+  end;
+end;
+
+procedure TDCFlexComboBox.KeyPress(var Key: Char);
+begin
+  inherited KeyPress(Key);
+  if (FStyle = csDropDown) and Enabled and (Key >= #32) then
+  begin
+    FText := FText + Key;
+    FItemIndex := FItems.IndexOf(FText);
+    Invalidate;
+    Change;
+    Key := #0;
+  end;
+end;
+
+procedure TDCFlexComboBox.ListBoxDrawItem(Control: TWinControl; Index: Integer;
+  Rect: TRect; State: TOwnerDrawState);
+var
+  LBack: TColor;
+  LText: TColor;
+begin
+  if not Assigned(FListBox) then
+    Exit;
+
+  LBack := FBackColor;
+  LText := FTextColor;
+  if odSelected in State then
+  begin
+    LBack := FAccentColor;
+    LText := clWhite;
+  end;
+
+  FListBox.Canvas.Brush.Color := LBack;
+  FListBox.Canvas.FillRect(Rect);
+  FListBox.Canvas.Font.Assign(Font);
+  FListBox.Canvas.Font.Color := LText;
+  InflateRect(Rect, -8, 0);
+  DrawText(FListBox.Canvas.Handle, PChar(FListBox.Items[Index]),
+    Length(FListBox.Items[Index]), Rect,
+    DT_SINGLELINE or DT_VCENTER or DT_END_ELLIPSIS);
+end;
+
+procedure TDCFlexComboBox.ListBoxKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+var
+  LForm: TCustomForm;
+begin
+  case Key of
+    VK_RETURN:
+      begin
+        if Assigned(FListBox) then
+          SelectListIndex(FListBox.ItemIndex);
+        Key := 0;
+      end;
+    VK_ESCAPE:
+      begin
+        CloseDropDown;
+        SetFocus;
+        Key := 0;
+      end;
+    VK_TAB:
+      begin
+        if Assigned(FListBox) and (FListBox.ItemIndex >= 0) then
+          SetItemIndex(FListBox.ItemIndex);
+        CloseDropDown;
+        LForm := GetParentForm(Self);
+        if Assigned(LForm) then
+          LForm.Perform(CM_DIALOGKEY, Key, 0)
+        else
+          SetFocus;
+        Key := 0;
+      end;
+  end;
+end;
+
+procedure TDCFlexComboBox.ListBoxMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  if (Button = mbLeft) and Assigned(FListBox) then
+    SelectListIndex(FListBox.ItemIndex);
+end;
+
+procedure TDCFlexComboBox.MouseDown(Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  inherited MouseDown(Button, Shift, X, Y);
+  if (Button = mbLeft) and Enabled then
+  begin
+    SetFocus;
+    DropDown;
+  end;
+end;
+
+procedure TDCFlexComboBox.Paint;
+var
+  R: TRect;
+  LBack: TColor;
+  LBorder: TColor;
+  LText: TColor;
+  LArrowX: Integer;
+  LArrowY: Integer;
+  LTextRect: TRect;
+begin
+  R := ClientRect;
+  if Enabled then
+  begin
+    LBack := FBackColor;
+    LText := FTextColor;
+  end
+  else
+  begin
+    LBack := FDisabledColor;
+    LText := FDisabledTextColor;
+  end;
+
+  LBorder := FBorderColor;
+  if (Focused or Assigned(FDropDown)) and Enabled then
+    LBorder := FAccentColor;
+
+  Canvas.Brush.Color := LBack;
+  Canvas.Pen.Color := LBorder;
+  Canvas.Rectangle(R);
+
+  LArrowX := R.Right - 16;
+  LArrowY := Height div 2;
+  Canvas.Pen.Color := LText;
+  Canvas.Pen.Width := 2;
+  Canvas.MoveTo(LArrowX, LArrowY - 2);
+  Canvas.LineTo(LArrowX + 4, LArrowY + 2);
+  Canvas.LineTo(LArrowX + 8, LArrowY - 2);
+  Canvas.Pen.Width := 1;
+
+  Canvas.Font.Assign(Font);
+  Canvas.Font.Color := LText;
+  Canvas.Brush.Style := bsClear;
+  LTextRect := Rect(8, 0, R.Right - 24, R.Bottom);
+  DrawText(Canvas.Handle, PChar(Text), Length(Text), LTextRect,
+    DT_SINGLELINE or DT_VCENTER or DT_END_ELLIPSIS);
+  Canvas.Brush.Style := bsSolid;
+end;
+
+procedure TDCFlexComboBox.SelectListIndex(AIndex: Integer);
+begin
+  SetItemIndex(AIndex);
+  CloseDropDown;
+  SetFocus;
+end;
+
+procedure TDCFlexComboBox.SetAccentColor(const Value: TColor);
+begin
+  if FAccentColor <> Value then
+  begin
+    FAccentColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexComboBox.SetBackColor(const Value: TColor);
+begin
+  if FBackColor <> Value then
+  begin
+    FBackColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexComboBox.SetBorderColor(const Value: TColor);
+begin
+  if FBorderColor <> Value then
+  begin
+    FBorderColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexComboBox.SetDisabledColor(const Value: TColor);
+begin
+  if FDisabledColor <> Value then
+  begin
+    FDisabledColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexComboBox.SetDisabledTextColor(const Value: TColor);
+begin
+  if FDisabledTextColor <> Value then
+  begin
+    FDisabledTextColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexComboBox.SetDropDownCount(const Value: Integer);
+begin
+  if Value < 1 then
+    FDropDownCount := 1
+  else
+    FDropDownCount := Value;
+end;
+
+procedure TDCFlexComboBox.SetHoverColor(const Value: TColor);
+begin
+  if FHoverColor <> Value then
+  begin
+    FHoverColor := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexComboBox.SetItemIndex(const Value: Integer);
+var
+  LNewIndex: Integer;
+begin
+  LNewIndex := Value;
+  if LNewIndex < -1 then
+    LNewIndex := -1;
+  if LNewIndex >= FItems.Count then
+    LNewIndex := FItems.Count - 1;
+
+  if FItemIndex <> LNewIndex then
+  begin
+    FItemIndex := LNewIndex;
+    if (FStyle = csDropDown) and (FItemIndex >= 0) and (FItemIndex < FItems.Count) then
+      FText := FItems[FItemIndex];
+    Invalidate;
+    Change;
+  end;
+end;
+
+procedure TDCFlexComboBox.SetItems(const Value: TStrings);
+begin
+  FItems.Assign(Value);
+  ItemsChanged(FItems);
+end;
+
+procedure TDCFlexComboBox.SetText(const Value: string);
+begin
+  if FText <> Value then
+  begin
+    FText := Value;
+    if FStyle = csDropDown then
+      FItemIndex := FItems.IndexOf(FText);
+    Invalidate;
+    Change;
+  end;
+end;
+
+procedure TDCFlexComboBox.SetTextColor(const Value: TColor);
+begin
+  if FTextColor <> Value then
+  begin
+    FTextColor := Value;
+    Font.Color := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TDCFlexComboBox.SetThemeMode(const Value: TDCFlexThemeMode);
+var
+  LPalette: TDCFlexThemePalette;
+begin
+  if FThemeMode = Value then
+    Exit;
+
+  FThemeMode := Value;
+  if FThemeMode = dtmCustom then
+    Exit;
+
+  LPalette := DCFlexPaletteForMode(FThemeMode);
+  FAccentColor := LPalette.Accent;
+  FBackColor := LPalette.InputBack;
+  FHoverColor := LPalette.Hover;
+  FBorderColor := LPalette.InputBorder;
+  FTextColor := LPalette.Text;
+  FDisabledColor := LPalette.Disabled;
+  FDisabledTextColor := LPalette.DisabledText;
+  Font.Color := FTextColor;
+  Invalidate;
+end;
+
+procedure TDCFlexComboBox.WMGetDlgCode(var Message: TWMGetDlgCode);
+begin
+  inherited;
+  Message.Result := Message.Result or DLGC_WANTARROWS or DLGC_WANTCHARS;
+end;
+
+procedure TDCFlexComboBox.WMKillFocus(var Message: TWMKillFocus);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexComboBox.WMSetFocus(var Message: TWMSetFocus);
+begin
+  inherited;
+  Invalidate;
+end;
+
 constructor TDCFlexColorPicker.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
@@ -384,9 +3194,13 @@ begin
   FSelected := clBlack;
   FPaletteLoaded := False;
   FPaletteLanguage := cplEnglish;
+  FThemeMode := dtmLight;
+  FThemePalette := DCFlexLightPalette;
   Style := csOwnerDrawFixed;
   ItemHeight := 22;
   Height := 24;
+  Color := FThemePalette.InputBack;
+  Font.Color := FThemePalette.Text;
 end;
 
 destructor TDCFlexColorPicker.Destroy;
@@ -399,6 +3213,57 @@ end;
 procedure TDCFlexColorPicker.AddColorItem(const ACaption: string; AColor: TColor);
 begin
   Items.AddObject(ACaption, TObject(NativeInt(AColor)));
+end;
+
+procedure TDCFlexColorPicker.ApplyThemePalette(
+  const APalette: TDCFlexThemePalette);
+begin
+  FThemeMode := dtmCustom;
+  FThemePalette := APalette;
+  Color := APalette.InputBack;
+  Font.Color := APalette.Text;
+  Invalidate;
+end;
+
+procedure ApplyDCFlexThemeToWindowHandle(AHandle: HWND; ADark: Boolean);
+type
+  TSetWindowThemeFunc = function(hwnd: HWND; pszSubAppName: PWideChar;
+    pszSubIdList: PWideChar): Longint; stdcall;
+var
+  LUxTheme: HMODULE;
+  LSetWindowTheme: TSetWindowThemeFunc;
+  LThemeName: WideString;
+begin
+  if AHandle = 0 then
+    Exit;
+
+  LThemeName := 'Explorer';
+  if ADark then
+    LThemeName := 'DarkMode_Explorer';
+
+  LUxTheme := LoadLibrary('uxtheme.dll');
+  if LUxTheme <> 0 then
+  try
+    @LSetWindowTheme := Winapi.Windows.GetProcAddress(LUxTheme,
+      PAnsiChar(AnsiString('SetWindowTheme')));
+    if Assigned(LSetWindowTheme) then
+      LSetWindowTheme(AHandle, PWideChar(LThemeName), nil);
+  finally
+    FreeLibrary(LUxTheme);
+  end;
+end;
+
+procedure TDCFlexColorPicker.ApplyDropDownTheme;
+var
+  LInfo: TComboBoxInfo;
+begin
+  if not HandleAllocated then
+    Exit;
+
+  FillChar(LInfo, SizeOf(LInfo), 0);
+  LInfo.cbSize := SizeOf(LInfo);
+  if GetComboBoxInfo(Handle, LInfo) then
+    ApplyDCFlexThemeToWindowHandle(LInfo.hwndList, FThemeMode = dtmDark);
 end;
 
 procedure TDCFlexColorPicker.ApplySelectedIndex;
@@ -433,6 +3298,84 @@ procedure TDCFlexColorPicker.DblClick;
 begin
   if not SelectCustomColor then
     inherited;
+end;
+
+procedure TDCFlexColorPicker.CNCommand(var Message: TWMCommand);
+begin
+  inherited;
+  if Message.NotifyCode = CBN_DROPDOWN then
+    ApplyDropDownTheme;
+end;
+
+procedure TDCFlexColorPicker.DrawClosedState;
+var
+  R: TRect;
+  SwatchRect: TRect;
+  TextRect: TRect;
+  LColor: TColor;
+  LText: string;
+  LBorderColor: TColor;
+  LArrowX: Integer;
+  LArrowY: Integer;
+begin
+  if not HandleAllocated then
+    Exit;
+
+  R := ClientRect;
+  Canvas.Brush.Style := bsSolid;
+  Canvas.Brush.Color := FThemePalette.InputBack;
+  Canvas.FillRect(R);
+
+  if Focused then
+    LBorderColor := FThemePalette.Accent
+  else
+    LBorderColor := FThemePalette.InputBorder;
+  Canvas.Pen.Color := LBorderColor;
+  Canvas.Brush.Style := bsClear;
+  Canvas.Rectangle(R);
+
+  LArrowX := R.Right - 16;
+  LArrowY := Height div 2;
+  Canvas.Pen.Color := FThemePalette.Text;
+  Canvas.Pen.Width := 2;
+  Canvas.MoveTo(LArrowX, LArrowY - 2);
+  Canvas.LineTo(LArrowX + 4, LArrowY + 2);
+  Canvas.LineTo(LArrowX + 8, LArrowY - 2);
+  Canvas.Pen.Width := 1;
+
+  LColor := Selected;
+  LText := DisplayText(LColor);
+
+  SwatchRect := R;
+  SwatchRect.Left := SwatchRect.Left + 8;
+  SwatchRect.Top := SwatchRect.Top + ((SwatchRect.Bottom - SwatchRect.Top) - 14) div 2;
+  SwatchRect.Right := SwatchRect.Left + 24;
+  SwatchRect.Bottom := SwatchRect.Top + 14;
+
+  Canvas.Brush.Style := bsSolid;
+  if LColor = clNone then
+    Canvas.Brush.Color := FThemePalette.InputBack
+  else
+    Canvas.Brush.Color := LColor;
+  Canvas.Pen.Color := FThemePalette.InputBorder;
+  Canvas.Rectangle(SwatchRect);
+
+  if LColor = clNone then
+  begin
+    Canvas.Pen.Color := FThemePalette.Danger;
+    Canvas.MoveTo(SwatchRect.Left + 2, SwatchRect.Bottom - 2);
+    Canvas.LineTo(SwatchRect.Right - 2, SwatchRect.Top + 2);
+  end;
+
+  TextRect := R;
+  TextRect.Left := SwatchRect.Right + 8;
+  TextRect.Right := R.Right - 24;
+  Canvas.Brush.Style := bsClear;
+  Canvas.Font.Assign(Font);
+  Canvas.Font.Color := FThemePalette.Text;
+  DrawText(Canvas.Handle, PChar(LText), Length(LText), TextRect,
+    DT_LEFT or DT_VCENTER or DT_SINGLELINE or DT_END_ELLIPSIS or DT_NOPREFIX);
+  Canvas.Brush.Style := bsSolid;
 end;
 
 procedure TDCFlexColorPicker.LanguageSourceChange(Sender: TObject);
@@ -473,12 +3416,12 @@ begin
   if odSelected in State then
   begin
     Canvas.Brush.Style := bsSolid;
-    Canvas.Brush.Color := clHighlight;
+    Canvas.Brush.Color := FThemePalette.Selection;
   end
   else
   begin
     Canvas.Brush.Style := bsSolid;
-    Canvas.Brush.Color := Color;
+    Canvas.Brush.Color := FThemePalette.InputBack;
   end;
   Canvas.FillRect(Rect);
   if (Index < 0) or (Index >= Items.Count) then
@@ -504,7 +3447,7 @@ begin
     Canvas.Brush.Color := clWhite
   else
     Canvas.Brush.Color := LColor;
-  Canvas.Pen.Color := $00AEB7C2;
+  Canvas.Pen.Color := FThemePalette.InputBorder;
   Canvas.Rectangle(SwatchRect);
 
   if LColor = clNone then
@@ -519,9 +3462,9 @@ begin
   TextRect.Right := TextRect.Right - 6;
   Canvas.Brush.Style := bsClear;
   if odSelected in State then
-    Canvas.Font.Color := clHighlightText
+    Canvas.Font.Color := FThemePalette.SelectionText
   else
-    Canvas.Font.Color := Font.Color;
+    Canvas.Font.Color := FThemePalette.Text;
   DrawText(Canvas.Handle, PChar(LText), Length(LText), TextRect,
     DT_LEFT or DT_VCENTER or DT_SINGLELINE or DT_END_ELLIPSIS or DT_NOPREFIX);
   Canvas.Brush.Style := bsSolid;
@@ -661,10 +3604,32 @@ begin
   end;
 end;
 
+procedure TDCFlexColorPicker.SetThemeMode(const Value: TDCFlexThemeMode);
+begin
+  if FThemeMode = Value then
+    Exit;
+
+  FThemeMode := Value;
+  if FThemeMode <> dtmCustom then
+    FThemePalette := DCFlexPaletteForMode(FThemeMode);
+  Color := FThemePalette.InputBack;
+  Font.Color := FThemePalette.Text;
+  if HandleAllocated then
+    DCFlexApplyNativeDarkMode(Self, FThemeMode = dtmDark);
+  Invalidate;
+end;
+
 procedure TDCFlexColorPicker.SetSelected(const Value: TColor);
 begin
   FSelected := Value;
   ApplySelectedIndex;
+  Invalidate;
+end;
+
+procedure TDCFlexColorPicker.WMPaint(var Message: TWMPaint);
+begin
+  inherited;
+  DrawClosedState;
 end;
 
 procedure TDCFlexColorPicker.Notification(AComponent: TComponent;
@@ -742,7 +3707,7 @@ begin
   FPaletteTop := 38;
   FStandardTop := FPaletteTop + (5 * FCellSize) + 22;
   BorderStyle := bsNone;
-  Color := clWhite;
+  Color := FButton.FThemePalette.PopupBack;
   KeyPreview := True;
   Position := poDesigned;
   Width := 228;
@@ -975,13 +3940,13 @@ var
   LColor: TColor;
 begin
   inherited;
-  Canvas.Brush.Color := clWhite;
+  Canvas.Brush.Color := FButton.FThemePalette.PopupBack;
   Canvas.FillRect(ClientRect);
-  Canvas.Pen.Color := $00D5DAE0;
+  Canvas.Pen.Color := FButton.FThemePalette.Border;
   Canvas.Rectangle(ClientRect);
 
   Canvas.Font.Assign(Font);
-  Canvas.Font.Color := $00333A45;
+  Canvas.Font.Color := FButton.FThemePalette.Text;
   Canvas.Brush.Style := bsClear;
   R := Rect(12, 8, Width - 12, 28);
   DrawText(Canvas.Handle,
@@ -997,7 +3962,7 @@ begin
       Canvas.Brush.Color := clWhite
     else
       Canvas.Brush.Color := LColor;
-    Canvas.Pen.Color := $00CBD5E1;
+    Canvas.Pen.Color := FButton.FThemePalette.InputBorder;
     Canvas.Rectangle(R);
     if LColor = clNone then
     begin
@@ -1009,7 +3974,7 @@ begin
       ((LColor <> clNone) and (FButton.Selected <> clNone) and
       (ColorToRGB(LColor) = ColorToRGB(FButton.Selected))) then
     begin
-      Canvas.Pen.Color := $002563EB;
+      Canvas.Pen.Color := FButton.FThemePalette.Accent;
       Canvas.Brush.Style := bsClear;
       InflateRect(R, -1, -1);
       Canvas.Rectangle(R);
@@ -1018,7 +3983,7 @@ begin
     if I = FHotIndex then
     begin
       R := HotRect(I);
-      Canvas.Pen.Color := $000F172A;
+      Canvas.Pen.Color := FButton.FThemePalette.Text;
       Canvas.Brush.Style := bsClear;
       InflateRect(R, -2, -2);
       Canvas.Rectangle(R);
@@ -1029,7 +3994,7 @@ begin
   R := Rect(12, FStandardTop - 18, Width - 12, FStandardTop - 2);
   Canvas.Font.Style := [fsBold];
   Canvas.Font.Size := Font.Size - 1;
-  Canvas.Font.Color := $00647586;
+  Canvas.Font.Color := FButton.FThemePalette.MutedText;
   Canvas.Brush.Style := bsClear;
   DrawText(Canvas.Handle,
     PChar(FButton.PaletteText('STANDARD', 'PADRAO')), -1, R,
@@ -1043,12 +4008,12 @@ begin
     R := StandardRect(I);
     LColor := StandardColorAt(I);
     Canvas.Brush.Color := LColor;
-    Canvas.Pen.Color := $00CBD5E1;
+    Canvas.Pen.Color := FButton.FThemePalette.InputBorder;
     Canvas.Rectangle(R);
     if (PaletteCount + I) = FHotIndex then
     begin
       R := HotRect(PaletteCount + I);
-      Canvas.Pen.Color := $000F172A;
+      Canvas.Pen.Color := FButton.FThemePalette.Text;
       Canvas.Brush.Style := bsClear;
       InflateRect(R, -2, -2);
       Canvas.Rectangle(R);
@@ -1057,20 +4022,22 @@ begin
   end;
 
   R := CustomColorRect;
-  Canvas.Brush.Color := $00F8FAFC;
-  Canvas.Pen.Color := $00E1E6EC;
+  Canvas.Brush.Color := FButton.FThemePalette.SurfaceAlt;
+  Canvas.Pen.Color := FButton.FThemePalette.Border;
   Canvas.Rectangle(R);
   Canvas.Brush.Style := bsClear;
+  Canvas.Font.Color := FButton.FThemePalette.Text;
   DrawText(Canvas.Handle,
     PChar(FButton.PaletteText('Custom color...', 'Cor personalizada...')), -1,
     R, DT_CENTER or DT_VCENTER or DT_SINGLELINE);
 
   R := CancelRect;
   Canvas.Brush.Style := bsSolid;
-  Canvas.Brush.Color := clWhite;
-  Canvas.Pen.Color := $00E1E6EC;
+  Canvas.Brush.Color := FButton.FThemePalette.PopupBack;
+  Canvas.Pen.Color := FButton.FThemePalette.Border;
   Canvas.Rectangle(R);
   Canvas.Brush.Style := bsClear;
+  Canvas.Font.Color := FButton.FThemePalette.Text;
   DrawText(Canvas.Handle,
     PChar(FButton.PaletteText('Cancel', 'Cancelar')), -1,
     R, DT_CENTER or DT_VCENTER or DT_SINGLELINE);
@@ -1119,6 +4086,19 @@ begin
   FHoverColor := $00F1F5F9;
   FPaletteLanguage := cplEnglish;
   FSelected := clBlack;
+  FThemeMode := dtmLight;
+  FThemePalette := DCFlexLightPalette;
+end;
+
+procedure TDCFlexColorPaletteButton.ApplyThemePalette(
+  const APalette: TDCFlexThemePalette);
+begin
+  FThemeMode := dtmCustom;
+  FThemePalette := APalette;
+  Color := APalette.InputBack;
+  FBorderColor := APalette.InputBorder;
+  FHoverColor := APalette.Hover;
+  Invalidate;
 end;
 
 destructor TDCFlexColorPaletteButton.Destroy;
@@ -1170,6 +4150,160 @@ begin
   inherited;
   FMouseOver := False;
   Invalidate;
+end;
+
+function TDCFlexColorPaletteButton.ColorText(AColor: TColor): string;
+begin
+  if AColor = clNone then
+    Exit(PaletteText('None', 'Nenhuma'));
+
+  Result := Format('#%.2x%.2x%.2x', [
+    GetRValue(ColorToRGB(AColor)),
+    GetGValue(ColorToRGB(AColor)),
+    GetBValue(ColorToRGB(AColor))
+  ]);
+end;
+
+function TDCFlexColorPaletteButton.DisplayText(AColor: TColor): string;
+begin
+  if AColor = clNone then
+    Exit(PaletteText('None', 'Nenhuma'));
+  if ColorToRGB(AColor) = ColorToRGB(clBlack) then
+    Exit(PaletteText('Black', 'Preto'));
+  if ColorToRGB(AColor) = ColorToRGB(clWhite) then
+    Exit(PaletteText('White', 'Branco'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(67, 67, 67)) then
+    Exit(PaletteText('Charcoal', 'Grafite'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(102, 102, 102)) then
+    Exit(PaletteText('Dark Gray', 'Cinza escuro'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(153, 153, 153)) then
+    Exit(PaletteText('Gray', 'Cinza'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(183, 183, 183)) then
+    Exit(PaletteText('Medium Gray', 'Cinza medio'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(217, 217, 217)) then
+    Exit(PaletteText('Soft Gray', 'Cinza suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(239, 239, 239)) then
+    Exit(PaletteText('Off White', 'Branco suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(221, 235, 247)) then
+    Exit(PaletteText('Pale Blue', 'Azul palido'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(152, 0, 0)) then
+    Exit(PaletteText('Dark Red', 'Vermelho escuro'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(255, 0, 0)) then
+    Exit(PaletteText('Bright Red', 'Vermelho vivo'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(255, 153, 0)) then
+    Exit(PaletteText('Bright Orange', 'Laranja vivo'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(255, 255, 0)) then
+    Exit(PaletteText('Bright Yellow', 'Amarelo vivo'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(0, 255, 0)) then
+    Exit(PaletteText('Lime', 'Lima'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(0, 255, 255)) then
+    Exit(PaletteText('Aqua', 'Aqua'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(74, 134, 232)) then
+    Exit(PaletteText('Sky Blue', 'Azul ceu'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(0, 0, 255)) then
+    Exit(PaletteText('Bright Blue', 'Azul vivo'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(153, 0, 255)) then
+    Exit(PaletteText('Violet', 'Violeta'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(255, 0, 255)) then
+    Exit(PaletteText('Magenta', 'Magenta'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(230, 184, 175)) then
+    Exit(PaletteText('Dusty Rose', 'Rose suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(244, 204, 204)) then
+    Exit(PaletteText('Soft Red', 'Vermelho suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(252, 229, 205)) then
+    Exit(PaletteText('Soft Orange', 'Laranja suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(255, 242, 204)) then
+    Exit(PaletteText('Soft Yellow', 'Amarelo suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(217, 234, 211)) then
+    Exit(PaletteText('Soft Green', 'Verde suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(208, 224, 227)) then
+    Exit(PaletteText('Soft Teal', 'Petroleo suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(201, 218, 248)) then
+    Exit(PaletteText('Soft Blue', 'Azul suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(207, 226, 243)) then
+    Exit(PaletteText('Light Sky', 'Azul nevoa'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(217, 210, 233)) then
+    Exit(PaletteText('Soft Purple', 'Roxo suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(234, 209, 220)) then
+    Exit(PaletteText('Soft Pink', 'Rosa suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(204, 65, 37)) then
+    Exit(PaletteText('Burnt Red', 'Vermelho queimado'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(224, 102, 102)) then
+    Exit(PaletteText('Muted Red', 'Vermelho medio'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(246, 178, 107)) then
+    Exit(PaletteText('Peach', 'Pesego'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(255, 217, 102)) then
+    Exit(PaletteText('Gold', 'Dourado'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(147, 196, 125)) then
+    Exit(PaletteText('Sage', 'Verde folha'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(118, 165, 175)) then
+    Exit(PaletteText('Steel Teal', 'Petroleo'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(109, 158, 235)) then
+    Exit(PaletteText('Cornflower', 'Azul flor'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(61, 133, 198)) then
+    Exit(PaletteText('Ocean Blue', 'Azul oceano'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(142, 124, 195)) then
+    Exit(PaletteText('Muted Purple', 'Roxo medio'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(194, 123, 160)) then
+    Exit(PaletteText('Mauve', 'Malva'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(236, 239, 243)) then
+    Exit(PaletteText('Light Gray', 'Cinza claro'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(148, 163, 184)) then
+    Exit(PaletteText('Gray', 'Cinza'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(80, 90, 102)) then
+    Exit(PaletteText('Slate', 'Ardosia'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(37, 52, 69)) then
+    Exit(PaletteText('Dark Slate', 'Ardosia escuro'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(221, 235, 255)) then
+    Exit(PaletteText('Light Blue', 'Azul claro'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(59, 130, 246)) then
+    Exit(PaletteText('Blue', 'Azul'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(30, 64, 175)) then
+    Exit(PaletteText('Dark Blue', 'Azul escuro'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(99, 102, 241)) then
+    Exit(PaletteText('Indigo', 'Indigo'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(139, 92, 246)) then
+    Exit(PaletteText('Purple', 'Roxo'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(233, 221, 255)) then
+    Exit(PaletteText('Lavender', 'Lavanda'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(221, 246, 229)) then
+    Exit(PaletteText('Light Green', 'Verde claro'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(34, 197, 94)) then
+    Exit(PaletteText('Green', 'Verde'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(22, 101, 52)) then
+    Exit(PaletteText('Dark Green', 'Verde escuro'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(223, 247, 242)) then
+    Exit(PaletteText('Mint', 'Menta'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(20, 184, 166)) then
+    Exit(PaletteText('Teal', 'Azul petroleo'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(165, 243, 252)) then
+    Exit(PaletteText('Cyan', 'Ciano'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(255, 244, 194)) then
+    Exit(PaletteText('Light Yellow', 'Amarelo claro'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(250, 204, 21)) then
+    Exit(PaletteText('Yellow', 'Amarelo'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(255, 235, 221)) then
+    Exit(PaletteText('Soft Amber', 'Ambar suave'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(245, 158, 11)) then
+    Exit(PaletteText('Amber', 'Ambar'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(249, 115, 22)) then
+    Exit(PaletteText('Orange', 'Laranja'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(255, 127, 127)) then
+    Exit(PaletteText('Coral', 'Coral'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(255, 215, 215)) then
+    Exit(PaletteText('Light Red', 'Vermelho claro'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(239, 68, 68)) then
+    Exit(PaletteText('Red', 'Vermelho'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(252, 225, 239)) then
+    Exit(PaletteText('Light Pink', 'Rosa claro'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(236, 72, 153)) then
+    Exit(PaletteText('Pink', 'Rosa'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(244, 63, 94)) then
+    Exit(PaletteText('Rose', 'Rose'));
+  if ColorToRGB(AColor) = ColorToRGB(RGB(120, 83, 57)) then
+    Exit(PaletteText('Brown', 'Marrom'));
+
+  Result := PaletteText('Custom ', 'Personalizada ') + ColorText(AColor);
 end;
 
 procedure TDCFlexColorPaletteButton.DropDown;
@@ -1244,29 +4378,30 @@ procedure TDCFlexColorPaletteButton.Paint;
 var
   R: TRect;
   SwatchRect: TRect;
-  Arrow: array[0..2] of TPoint;
   ArrowX: Integer;
   ArrowY: Integer;
   LBackColor: TColor;
+  LTextRect: TRect;
+  LCaption: string;
 begin
-  LBackColor := Color;
+  LBackColor := FThemePalette.InputBack;
   if FMouseOver then
     LBackColor := FHoverColor;
   if not Enabled then
-    LBackColor := $00F0F0F0;
+    LBackColor := FThemePalette.Disabled;
 
   Canvas.Brush.Color := LBackColor;
   Canvas.Pen.Color := FBorderColor;
   Canvas.Rectangle(ClientRect);
 
-  SwatchRect := Rect(8, 6, Width - 21, Height - 6);
+  SwatchRect := Rect(8, 6, 28, Height - 6);
   if SwatchRect.Bottom - SwatchRect.Top < 12 then
   begin
     SwatchRect.Top := (Height - 12) div 2;
     SwatchRect.Bottom := SwatchRect.Top + 12;
   end;
   Canvas.Brush.Color := clWhite;
-  Canvas.Pen.Color := $00B8C1CC;
+  Canvas.Pen.Color := FThemePalette.InputBorder;
   Canvas.Rectangle(SwatchRect);
   InflateRect(SwatchRect, -1, -1);
   if FSelected = clNone then
@@ -1285,19 +4420,31 @@ begin
 
   ArrowX := Width - 15;
   ArrowY := Height div 2;
-  Canvas.Brush.Color := $005F6B7A;
-  Canvas.Pen.Color := $005F6B7A;
-  Arrow[0] := Point(ArrowX, ArrowY - 1);
-  Arrow[1] := Point(ArrowX + 5, ArrowY - 1);
-  Arrow[2] := Point(ArrowX + 2, ArrowY + 2);
-  Canvas.Polygon(Arrow);
+  Canvas.Pen.Color := FThemePalette.MutedText;
+  Canvas.Pen.Width := 2;
+  Canvas.MoveTo(ArrowX, ArrowY - 2);
+  Canvas.LineTo(ArrowX + 4, ArrowY + 2);
+  Canvas.LineTo(ArrowX + 8, ArrowY - 2);
+  Canvas.Pen.Width := 1;
+
+  if Width > 58 then
+  begin
+    LCaption := DisplayText(FSelected);
+    LTextRect := Rect(34, 0, Width - 24, Height);
+    Canvas.Font.Assign(Font);
+    Canvas.Font.Color := FThemePalette.Text;
+    Canvas.Brush.Style := bsClear;
+    DrawText(Canvas.Handle, PChar(LCaption), Length(LCaption), LTextRect,
+      DT_SINGLELINE or DT_VCENTER or DT_END_ELLIPSIS);
+    Canvas.Brush.Style := bsSolid;
+  end;
 
   if Focused and Enabled then
   begin
     R := ClientRect;
     InflateRect(R, -3, -3);
     Canvas.Brush.Style := bsClear;
-    Canvas.Pen.Color := $002563EB;
+    Canvas.Pen.Color := FThemePalette.Accent;
     Canvas.Rectangle(R);
     Canvas.Brush.Style := bsSolid;
   end;
@@ -1385,6 +4532,23 @@ begin
   end;
 end;
 
+procedure TDCFlexColorPaletteButton.SetThemeMode(
+  const Value: TDCFlexThemeMode);
+begin
+  if FThemeMode = Value then
+    Exit;
+
+  FThemeMode := Value;
+  if FThemeMode = dtmCustom then
+    Exit;
+
+  FThemePalette := DCFlexPaletteForMode(FThemeMode);
+  Color := FThemePalette.InputBack;
+  FBorderColor := FThemePalette.InputBorder;
+  FHoverColor := FThemePalette.Hover;
+  Invalidate;
+end;
+
 { TDCFlexToggleButton }
 
 constructor TDCFlexToggleButton.Create(AOwner: TComponent);
@@ -1411,9 +4575,36 @@ begin
   FDisabledBorderColor := $00D8D8D8;
   FCheckedFontColor := clBlack;
   FDisabledFontColor := clGrayText;
+  FThemeMode := dtmLight;
   Font.Name := 'Segoe UI';
   Font.Size := 9;
   Caption := 'Toggle';
+end;
+
+procedure TDCFlexToggleButton.ApplyThemePalette(
+  const APalette: TDCFlexThemePalette);
+begin
+  FThemeMode := dtmCustom;
+  FNormalColor := APalette.InputBack;
+  FHoverColor := APalette.Hover;
+  FCheckedColor := APalette.Selection;
+  FPressedColor := APalette.Pressed;
+  FDisabledColor := APalette.Disabled;
+  FBorderColor := APalette.InputBorder;
+  FHoverBorderColor := APalette.Accent;
+  FCheckedBorderColor := APalette.Accent;
+  FDisabledBorderColor := APalette.Border;
+  FCheckedFontColor := APalette.SelectionText;
+  FDisabledFontColor := APalette.DisabledText;
+  Font.Color := APalette.Text;
+  Invalidate;
+end;
+
+destructor TDCFlexToggleButton.Destroy;
+begin
+  if Assigned(FLanguageSource) then
+    FLanguageSource.RemoveChangeListener(LanguageSourceChange);
+  inherited Destroy;
 end;
 
 procedure TDCFlexToggleButton.Change;
@@ -1430,6 +4621,18 @@ begin
 end;
 
 procedure TDCFlexToggleButton.CMEnabledChanged(var Message: TMessage);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexToggleButton.CMEnter(var Message: TCMGotFocus);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TDCFlexToggleButton.CMExit(var Message: TCMLostFocus);
 begin
   inherited;
   Invalidate;
@@ -1489,6 +4692,9 @@ begin
   if FChecked then
     Exit(FCheckedBorderColor);
 
+  if Focused then
+    Exit(FCheckedBorderColor);
+
   if FMouseOver then
     Exit(FHoverBorderColor);
 
@@ -1504,6 +4710,24 @@ begin
     Exit(FCheckedFontColor);
 
   Result := Font.Color;
+end;
+
+procedure TDCFlexToggleButton.LanguageSourceChange(Sender: TObject);
+begin
+  if Assigned(FLanguageSource) then
+    FLanguageSource.ApplyTo(Self);
+  UpdateAutoSizeToCaption;
+  Invalidate;
+end;
+
+procedure TDCFlexToggleButton.KeyDown(var Key: Word; Shift: TShiftState);
+begin
+  inherited KeyDown(Key, Shift);
+  if Enabled and ((Key = VK_RETURN) or (Key = VK_SPACE)) then
+  begin
+    Click;
+    Key := 0;
+  end;
 end;
 
 procedure TDCFlexToggleButton.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
@@ -1527,6 +4751,14 @@ begin
     FMouseDown := False;
     Invalidate;
   end;
+end;
+
+procedure TDCFlexToggleButton.Notification(AComponent: TComponent;
+  Operation: TOperation);
+begin
+  inherited Notification(AComponent, Operation);
+  if (Operation = opRemove) and (AComponent = FLanguageSource) then
+    SetLanguageSource(nil);
 end;
 
 procedure TDCFlexToggleButton.Paint;
@@ -1582,6 +4814,55 @@ begin
     FAutoSizeToCaption := Value;
     UpdateAutoSizeToCaption;
   end;
+end;
+
+procedure TDCFlexToggleButton.SetLanguageSource(const Value: TDCFlexLanguage);
+begin
+  if FLanguageSource = Value then
+    Exit;
+
+  if Assigned(FLanguageSource) then
+  begin
+    FLanguageSource.RemoveChangeListener(LanguageSourceChange);
+    FLanguageSource.RemoveFreeNotification(Self);
+  end;
+
+  FLanguageSource := Value;
+
+  if Assigned(FLanguageSource) then
+  begin
+    FLanguageSource.FreeNotification(Self);
+    FLanguageSource.AddChangeListener(LanguageSourceChange);
+  end;
+
+  LanguageSourceChange(Self);
+end;
+
+procedure TDCFlexToggleButton.SetThemeMode(const Value: TDCFlexThemeMode);
+var
+  LPalette: TDCFlexThemePalette;
+begin
+  if FThemeMode = Value then
+    Exit;
+
+  FThemeMode := Value;
+  if FThemeMode = dtmCustom then
+    Exit;
+
+  LPalette := DCFlexPaletteForMode(FThemeMode);
+  FNormalColor := LPalette.InputBack;
+  FHoverColor := LPalette.Hover;
+  FCheckedColor := LPalette.Selection;
+  FPressedColor := LPalette.Pressed;
+  FDisabledColor := LPalette.Disabled;
+  FBorderColor := LPalette.InputBorder;
+  FHoverBorderColor := LPalette.Accent;
+  FCheckedBorderColor := LPalette.Accent;
+  FDisabledBorderColor := LPalette.Border;
+  FCheckedFontColor := LPalette.SelectionText;
+  FDisabledFontColor := LPalette.DisabledText;
+  Font.Color := LPalette.Text;
+  Invalidate;
 end;
 
 procedure TDCFlexToggleButton.SetBorderColor(const Value: TColor);
@@ -1788,9 +5069,19 @@ begin
   FPaddingTop := 6;
   FPaddingRight := 8;
   FPaddingBottom := 6;
+  FThemeMode := dtmLight;
   FWrap := True;
   Font.Name := 'Segoe UI';
   Font.Size := 9;
+end;
+
+procedure TDCFlexFlowLayout.ApplyThemePalette(
+  const APalette: TDCFlexThemePalette);
+begin
+  FThemeMode := dtmCustom;
+  FBackColor := APalette.Surface;
+  Font.Color := APalette.Text;
+  Invalidate;
 end;
 
 procedure TDCFlexFlowLayout.AlignControls(AControl: TControl; var Rect: TRect);
@@ -1993,6 +5284,23 @@ begin
   end;
 end;
 
+procedure TDCFlexFlowLayout.SetThemeMode(const Value: TDCFlexThemeMode);
+var
+  LPalette: TDCFlexThemePalette;
+begin
+  if FThemeMode = Value then
+    Exit;
+
+  FThemeMode := Value;
+  if FThemeMode = dtmCustom then
+    Exit;
+
+  LPalette := DCFlexPaletteForMode(FThemeMode);
+  FBackColor := LPalette.Surface;
+  Font.Color := LPalette.Text;
+  Invalidate;
+end;
+
 procedure TDCFlexFlowLayout.SetVerticalSpacing(const Value: Integer);
 var
   LValue: Integer;
@@ -2040,8 +5348,29 @@ begin
   FPaddingTop := 6;
   FPaddingRight := 8;
   FPaddingBottom := 6;
+  FThemeMode := dtmLight;
+  FThemePalette := DCFlexLightPalette;
   Font.Name := 'Segoe UI';
   Font.Size := 9;
+end;
+
+procedure TDCFlexToolbar.ApplyThemePalette(const APalette: TDCFlexThemePalette);
+var
+  I: Integer;
+begin
+  FThemeMode := dtmCustom;
+  FThemePalette := APalette;
+  FBackColor := APalette.Surface;
+  FBorderColor := APalette.Border;
+  FSeparatorColor := APalette.Border;
+  Font.Color := APalette.Text;
+
+  for I := 0 to ControlCount - 1 do
+    if Controls[I] is TDCFlexToggleButton then
+      TDCFlexToggleButton(Controls[I]).ApplyThemePalette(APalette);
+
+  LayoutControls;
+  Invalidate;
 end;
 
 function TDCFlexToolbar.AddToggleButton(const ACaption: string; AWidth,
@@ -2056,6 +5385,10 @@ begin
   Result.AutoSizeToCaption := FAutoButtonWidth and (AWidth <= 0);
   Result.Checked := AChecked;
   Result.Font.Assign(Font);
+  if FThemeMode = dtmCustom then
+    Result.ApplyThemePalette(FThemePalette)
+  else
+    Result.ThemeMode := FThemeMode;
   LayoutControls;
 end;
 
@@ -2297,6 +5630,33 @@ begin
     LayoutControls;
     Invalidate;
   end;
+end;
+
+procedure TDCFlexToolbar.SetThemeMode(const Value: TDCFlexThemeMode);
+var
+  I: Integer;
+  LPalette: TDCFlexThemePalette;
+begin
+  if FThemeMode = Value then
+    Exit;
+
+  FThemeMode := Value;
+  if FThemeMode = dtmCustom then
+    Exit;
+
+  LPalette := DCFlexPaletteForMode(FThemeMode);
+  FThemePalette := LPalette;
+  FBackColor := LPalette.Surface;
+  FBorderColor := LPalette.Border;
+  FSeparatorColor := LPalette.Border;
+  Font.Color := LPalette.Text;
+
+  for I := 0 to ControlCount - 1 do
+    if Controls[I] is TDCFlexToggleButton then
+      TDCFlexToggleButton(Controls[I]).ThemeMode := FThemeMode;
+
+  LayoutControls;
+  Invalidate;
 end;
 
 procedure TDCFlexToolbar.SetSeparatorWidth(const Value: Integer);

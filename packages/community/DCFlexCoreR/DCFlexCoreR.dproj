@@ -55,7 +55,10 @@
         <DCCReference Include="rtl.dcp"/>
         <DCCReference Include="vcl.dcp"/>
         <DCCReference Include="..\..\..\src\DCFlex.Language.pas"/>
+        <DCCReference Include="..\..\..\src\DCFlex.Theme.pas"/>
         <DCCReference Include="..\..\..\src\DCFlex.Controls.pas"/>
+        <DCCReference Include="..\..\..\src\DCFlex.PopupMenu.pas"/>
+        <DCCReference Include="..\..\..\src\DCFlex.Dialogs.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

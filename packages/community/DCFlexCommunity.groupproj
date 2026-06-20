@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{32BA17D1-C0B6-4369-A87C-10C57E552DD6}</ProjectGuid>
     </PropertyGroup>
@@ -8,13 +7,19 @@
             <Dependencies/>
         </Projects>
         <Projects Include="DCFlexCoreD\DCFlexCoreD.dproj">
-            <Dependencies>DCFlexCoreR</Dependencies>
+            <Dependencies/>
         </Projects>
         <Projects Include="DCFlexGridCommunityR\DCFlexGridCommunityR.dproj">
-            <Dependencies>DCFlexCoreR</Dependencies>
+            <Dependencies/>
         </Projects>
         <Projects Include="DCFlexGridCommunityD\DCFlexGridCommunityD.dproj">
-            <Dependencies>DCFlexCoreR;DCFlexGridCommunityR</Dependencies>
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\..\demo\DCFlexGridDemo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\..\demo\DCFlexLanguageDemo.dproj">
+            <Dependencies/>
         </Projects>
     </ItemGroup>
     <ProjectExtensions>
@@ -60,14 +65,32 @@
     <Target Name="DCFlexGridCommunityD:Make">
         <MSBuild Projects="DCFlexGridCommunityD\DCFlexGridCommunityD.dproj" Targets="Make"/>
     </Target>
+    <Target Name="DCFlexGridDemo">
+        <MSBuild Projects="..\..\demo\DCFlexGridDemo.dproj"/>
+    </Target>
+    <Target Name="DCFlexGridDemo:Clean">
+        <MSBuild Projects="..\..\demo\DCFlexGridDemo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DCFlexGridDemo:Make">
+        <MSBuild Projects="..\..\demo\DCFlexGridDemo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="DCFlexLanguageDemo">
+        <MSBuild Projects="..\..\demo\DCFlexLanguageDemo.dproj"/>
+    </Target>
+    <Target Name="DCFlexLanguageDemo:Clean">
+        <MSBuild Projects="..\..\demo\DCFlexLanguageDemo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DCFlexLanguageDemo:Make">
+        <MSBuild Projects="..\..\demo\DCFlexLanguageDemo.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="DCFlexCoreR;DCFlexCoreD;DCFlexGridCommunityR;DCFlexGridCommunityD"/>
+        <CallTarget Targets="DCFlexCoreR;DCFlexCoreD;DCFlexGridCommunityR;DCFlexGridCommunityD;DCFlexGridDemo;DCFlexLanguageDemo"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="DCFlexCoreR:Clean;DCFlexCoreD:Clean;DCFlexGridCommunityR:Clean;DCFlexGridCommunityD:Clean"/>
+        <CallTarget Targets="DCFlexCoreR:Clean;DCFlexCoreD:Clean;DCFlexGridCommunityR:Clean;DCFlexGridCommunityD:Clean;DCFlexGridDemo:Clean;DCFlexLanguageDemo:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="DCFlexCoreR:Make;DCFlexCoreD:Make;DCFlexGridCommunityR:Make;DCFlexGridCommunityD:Make"/>
+        <CallTarget Targets="DCFlexCoreR:Make;DCFlexCoreD:Make;DCFlexGridCommunityR:Make;DCFlexGridCommunityD:Make;DCFlexGridDemo:Make;DCFlexLanguageDemo:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

@@ -1,9 +1,9 @@
 object Form1: TForm1
   Left = 0
   Top = 0
-  Caption = 'DCFlexGrid Showcase Demo - v2'
-  ClientHeight = 777
-  ClientWidth = 1172
+  Caption = 'DCFlexGrid Showcase Demo'
+  ClientHeight = 690
+  ClientWidth = 1168
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -15,20 +15,20 @@ object Form1: TForm1
   object pnlHeader: TPanel
     Left = 0
     Top = 0
-    Width = 1172
+    Width = 1168
     Height = 56
     Align = alTop
     BevelOuter = bvNone
     Color = clWhite
     ParentBackground = False
     TabOrder = 0
-    ExplicitWidth = 1170
+    ExplicitWidth = 1166
     object lblTitle: TLabel
       Left = 16
       Top = 10
-      Width = 382
+      Width = 351
       Height = 21
-      Caption = 'DCFlexGrid Showcase - SQLite + Runtime Studio - v2'
+      Caption = 'DCFlexGrid Showcase - SQLite + Runtime Studio'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
       Font.Height = -16
@@ -48,22 +48,22 @@ object Form1: TForm1
     Left = 0
     Top = 56
     Width = 276
-    Height = 721
+    Height = 634
     Align = alLeft
     BevelOuter = bvNone
     Color = clWhitesmoke
     ParentBackground = False
     TabOrder = 1
-    ExplicitHeight = 713
+    ExplicitHeight = 626
     object PageControl1: TPageControl
       Left = 0
       Top = 0
       Width = 276
-      Height = 721
-      ActivePage = tsAdvanced
+      Height = 634
+      ActivePage = tsTheme
       Align = alClient
       TabOrder = 0
-      ExplicitHeight = 713
+      ExplicitHeight = 626
       object tsBehavior: TTabSheet
         Caption = 'Behavior'
         object lblSearch: TLabel
@@ -89,45 +89,52 @@ object Form1: TForm1
         end
         object lblRowHeight: TLabel
           Left = 12
-          Top = 294
+          Top = 332
           Width = 70
           Height = 13
           Caption = 'RowHeight: 0'
         end
         object lblHeaderHeight: TLabel
           Left = 12
-          Top = 344
+          Top = 382
           Width = 84
           Height = 13
           Caption = 'HeaderHeight: 0'
         end
         object lblDetailRowHeight: TLabel
           Left = 12
-          Top = 394
+          Top = 432
           Width = 100
           Height = 13
           Caption = 'DetailRowHeight: 0'
         end
         object lblDetailHeaderHeight: TLabel
           Left = 12
-          Top = 444
+          Top = 482
           Width = 114
           Height = 13
           Caption = 'DetailHeaderHeight: 0'
         end
         object lblDetailStyle: TLabel
           Left = 12
-          Top = 494
+          Top = 532
           Width = 54
           Height = 13
           Caption = 'DetailStyle'
         end
         object lblExpandMode: TLabel
           Left = 124
-          Top = 494
+          Top = 532
           Width = 68
           Height = 13
           Caption = 'ExpandMode'
+        end
+        object Label1: TLabel
+          Left = 12
+          Top = 580
+          Width = 51
+          Height = 13
+          Caption = 'Language'
         end
         object edtSearch: TEdit
           Left = 12
@@ -219,7 +226,7 @@ object Form1: TForm1
         end
         object tbRowHeight: TTrackBar
           Left = 12
-          Top = 312
+          Top = 350
           Width = 232
           Height = 28
           Max = 56
@@ -231,7 +238,7 @@ object Form1: TForm1
         end
         object tbHeaderHeight: TTrackBar
           Left = 12
-          Top = 362
+          Top = 400
           Width = 232
           Height = 28
           Max = 60
@@ -243,7 +250,7 @@ object Form1: TForm1
         end
         object tbDetailRowHeight: TTrackBar
           Left = 12
-          Top = 412
+          Top = 450
           Width = 232
           Height = 28
           Max = 40
@@ -255,7 +262,7 @@ object Form1: TForm1
         end
         object tbDetailHeaderHeight: TTrackBar
           Left = 12
-          Top = 462
+          Top = 500
           Width = 232
           Height = 28
           Max = 44
@@ -267,7 +274,7 @@ object Form1: TForm1
         end
         object cbDetailStyle: TComboBox
           Left = 12
-          Top = 512
+          Top = 550
           Width = 90
           Height = 21
           Style = csDropDownList
@@ -276,12 +283,33 @@ object Form1: TForm1
         end
         object cbExpandMode: TComboBox
           Left = 124
-          Top = 512
+          Top = 550
           Width = 90
           Height = 21
           Style = csDropDownList
           TabOrder = 15
           OnChange = cbExpandModeChange
+        end
+        object CheckBox1: TCheckBox
+          Left = 12
+          Top = 286
+          Width = 170
+          Height = 17
+          Caption = 'Show Column Filters'
+          TabOrder = 16
+          OnClick = CheckBox1Click
+        end
+        object cbLanguage: TComboBox
+          Left = 12
+          Top = 598
+          Width = 90
+          Height = 21
+          Style = csDropDownList
+          TabOrder = 17
+          OnChange = cbDetailStyleChange
+          Items.Strings = (
+            'PT'
+            'EN')
         end
       end
       object tsTheme: TTabSheet
@@ -290,12 +318,13 @@ object Form1: TForm1
           Left = 0
           Top = 0
           Width = 268
-          Height = 693
+          Height = 606
           HorzScrollBar.Visible = False
           VertScrollBar.Tracking = True
           Align = alClient
           BorderStyle = bsNone
           TabOrder = 0
+          ExplicitHeight = 598
           object lblThemeColors: TLabel
             Left = 12
             Top = 36
@@ -1261,18 +1290,18 @@ object Form1: TForm1
   object pnlMain: TPanel
     Left = 276
     Top = 56
-    Width = 896
-    Height = 721
+    Width = 892
+    Height = 634
     Align = alClient
     BevelOuter = bvNone
     Color = clWhite
     ParentBackground = False
     TabOrder = 2
-    ExplicitWidth = 894
-    ExplicitHeight = 713
+    ExplicitWidth = 890
+    ExplicitHeight = 626
     DesignSize = (
-      896
-      721)
+      892
+      634)
     object lblStatus: TLabel
       Left = 16
       Top = 12
@@ -1349,68 +1378,62 @@ object Form1: TForm1
       TabOrder = 6
       OnClick = btnExportThemeClick
     end
-    object DCGrid1: TDCFlexGrid
-      Left = 16
-      Top = 72
-      Width = 860
-      Height = 638
-      Anchors = [akLeft, akTop, akRight, akBottom]
-      Color = clWhite
-      ParentColor = False
-      Columns = <>
-      DetailColumns = <
-        item
-        end>
-      Theme.HeaderColor = 3357254
-      Theme.HeaderFontColor = clWhite
-      Theme.GridBackgroundColor = 16514301
-      Theme.RowColor = clWhite
-      Theme.AlternateRowColor = 16251387
-      Theme.HoverRowColor = 16774118
-      Theme.SelectedRowColor = 16770501
-      Theme.SelectedTextColor = 2764600
-      Theme.DetailColor = 15988474
-      Theme.BorderColor = 14147046
-      Theme.DetailBorderColor = 14739182
-      Theme.TextColor = 2764600
-      Theme.DetailTextColor = 3226183
-      Theme.ExpandButtonColor = 6187644
-      Theme.DetailGridHeaderColor = 15331061
-      Theme.DetailGridHeaderFontColor = 3226183
-      Theme.DetailGridRowColor = clWhite
-      Theme.DetailGridAlternateRowColor = 16317180
-      Theme.DetailGridLineColor = 14476010
-      Theme.SearchHighlightColor = 16774557
-      Theme.SearchHighlightTextColor = clBlack
-      TitleFont.Charset = DEFAULT_CHARSET
-      TitleFont.Color = clWindowText
-      TitleFont.Height = -12
-      TitleFont.Name = 'Segoe UI'
-      TitleFont.Style = [fsBold]
-      DetailFont.Charset = DEFAULT_CHARSET
-      DetailFont.Color = 3226183
-      DetailFont.Height = -11
-      DetailFont.Name = 'Segoe UI'
-      DetailFont.Style = []
-      DetailStyle = dsGrid
-      OnSortColumn = DCGrid1SortColumn
-      OnDetailRowClick = DCGrid1DetailRowClick
-      OnDetailRowDblClick = DCGrid1DetailRowDblClick
-      OnRightClickHitTest = DCGrid1RightClickHitTest
-      RulesDesignerLanguage = rdlEnglish
-      ExplicitWidth = 858
-      ExplicitHeight = 630
-    end
     object memThemeCode: TMemo
       Left = 16
-      Top = 778
-      Width = 860
+      Top = 691
+      Width = 820
       Height = 188
       Anchors = [akLeft, akRight, akBottom]
       ReadOnly = True
       ScrollBars = ssVertical
       TabOrder = 7
       WordWrap = False
+      ExplicitTop = 683
+      ExplicitWidth = 818
+    end
+    object DCGrid1: TDCFlexGrid
+      Left = 18
+      Top = 80
+      Width = 853
+      Height = 553
+      Anchors = [akLeft, akTop, akRight, akBottom]
+      Color = clWhite
+      ParentColor = False
+      Columns = <>
+      DetailColumns = <>
+      Theme.HeaderColor = 16249581
+      Theme.HeaderFontColor = 2826523
+      Theme.GridBackgroundColor = clWhite
+      Theme.RowColor = 16447734
+      Theme.AlternateRowColor = 16052460
+      Theme.HoverRowColor = 16774120
+      Theme.SelectedRowColor = 16770503
+      Theme.SelectedTextColor = 2826523
+      Theme.DetailColor = 16052460
+      Theme.BorderColor = 15195604
+      Theme.DetailBorderColor = 15130068
+      Theme.TextColor = 2826523
+      Theme.DetailTextColor = 8022622
+      Theme.ExpandButtonColor = 15759384
+      Theme.DetailGridHeaderColor = 16249581
+      Theme.DetailGridHeaderFontColor = 2826523
+      Theme.DetailGridRowColor = 16447734
+      Theme.DetailGridAlternateRowColor = 16052460
+      Theme.DetailGridLineColor = 15195604
+      Theme.SearchHighlightColor = 1615344
+      Theme.SearchHighlightTextColor = 2826523
+      TitleFont.Charset = DEFAULT_CHARSET
+      TitleFont.Color = clWindowText
+      TitleFont.Height = -15
+      TitleFont.Name = 'Segoe UI'
+      TitleFont.Style = [fsBold]
+      DetailFont.Charset = DEFAULT_CHARSET
+      DetailFont.Color = 3226183
+      DetailFont.Height = -15
+      DetailFont.Name = 'Segoe UI'
+      DetailFont.Style = []
+      ExplicitWidth = 851
+      ExplicitHeight = 545
     end
   end
   object FDConnection1: TFDConnection
@@ -1434,6 +1457,10 @@ object Form1: TForm1
   end
   object ColorDialog1: TColorDialog
     Left = 1112
-    Top = 88
+    Top = 155
+  end
+  object DCFlexLanguage1: TDCFlexLanguage
+    Items = <>
+    Left = 968
   end
 end

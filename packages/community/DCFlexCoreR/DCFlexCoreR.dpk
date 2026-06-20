@@ -8,6 +8,9 @@ requires
 
 contains
   DCFlex.Language in '..\..\..\src\DCFlex.Language.pas',
-  DCFlex.Controls in '..\..\..\src\DCFlex.Controls.pas';
+  DCFlex.Theme in '..\..\..\src\DCFlex.Theme.pas',
+  DCFlex.Controls in '..\..\..\src\DCFlex.Controls.pas',
+  DCFlex.PopupMenu in '..\..\..\src\DCFlex.PopupMenu.pas',
+  DCFlex.Dialogs in '..\..\..\src\DCFlex.Dialogs.pas';
 
 end.

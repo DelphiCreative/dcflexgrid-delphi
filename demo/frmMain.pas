@@ -31,11 +31,12 @@ uses
   FireDAC.Phys.SQLite,
   FireDAC.Phys.SQLiteDef,
   FireDAC.UI.Intf,
-  DCFlexGrid, DCFlexGrid.Fluent, DCFlexGrid.Themes, DCFlexGrid.VisualRulesDesigner, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.VCLUI.Wait,
-  FireDAC.Stan.ExprFuncs, FireDAC.Phys.SQLiteWrapper.Stat;
-
-const
-  version = 'v2';
+  DCFlexGrid,
+  DCFlexGrid.Fluent,
+  DCFlexGrid.Themes,
+  DCFlexGrid.VisualRulesDesigner,
+  FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.VCLUI.Wait,
+  FireDAC.Stan.ExprFuncs, FireDAC.Phys.SQLiteWrapper.Stat, DCFlex.Language;
 
 type
   TForm1 = class(TForm)
@@ -209,12 +210,16 @@ type
     lblDetailGridLineColorHex: TLabel;
     pnlMain: TPanel;
     lblStatus: TLabel;
-    DCGrid1: TDCFlexGrid;
     FDConnection1: TFDConnection;
     FDPhysSQLiteDriverLink1: TFDPhysSQLiteDriverLink;
     qryOrders: TFDQuery;
     qryItems: TFDQuery;
     ColorDialog1: TColorDialog;
+    CheckBox1: TCheckBox;
+    Label1: TLabel;
+    cbLanguage: TComboBox;
+    DCGrid1: TDCFlexGrid;
+    DCFlexLanguage1: TDCFlexLanguage;
     procedure FormCreate(Sender: TObject);
     procedure DCGrid1SortColumn(Sender: TObject; ACol: Integer; ADirection: TDCSortDirection);
     procedure DCGrid1DetailRowClick(Sender: TObject; AMasterRow, ADetailRow: Integer);
@@ -222,6 +227,7 @@ type
     procedure DCGrid1RightClickHitTest(Sender: TObject; Area: TDCHitTestArea; AMasterRow, ADetailRow, ACol: Integer; const ScreenPt: TPoint);
     procedure DCGrid1GetMasterRowStyle(Sender: TObject; ARow: Integer; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles);
     procedure DCGrid1GetDetailRowStyle(Sender: TObject; AMasterRow, ADetailRow: Integer; var ABackColor, AFontColor: TColor; var AFontStyles: TFontStyles);
+    procedure CheckBox1Click(Sender: TObject);
   private
     FDBPath: string;
     procedure PrepareDatabase;
@@ -538,6 +544,21 @@ begin
   ApplyAdvancedSettings;
   UpdateLabels;
   UpdateStatus;
+
+  if cbLanguage.ItemIndex = 1 then
+//    DCGrid1.RulesDesignerLanguage := rdlEnglish
+  DCFlexLanguage1.Language := dlcEnglish
+
+  else
+  //  DCGrid1.RulesDesignerLanguage := rdlPortuguese;
+  DCFlexLanguage1.Language := dlcPortuguese;
+
+
+
+
+
+  DCGrid1.LanguageSource := DCFlexLanguage1;
+
 end;
 
 procedure TForm1.UpdateLabels;
@@ -711,6 +732,7 @@ procedure TForm1.RefreshBusinessRulesUI;
 var
   I: Integer;
   R: TDCHighlightRule;
+  LTargetText: string;
 begin
   lstBusinessRules.Items.BeginUpdate;
   try
@@ -718,7 +740,11 @@ begin
     for I := 0 to DCGrid1.BusinessHighlight.Rules.Count - 1 do
     begin
       R := DCGrid1.BusinessHighlight.Rules[I];
-      lstBusinessRules.Items.Add(Format('%s | Back=%d | Font=%d', [R.Expression, R.BackColor, R.FontColor]));
+      if R.Target = htCell then
+        LTargetText := 'Cell'
+      else
+        LTargetText := 'Row';
+      lstBusinessRules.Items.Add(Format('%s | Target=%s | Back=%d | Font=%d', [R.Expression, LTargetText, R.BackColor, R.FontColor]));
     end;
   finally
     lstBusinessRules.Items.EndUpdate;
@@ -784,6 +810,19 @@ begin
     .WithDefaultVisuals
     .WithInteractiveLayout
     .WithLayout('demo-main', True, False);
+
+    DCGrid1.ShowToolbar := True;
+    DCGrid1.ShowToolbarRulesDesignerButton := True;
+//  DCGrid1.ShowFooter := True;
+  //DCGrid1.FooterHeight := 32;
+
+//  DCGrid1.Columns[0].FooterSummary := fsCount;
+//  DCGrid1.Columns[5].FooterSummary := fsSum;
+    DCGrid1.Columns[0].FooterCount;
+    DCGrid1.Columns[5].FooterSum;
+    DCGrid1.ShowHeaderColumnLines := True;
+    DCGrid1.ShowRowColumnLines := True;
+
 
   ConfigureColorBoxes;
 
@@ -969,6 +1008,8 @@ end;
 procedure TForm1.GenericSettingClick(Sender: TObject);
 begin
   ApplyGridSettings;
+
+
 end;
 
 procedure TForm1.TrackBarChange(Sender: TObject);
@@ -1014,19 +1055,22 @@ end;
 
 procedure TForm1.btnSaveLayoutClick(Sender: TObject);
 begin
-  DCGrid1.SaveLayout;
+  //DCGrid1.SaveLayout;
   lblStatus.Caption := 'Layout saved';
+  DCGrid1.SaveLayout('financeiro');
 end;
 
 procedure TForm1.btnLoadLayoutClick(Sender: TObject);
 begin
-  DCGrid1.LoadLayout;
+  //DCGrid1.LoadLayout;
+  DCGrid1.LoadLayout('financeiro');
   lblStatus.Caption := 'Layout loaded';
 end;
 
 procedure TForm1.btnResetLayoutClick(Sender: TObject);
 begin
-  DCGrid1.ResetLayout;
+  //DCGrid1.ResetLayout;
+  DCGrid1.ResetLayout('financeiro');
   lblStatus.Caption := 'Layout reset';
 end;
 
@@ -1042,6 +1086,12 @@ procedure TForm1.cbThemeColorChange(Sender: TObject);
 begin
   ApplyThemeEditorsToGrid;
   UpdateStatus;
+end;
+
+procedure TForm1.CheckBox1Click(Sender: TObject);
+begin
+   DCGrid1.ShowColumnFilters := TCheckBox(Sender).Checked;
+   //DCGrid1.ColumnFilterHeight := 34;
 end;
 
 procedure TForm1.btnThemeChooseClick(Sender: TObject);
@@ -1096,9 +1146,15 @@ begin
 end;
 
 procedure TForm1.btnVisualRulesDesignerClick(Sender: TObject);
+//begin
+var
+  LJson: string;
 begin
-  RefreshBusinessRulesUI;
-  UpdateStatus;
+
+  DCGrid1.RulesDesignerLanguage := rdlPortuguese;
+  ShowDCFlexGridVisualRulesDesigner(DCGrid1);
+//  RefreshBusinessRulesUI;
+//  UpdateStatus;
 end;
 
 procedure TForm1.btnClearRulesClick(Sender: TObject);
