@@ -954,6 +954,14 @@ begin
   Message.Result := Message.Result or DLGC_WANTTAB or DLGC_WANTARROWS;
 end;
 
+function DCFlexColorBrightness(AColor: TColor): Integer;
+var
+  C: TColor;
+begin
+  C := ColorToRGB(AColor);
+  Result := GetRValue(C) + GetGValue(C) + GetBValue(C);
+end;
+
 { TDCFlexButton }
 
 constructor TDCFlexButton.Create(AOwner: TComponent);
@@ -1112,7 +1120,11 @@ begin
     LBorder := FAccentColor;
     LText := clWhite;
     if FMouseOver or FMouseDown then
+    begin
       LBack := FPressedColor;
+      if DCFlexColorBrightness(LBack) > 520 then
+        LText := FTextColor;
+    end;
   end
   else if FMouseDown then
     LBack := FPressedColor
@@ -3125,12 +3137,14 @@ begin
 end;
 
 procedure TDCFlexComboBox.SetText(const Value: string);
+var
+  LNewIndex: Integer;
 begin
-  if FText <> Value then
+  LNewIndex := FItems.IndexOf(Value);
+  if (FText <> Value) or (FItemIndex <> LNewIndex) then
   begin
     FText := Value;
-    if FStyle = csDropDown then
-      FItemIndex := FItems.IndexOf(FText);
+    FItemIndex := LNewIndex;
     Invalidate;
     Change;
   end;
@@ -3508,7 +3522,7 @@ begin
     AddColorItem(PaletteText('Light Blue', 'Azul claro'), RGB(221, 235, 255));
     AddColorItem(PaletteText('Blue', 'Azul'), RGB(59, 130, 246));
     AddColorItem(PaletteText('Dark Blue', 'Azul escuro'), RGB(30, 64, 175));
-    AddColorItem(PaletteText('Indigo', 'Indigo'), RGB(99, 102, 241));
+    AddColorItem(PaletteText('Indigo', #205 + 'ndigo'), RGB(99, 102, 241));
     AddColorItem(PaletteText('Purple', 'Roxo'), RGB(139, 92, 246));
     AddColorItem(PaletteText('Lavender', 'Lavanda'), RGB(233, 221, 255));
 
@@ -3997,7 +4011,7 @@ begin
   Canvas.Font.Color := FButton.FThemePalette.MutedText;
   Canvas.Brush.Style := bsClear;
   DrawText(Canvas.Handle,
-    PChar(FButton.PaletteText('STANDARD', 'PADRAO')), -1, R,
+    PChar(FButton.PaletteText('STANDARD', 'PADR' + #195 + 'O')), -1, R,
     DT_LEFT or DT_VCENTER or DT_SINGLELINE);
   Canvas.Font.Style := [];
   Canvas.Font.Size := Font.Size;
@@ -4251,9 +4265,9 @@ begin
   if ColorToRGB(AColor) = ColorToRGB(RGB(148, 163, 184)) then
     Exit(PaletteText('Gray', 'Cinza'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(80, 90, 102)) then
-    Exit(PaletteText('Slate', 'Ardosia'));
+    Exit(PaletteText('Slate', 'Ard' + #243 + 'sia'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(37, 52, 69)) then
-    Exit(PaletteText('Dark Slate', 'Ardosia escuro'));
+    Exit(PaletteText('Dark Slate', 'Ard' + #243 + 'sia escuro'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(221, 235, 255)) then
     Exit(PaletteText('Light Blue', 'Azul claro'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(59, 130, 246)) then
@@ -4261,7 +4275,7 @@ begin
   if ColorToRGB(AColor) = ColorToRGB(RGB(30, 64, 175)) then
     Exit(PaletteText('Dark Blue', 'Azul escuro'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(99, 102, 241)) then
-    Exit(PaletteText('Indigo', 'Indigo'));
+    Exit(PaletteText('Indigo', #205 + 'ndigo'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(139, 92, 246)) then
     Exit(PaletteText('Purple', 'Roxo'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(233, 221, 255)) then
@@ -4275,7 +4289,7 @@ begin
   if ColorToRGB(AColor) = ColorToRGB(RGB(223, 247, 242)) then
     Exit(PaletteText('Mint', 'Menta'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(20, 184, 166)) then
-    Exit(PaletteText('Teal', 'Azul petroleo'));
+    Exit(PaletteText('Teal', 'Azul petr' + #243 + 'leo'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(165, 243, 252)) then
     Exit(PaletteText('Cyan', 'Ciano'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(255, 244, 194)) then
@@ -4283,9 +4297,9 @@ begin
   if ColorToRGB(AColor) = ColorToRGB(RGB(250, 204, 21)) then
     Exit(PaletteText('Yellow', 'Amarelo'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(255, 235, 221)) then
-    Exit(PaletteText('Soft Amber', 'Ambar suave'));
+    Exit(PaletteText('Soft Amber', #194 + 'mbar suave'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(245, 158, 11)) then
-    Exit(PaletteText('Amber', 'Ambar'));
+    Exit(PaletteText('Amber', #194 + 'mbar'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(249, 115, 22)) then
     Exit(PaletteText('Orange', 'Laranja'));
   if ColorToRGB(AColor) = ColorToRGB(RGB(255, 127, 127)) then
@@ -4764,26 +4778,38 @@ end;
 procedure TDCFlexToggleButton.Paint;
 var
   R: TRect;
+  LOuterRect: TRect;
   LFlags: Cardinal;
   LBackColor: TColor;
   LBorderColor: TColor;
   LTextColor: TColor;
+  LParentBackColor: TColor;
 begin
   inherited;
 
   R := ClientRect;
+  LOuterRect := R;
   LBackColor := GetBackColor;
   LBorderColor := GetBorderPaintColor;
   LTextColor := GetTextColor;
+
+  if Assigned(Parent) then
+    LParentBackColor := Parent.Brush.Color
+  else
+    LParentBackColor := Color;
+
+  Canvas.Brush.Color := LParentBackColor;
+  Canvas.FillRect(LOuterRect);
 
   Canvas.Brush.Color := LBackColor;
   Canvas.Pen.Color := LBorderColor;
   Canvas.Pen.Width := 1;
 
   if FBorderRadius > 0 then
-    Canvas.RoundRect(R.Left, R.Top, R.Right, R.Bottom, FBorderRadius, FBorderRadius)
+    Canvas.RoundRect(R.Left, R.Top, R.Right - 1, R.Bottom - 1,
+      FBorderRadius, FBorderRadius)
   else
-    Canvas.Rectangle(R);
+    Canvas.Rectangle(R.Left, R.Top, R.Right - 1, R.Bottom - 1);
 
   Canvas.Font.Assign(Font);
   Canvas.Font.Color := LTextColor;

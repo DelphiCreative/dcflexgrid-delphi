@@ -22,7 +22,9 @@ The component is focused on:
 This public repository contains the free Community edition:
 
 - `TDCFlexGrid`
-- shared DCFlex core controls used by the grid
+- shared DCFlex core package used by the grid
+- `DCFlex.Theme`, `DCFlex.Language`, `DCFlex.Controls`, `DCFlex.PopupMenu`
+  and `DCFlex.Dialogs`
 - visual rules designer
 - color picker and themed controls used by the grid UI
 - English/Portuguese language infrastructure
@@ -125,6 +127,10 @@ Build order:
 2. `DCFlexCoreD`
 3. `DCFlexGridCommunityR`
 4. `DCFlexGridCommunityD`
+
+Important: do not compile/install only the grid package. `DCFlexGrid` depends on
+the shared Core package, which contains units such as `DCFlex.Theme`,
+`DCFlex.Language`, `DCFlex.Controls`, `DCFlex.PopupMenu` and `DCFlex.Dialogs`.
 
 Install these design-time packages in the IDE:
 

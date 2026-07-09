@@ -499,24 +499,24 @@ begin
       if LKey = 'color.white' then Exit('Branco');
       if LKey = 'color.light.gray' then Exit('Cinza claro');
       if LKey = 'color.gray' then Exit('Cinza');
-      if LKey = 'color.slate' then Exit('Ardosia');
-      if LKey = 'color.dark.slate' then Exit('Ardosia escuro');
+      if LKey = 'color.slate' then Exit('Ard' + #243 + 'sia');
+      if LKey = 'color.dark.slate' then Exit('Ard' + #243 + 'sia escuro');
       if LKey = 'color.light.blue' then Exit('Azul claro');
       if LKey = 'color.blue' then Exit('Azul');
       if LKey = 'color.dark.blue' then Exit('Azul escuro');
-      if LKey = 'color.indigo' then Exit('Indigo');
+      if LKey = 'color.indigo' then Exit(#205 + 'ndigo');
       if LKey = 'color.purple' then Exit('Roxo');
       if LKey = 'color.lavender' then Exit('Lavanda');
       if LKey = 'color.light.green' then Exit('Verde claro');
       if LKey = 'color.green' then Exit('Verde');
       if LKey = 'color.dark.green' then Exit('Verde escuro');
       if LKey = 'color.mint' then Exit('Menta');
-      if LKey = 'color.teal' then Exit('Azul petroleo');
+      if LKey = 'color.teal' then Exit('Azul petr' + #243 + 'leo');
       if LKey = 'color.cyan' then Exit('Ciano');
       if LKey = 'color.light.yellow' then Exit('Amarelo claro');
       if LKey = 'color.yellow' then Exit('Amarelo');
-      if LKey = 'color.soft.amber' then Exit('Ambar suave');
-      if LKey = 'color.amber' then Exit('Ambar');
+      if LKey = 'color.soft.amber' then Exit(#194 + 'mbar suave');
+      if LKey = 'color.amber' then Exit(#194 + 'mbar');
       if LKey = 'color.orange' then Exit('Laranja');
       if LKey = 'color.coral' then Exit('Coral');
       if LKey = 'color.light.red' then Exit('Vermelho claro');
@@ -526,26 +526,26 @@ begin
       if LKey = 'color.rose' then Exit('Rose');
       if LKey = 'color.brown' then Exit('Marrom');
       if LKey = 'color.reset' then Exit('Redefinir');
-      if LKey = 'color.standard' then Exit('PADRAO');
+      if LKey = 'color.standard' then Exit('PADR' + #195 + 'O');
       if LKey = 'color.cancel' then Exit('Cancelar');
       if LKey = 'color.custom' then Exit('Personalizada ');
       if LKey = 'color.custom.color' then Exit('Cor personalizada...');
     end
     else if AScope = dlsSheets then
     begin
-      if LKey = 'font.default' then Exit('Fonte padrao');
+      if LKey = 'font.default' then Exit('Fonte padr' + #227 + 'o');
       if LKey = 'font.family' then Exit('Fonte');
-      if LKey = 'font.size.default' then Exit('Padrao');
+      if LKey = 'font.size.default' then Exit('Padr' + #227 + 'o');
       if LKey = 'font.size' then Exit('Tamanho da fonte');
       if LKey = 'font.bold' then Exit('Negrito');
-      if LKey = 'font.italic' then Exit('Italico');
+      if LKey = 'font.italic' then Exit('It' + #225 + 'lico');
       if LKey = 'font.underline' then Exit('Sublinhado');
-      if LKey = 'align.left' then Exit('Alinhar a esquerda');
+      if LKey = 'align.left' then Exit('Alinhar ' + #224 + ' esquerda');
       if LKey = 'align.center' then Exit('Centralizar');
-      if LKey = 'align.right' then Exit('Alinhar a direita');
-      if LKey = 'number.format' then Exit('Formato numerico');
+      if LKey = 'align.right' then Exit('Alinhar ' + #224 + ' direita');
+      if LKey = 'number.format' then Exit('Formato num' + #233 + 'rico');
       if LKey = 'number.general' then Exit('Geral');
-      if LKey = 'number.number' then Exit('Numero');
+      if LKey = 'number.number' then Exit('N' + #250 + 'mero');
       if LKey = 'number.currency' then Exit('Moeda');
       if LKey = 'number.percent' then Exit('Percentual');
       if LKey = 'borders' then Exit('Bordas');
@@ -556,84 +556,95 @@ begin
       if LKey = 'color.text' then Exit('Cor do texto');
       if LKey = 'style.clear' then Exit('Limpar estilo');
       if LKey = 'style.clear.hint' then
-        Exit('Limpar formatacao das celulas selecionadas');
-      if LKey = 'formula.cell' then Exit('Celula');
-      if LKey = 'formula.value' then Exit('Formula');
+        Exit('Limpar formata' + #231 + #227 + 'o das c' + #233 +
+          'lulas selecionadas');
+      if LKey = 'formula.cell' then Exit('C' + #233 + 'lula');
+      if LKey = 'formula.value' then Exit('F' + #243 + 'rmula');
       if LKey = 'edit.cut' then Exit('Recortar');
       if LKey = 'edit.copy' then Exit('Copiar');
       if LKey = 'edit.paste' then Exit('Colar');
-      if LKey = 'edit.clear.contents' then Exit('Limpar conteudo');
+      if LKey = 'edit.clear.contents' then Exit('Limpar conte' + #250 + 'do');
       if LKey = 'row.insert' then Exit('Inserir linha');
       if LKey = 'row.delete' then Exit('Excluir linha');
       if LKey = 'column.insert' then Exit('Inserir coluna');
       if LKey = 'column.delete' then Exit('Excluir coluna');
-      if LKey = 'selection.autofit' then Exit('Auto ajustar selecao');
-      if LKey = 'cells.merge' then Exit('Mesclar celulas');
-      if LKey = 'cells.unmerge' then Exit('Desmesclar celulas');
+      if LKey = 'selection.autofit' then Exit('Auto ajustar sele' + #231 + #227 + 'o');
+      if LKey = 'cells.merge' then Exit('Mesclar c' + #233 + 'lulas');
+      if LKey = 'cells.unmerge' then Exit('Desmesclar c' + #233 + 'lulas');
     end;
     if AScope = dlsScheduler then
     begin
       if LKey = 'event.caption' then Exit('Evento');
       if LKey = 'event.new.title' then Exit('Novo evento');
-      if LKey = 'field.title' then Exit('Titulo');
-      if LKey = 'field.start' then Exit('Inicio');
+      if LKey = 'field.title' then Exit('T' + #237 + 'tulo');
+      if LKey = 'field.start' then Exit('In' + #237 + 'cio');
       if LKey = 'field.end' then Exit('Fim');
       if LKey = 'field.all.day' then Exit('Dia inteiro');
       if LKey = 'field.location' then Exit('Local');
       if LKey = 'field.color' then Exit('Cor');
       if LKey = 'field.text.color' then Exit('Cor do texto');
-      if LKey = 'field.notes' then Exit('Observacoes');
+      if LKey = 'field.notes' then Exit('Observa' + #231 + #245 + 'es');
       if LKey = 'recurrence.caption' then Exit('Repetir');
-      if LKey = 'recurrence.until' then Exit('Ate');
-      if LKey = 'recurrence.none' then Exit('Nao repetir');
-      if LKey = 'recurrence.daily' then Exit('Diario');
+      if LKey = 'recurrence.until' then Exit('At' + #233);
+      if LKey = 'recurrence.none' then Exit('N' + #227 + 'o repetir');
+      if LKey = 'recurrence.daily' then Exit('Di' + #225 + 'rio');
       if LKey = 'recurrence.weekly' then Exit('Semanal');
       if LKey = 'recurrence.monthly' then Exit('Mensal');
       if LKey = 'ok' then Exit('OK');
       if LKey = 'cancel' then Exit('Cancelar');
-      if LKey = 'event.untitled' then Exit('(Sem titulo)');
+      if LKey = 'event.untitled' then Exit('(Sem t' + #237 + 'tulo)');
       if LKey = 'event.more' then Exit('+%d mais');
-      if LKey = 'recurrence.this.occurrence' then Exit('Esta ocorrencia');
+      if LKey = 'recurrence.this.occurrence' then Exit('Esta ocorr' + #234 + 'ncia');
       if LKey = 'recurrence.this.future' then Exit('Esta e futuras');
-      if LKey = 'recurrence.entire.series' then Exit('Serie inteira');
+      if LKey = 'recurrence.entire.series' then Exit('S' + #233 + 'rie inteira');
       if LKey = 'recurrence.edit.title' then Exit('Evento recorrente');
       if LKey = 'recurrence.edit.message' then
-        Exit('Escolha se deseja editar somente esta ocorrencia ou a serie inteira.');
+        Exit('Escolha se deseja editar somente esta ocorr' + #234 +
+          'ncia ou a s' + #233 + 'rie inteira.');
       if LKey = 'delete' then Exit('Excluir');
       if LKey = 'delete.event.title' then Exit('Excluir evento');
       if LKey = 'delete.event.message' then
-        Exit('Este evento sera excluido permanentemente.');
+        Exit('Este evento ser' + #225 + ' exclu' + #237 + 'do permanentemente.');
       if LKey = 'delete.recurring.title' then Exit('Excluir evento recorrente');
       if LKey = 'delete.recurring.message' then
-        Exit('Escolha se deseja excluir somente esta ocorrencia ou a serie inteira.');
+        Exit('Escolha se deseja excluir somente esta ocorr' + #234 +
+          'ncia ou a s' + #233 + 'rie inteira.');
+      if LKey = 'popup.previous' then Exit('Anterior');
+      if LKey = 'popup.today' then Exit('Hoje');
+      if LKey = 'popup.next' then Exit('Pr' + #243 + 'ximo');
+      if LKey = 'popup.view' then Exit('Vis' + #227 + 'o');
+      if LKey = 'popup.view.day' then Exit('Dia');
+      if LKey = 'popup.view.week' then Exit('Semana');
+      if LKey = 'popup.view.month' then Exit('M' + #234 + 's');
       if LKey = 'weekday.sunday' then Exit('dom');
       if LKey = 'weekday.monday' then Exit('seg');
       if LKey = 'weekday.tuesday' then Exit('ter');
       if LKey = 'weekday.wednesday' then Exit('qua');
       if LKey = 'weekday.thursday' then Exit('qui');
       if LKey = 'weekday.friday' then Exit('sex');
-      if LKey = 'weekday.saturday' then Exit('sab');
+      if LKey = 'weekday.saturday' then Exit('s' + #225 + 'b');
     end;
     if AScope = dlsKanban then
     begin
       if LKey = 'card.caption' then Exit('Card');
       if LKey = 'column.caption' then Exit('Coluna');
-      if LKey = 'field.title' then Exit('Titulo');
+      if LKey = 'field.title' then Exit('T' + #237 + 'tulo');
       if LKey = 'field.name' then Exit('Nome');
-      if LKey = 'field.description' then Exit('Descricao');
+      if LKey = 'field.description' then Exit('Descri' + #231 + #227 + 'o');
       if LKey = 'field.tag' then Exit('Etiqueta');
       if LKey = 'field.color' then Exit('Cor');
       if LKey = 'field.text.color' then Exit('Cor do texto');
       if LKey = 'ok' then Exit('OK');
       if LKey = 'cancel' then Exit('Cancelar');
-      if LKey = 'card.untitled' then Exit('(Sem titulo)');
+      if LKey = 'card.untitled' then Exit('(Sem t' + #237 + 'tulo)');
       if LKey = 'delete' then Exit('Excluir');
       if LKey = 'delete.card.title' then Exit('Excluir card');
       if LKey = 'delete.card.message' then
-        Exit('Este card sera excluido permanentemente.');
+        Exit('Este card ser' + #225 + ' exclu' + #237 + 'do permanentemente.');
       if LKey = 'delete.column.title' then Exit('Excluir coluna');
       if LKey = 'delete.column.message' then
-        Exit('Esta coluna e todos os seus cards serao excluidos permanentemente.');
+        Exit('Esta coluna e todos os seus cards ser' + #227 + 'o exclu' +
+          #237 + 'dos permanentemente.');
     end;
   end;
 end;

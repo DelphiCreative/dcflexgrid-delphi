@@ -34,7 +34,10 @@ Install in the IDE:
 Community source units:
 
 - `DCFlex.Language`
+- `DCFlex.Theme`
 - `DCFlex.Controls`
+- `DCFlex.PopupMenu`
+- `DCFlex.Dialogs`
 - `DCFlexGrid`
 - `DCFlexGrid.Fluent`
 - `DCFlexGrid.Themes`
@@ -66,6 +69,48 @@ Pro runtime units:
 The Pro package depends on `DCFlexCoreR`, but does not depend on
 `DCFlexGridCommunityR`. This lets customers install the paid suite without
 requiring the free grid package, while still allowing both to coexist.
+
+## WebUI Distribution
+
+Open `DCFlexWebUI.groupproj` from the repository root.
+
+Build order:
+
+1. `DCFlexWebUIR`
+2. `DCFlexWebUID`
+3. `DCFlexWebUIDemo`
+4. `DCFlexWebUIFinanceDemo`
+
+Install in the IDE:
+
+- `DCFlexWebUID`
+
+WebUI runtime units:
+
+- `DCFlexWebUI.Core`
+
+Design-time units:
+
+- `DCFlexWebUI.Reg`
+
+The WebUI package is intentionally isolated from the Community and Pro VCL
+component packages. It uses `TEdgeBrowser`/WebView2 and is meant for modern
+local HTML/CSS/JavaScript screens hosted by Delphi.
+
+Important distribution files:
+
+- `packages/webui/DCFlexWebUIR/DCFlexWebUIR.dpk`
+- `packages/webui/DCFlexWebUID/DCFlexWebUID.dpk`
+- `demo/DCFlexWebUI-demo`
+- `demo/DCFlexWebUI-vcl-crud-demo`
+- `demo/DCFlexWebUI-finance-demo`
+- `demo/DCFlexWebUI-finance-demo/README.md`
+
+The VCL CRUD demo is the fastest adoption reference: a traditional VCL form
+opens a second WebUI form with a complete customer CRUD persisted by Delphi.
+
+The Finance demo is the recommended commercial reference because it shows CRUD,
+SQLite persistence, dashboards, filters, dialogs, reports and a bridge console.
 
 ## Full Suite Development
 

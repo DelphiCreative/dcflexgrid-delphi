@@ -47,6 +47,8 @@ __recovery/
 *.db
 *.db3
 demo/*.scheduler.json
+webview-profile/
+**/webview-profile/
 
 # Local folders
 backups/
